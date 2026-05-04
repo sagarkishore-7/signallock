@@ -128,6 +128,28 @@ Optional fields:
 - `paired_require_stronger_min_exposure_band`
 - `warn_min_password_band`
 
+### `PolicyEvaluationRecord`
+
+- `employee_id`
+- `scenario`
+- `password`
+- `policy_profile`
+- `exposure_band`
+- `password_band`
+- `primary_action`
+- `combined_score`
+
+### `PolicyEvaluationSummary`
+
+- `policy_profile`
+- `sample_count`
+- `scenario_count`
+- `primary_action_counts`
+- `supporting_action_counts`
+- `average_combined_score`
+- `average_exposure_score`
+- `average_password_score`
+
 ## Exposure-Oriented Fields
 
 These features should influence exposure scoring, not password scoring by themselves.

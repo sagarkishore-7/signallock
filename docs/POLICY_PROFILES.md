@@ -77,6 +77,18 @@ List available profiles:
 PYTHONPATH=src python3 -m signallock list-policy-profiles --pretty
 ```
 
+The default profile definitions live in:
+
+`configs/policy_profiles.json`
+
+Use a different file for experiments:
+
+```bash
+PYTHONPATH=src python3 -m signallock list-policy-profiles \
+  --policy-file /path/to/policies.json \
+  --pretty
+```
+
 Apply a profile:
 
 ```bash
@@ -84,10 +96,21 @@ PYTHONPATH=src python3 -m signallock recommend-hardening \
   --password "Priya2014!" \
   --seed 1 \
   --profile-index 0 \
+  --policy-file configs/policy_profiles.json \
   --policy-profile strict \
+  --pretty
+```
+
+Evaluate multiple profiles at once:
+
+```bash
+PYTHONPATH=src python3 -m signallock evaluate-policies \
+  --count 5 \
+  --seed 1 \
+  --policy-profiles balanced strict usability \
   --pretty
 ```
 
 ## Current Limitation
 
-These profiles are heuristic baselines, not empirically calibrated organizational policies. Their main purpose today is to support comparative experiments and make the prototype easier to evolve.
+These profiles are heuristic baselines, not empirically calibrated organizational policies. Their main purpose today is to support comparative experiments and make the prototype easier to evolve. The repository now includes a synthetic evaluation harness so these profiles can be compared without changing code.

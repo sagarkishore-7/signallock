@@ -28,6 +28,7 @@ Current contents:
 - a baseline exposure scoring pipeline under [`src/signallock/exposure.py`](src/signallock/exposure.py),
 - a baseline password-risk scoring pipeline under [`src/signallock/password_risk.py`](src/signallock/password_risk.py),
 - a baseline hardening policy engine under [`src/signallock/policy.py`](src/signallock/policy.py),
+- a synthetic evaluation harness under [`src/signallock/evaluation.py`](src/signallock/evaluation.py),
 - an initial Python package scaffold under [`src/signallock/`](src/signallock/).
 
 Repository:
@@ -50,14 +51,17 @@ This separation is deliberate. Public exposure is not the same thing as weak pas
 SignalLock/
 ├── docs/
 │   ├── ARCHITECTURE.md
+│   ├── POLICY_PROFILES.md
 │   ├── FEATURE_SCHEMA.md
 │   ├── IMPLEMENTATION_PLAN.md
-│   ├── POLICY_PROFILES.md
 │   └── THREAT_MODEL.md
+├── configs/
+│   └── policy_profiles.json
 ├── src/
 │   └── signallock/
 │       ├── __init__.py
 │       ├── cli.py
+│       ├── evaluation.py
 │       ├── exposure.py
 │       ├── password_risk.py
 │       ├── policy.py
@@ -173,6 +177,16 @@ List the built-in policy profiles:
 PYTHONPATH=src python3 -m signallock list-policy-profiles --pretty
 ```
 
+Compare policy profiles across synthetic evaluation scenarios:
+
+```bash
+PYTHONPATH=src python3 -m signallock evaluate-policies \
+  --count 5 \
+  --seed 1 \
+  --policy-profiles balanced strict usability \
+  --pretty
+```
+
 Run the current test suite:
 
 ```bash
@@ -187,6 +201,8 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - compute a transparent baseline password-risk score conditioned on profile context,
 - compute a baseline hardening recommendation from both scores,
 - switch between named policy profiles for experiments,
+- load policy thresholds from a repo-backed JSON config file,
+- compare policy profiles across synthetic evaluation scenarios,
 - inspect outputs through a CLI-first workflow with test coverage.
 
 ## Current Limitations
@@ -195,7 +211,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - no ML models are in the loop yet,
 - password scoring currently operates on one synthetic profile context at a time,
 - the policy engine is heuristic and not yet calibrated against user or org study data,
-- policy profiles are built-in only and not yet loaded from external config files,
+- policy profiles are loaded from JSON but still limited to the current named profile set,
 - no dashboard has been added yet.
 
 ## Internal Planning Artifacts

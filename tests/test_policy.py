@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
 from signallock.exposure import score_exposure
 from signallock.password_risk import score_password_for_profile
@@ -100,6 +103,64 @@ class PolicyTests(unittest.TestCase):
             usability.primary_action,
             {HardeningAction.WARN, HardeningAction.STEP_UP_AUTHENTICATION},
         )
+
+    def test_policy_file_override_changes_thresholds(self) -> None:
+        payload = {
+            "profiles": [
+                {
+                    "profile": "balanced",
+                    "exposure_weight": 0.1,
+                    "password_weight": 0.9,
+                    "warn_threshold": 95.0,
+                    "step_up_threshold": 97.0,
+                    "enforce_mfa_threshold": 99.0,
+                    "awareness_min_exposure_band": "CRITICAL",
+                    "step_up_min_exposure_band": "CRITICAL",
+                    "enforce_mfa_min_exposure_band": "CRITICAL",
+                    "require_stronger_min_password_band": "CRITICAL",
+                    "paired_require_stronger_password_band": "CRITICAL",
+                    "paired_require_stronger_min_exposure_band": "CRITICAL",
+                    "warn_min_password_band": "CRITICAL"
+                },
+                {
+                    "profile": "strict",
+                    "exposure_weight": 0.45,
+                    "password_weight": 0.55,
+                    "warn_threshold": 32.0,
+                    "step_up_threshold": 48.0,
+                    "enforce_mfa_threshold": 68.0,
+                    "awareness_min_exposure_band": "MEDIUM",
+                    "step_up_min_exposure_band": "MEDIUM",
+                    "enforce_mfa_min_exposure_band": "HIGH",
+                    "require_stronger_min_password_band": "HIGH",
+                    "paired_require_stronger_password_band": "MEDIUM",
+                    "paired_require_stronger_min_exposure_band": "HIGH",
+                    "warn_min_password_band": "MEDIUM"
+                },
+                {
+                    "profile": "usability",
+                    "exposure_weight": 0.3,
+                    "password_weight": 0.7,
+                    "warn_threshold": 48.0,
+                    "step_up_threshold": 65.0,
+                    "enforce_mfa_threshold": 82.0,
+                    "awareness_min_exposure_band": "CRITICAL",
+                    "step_up_min_exposure_band": "CRITICAL",
+                    "enforce_mfa_min_exposure_band": "CRITICAL",
+                    "require_stronger_min_password_band": "CRITICAL",
+                    "paired_require_stronger_password_band": "HIGH",
+                    "paired_require_stronger_min_exposure_band": "CRITICAL",
+                    "warn_min_password_band": "HIGH"
+                }
+            ]
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "policies.json"
+            path.write_text(json.dumps(payload))
+            config = get_policy_config(PolicyProfile.BALANCED, policy_file=path)
+
+        self.assertEqual(config.warn_threshold, 95.0)
+        self.assertEqual(config.exposure_weight, 0.1)
 
 
 if __name__ == "__main__":

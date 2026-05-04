@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 
+from .evaluation import evaluate_policy_profiles, evaluation_results_to_json
 from .exposure import assessments_to_json, score_profiles_exposure
 from .password_risk import score_password_for_profile
 from .policy import get_policy_config, policy_configs_to_json, recommend_hardening
@@ -158,12 +159,66 @@ def build_parser() -> argparse.ArgumentParser:
         default=PolicyProfile.BALANCED.value,
         help="Named hardening policy profile to apply.",
     )
+    policy_parser.add_argument(
+        "--policy-file",
+        default=None,
+        help="Optional path to a policy profile JSON file.",
+    )
 
     profiles_parser = subparsers.add_parser(
         "list-policy-profiles",
         help="List built-in hardening policy profiles and thresholds.",
     )
     profiles_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+    profiles_parser.add_argument(
+        "--policy-file",
+        default=None,
+        help="Optional path to a policy profile JSON file.",
+    )
+
+    evaluate_parser = subparsers.add_parser(
+        "evaluate-policies",
+        help="Compare policy profiles across synthetic profiles and scenarios.",
+    )
+    evaluate_parser.add_argument(
+        "--count",
+        type=int,
+        default=5,
+        help="Number of synthetic profiles to generate.",
+    )
+    evaluate_parser.add_argument(
+        "--organization",
+        default="ExampleCorp",
+        help="Organization name to embed in generated profiles.",
+    )
+    evaluate_parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Optional random seed for reproducible output.",
+    )
+    evaluate_parser.add_argument(
+        "--policy-profiles",
+        nargs="*",
+        choices=[profile.value for profile in PolicyProfile],
+        default=None,
+        help="Optional subset of policy profiles to evaluate.",
+    )
+    evaluate_parser.add_argument(
+        "--policy-file",
+        default=None,
+        help="Optional path to a policy profile JSON file.",
+    )
+    evaluate_parser.add_argument(
+        "--include-records",
+        action="store_true",
+        help="Include per-scenario evaluation records in the JSON output.",
+    )
+    evaluate_parser.add_argument(
         "--pretty",
         action="store_true",
         help="Pretty-print JSON output.",
@@ -229,7 +284,7 @@ def main(argv: list[str] | None = None) -> None:
         profile = profiles[args.profile_index]
         exposure = score_profiles_exposure([profile])[0]
         password_assessment = score_password_for_profile(args.password, profile)
-        config = get_policy_config(args.policy_profile)
+        config = get_policy_config(args.policy_profile, policy_file=args.policy_file)
         recommendation = recommend_hardening(exposure, password_assessment, config=config)
         payload = {
             "profile": profile.to_dict(),
@@ -245,12 +300,38 @@ def main(argv: list[str] | None = None) -> None:
         return
 
     if args.command == "list-policy-profiles":
-        print(policy_configs_to_json(pretty=args.pretty))
+        print(policy_configs_to_json(pretty=args.pretty, policy_file=args.policy_file))
+        return
+
+    if args.command == "evaluate-policies":
+        profiles = generate_synthetic_profiles(
+            count=args.count,
+            organization=args.organization,
+            seed=args.seed,
+        )
+        selected_profiles = (
+            [PolicyProfile(profile) for profile in args.policy_profiles]
+            if args.policy_profiles
+            else list(PolicyProfile)
+        )
+        summaries, records = evaluate_policy_profiles(
+            profiles,
+            selected_profiles,
+            policy_file=args.policy_file,
+        )
+        print(
+            evaluation_results_to_json(
+                summaries,
+                records,
+                include_records=args.include_records,
+                pretty=args.pretty,
+            )
+        )
         return
 
     print("SignalLock is in early implementation.")
     print("Start with docs/THREAT_MODEL.md, docs/FEATURE_SCHEMA.md, and the CLI help.")
     print(
         "Try: PYTHONPATH=src python3 -m signallock "
-        "recommend-hardening --password 'Priya2014!' --seed 1 --profile-index 0 --policy-profile balanced --pretty"
+        "evaluate-policies --count 5 --seed 1 --pretty"
     )

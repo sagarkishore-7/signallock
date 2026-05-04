@@ -1,8 +1,9 @@
-"""Baseline policy engine for turning risk scores into hardening actions."""
+"""Policy engine for turning risk scores into hardening actions."""
 
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 from .schemas import (
     ExposureAssessment,
@@ -22,53 +23,7 @@ BAND_RANK = {
     RiskBand.CRITICAL: 3,
 }
 
-DEFAULT_POLICY_CONFIGS = {
-    PolicyProfile.BALANCED: PolicyConfig(
-        profile=PolicyProfile.BALANCED,
-        exposure_weight=0.4,
-        password_weight=0.6,
-        warn_threshold=40.0,
-        step_up_threshold=55.0,
-        enforce_mfa_threshold=75.0,
-        awareness_min_exposure_band=RiskBand.HIGH,
-        step_up_min_exposure_band=RiskBand.HIGH,
-        enforce_mfa_min_exposure_band=RiskBand.CRITICAL,
-        require_stronger_min_password_band=RiskBand.CRITICAL,
-        paired_require_stronger_password_band=RiskBand.HIGH,
-        paired_require_stronger_min_exposure_band=RiskBand.HIGH,
-        warn_min_password_band=RiskBand.MEDIUM,
-    ),
-    PolicyProfile.STRICT: PolicyConfig(
-        profile=PolicyProfile.STRICT,
-        exposure_weight=0.45,
-        password_weight=0.55,
-        warn_threshold=32.0,
-        step_up_threshold=48.0,
-        enforce_mfa_threshold=68.0,
-        awareness_min_exposure_band=RiskBand.MEDIUM,
-        step_up_min_exposure_band=RiskBand.MEDIUM,
-        enforce_mfa_min_exposure_band=RiskBand.HIGH,
-        require_stronger_min_password_band=RiskBand.HIGH,
-        paired_require_stronger_password_band=RiskBand.MEDIUM,
-        paired_require_stronger_min_exposure_band=RiskBand.HIGH,
-        warn_min_password_band=RiskBand.MEDIUM,
-    ),
-    PolicyProfile.USABILITY: PolicyConfig(
-        profile=PolicyProfile.USABILITY,
-        exposure_weight=0.3,
-        password_weight=0.7,
-        warn_threshold=48.0,
-        step_up_threshold=65.0,
-        enforce_mfa_threshold=82.0,
-        awareness_min_exposure_band=RiskBand.CRITICAL,
-        step_up_min_exposure_band=RiskBand.CRITICAL,
-        enforce_mfa_min_exposure_band=RiskBand.CRITICAL,
-        require_stronger_min_password_band=RiskBand.CRITICAL,
-        paired_require_stronger_password_band=RiskBand.HIGH,
-        paired_require_stronger_min_exposure_band=RiskBand.CRITICAL,
-        warn_min_password_band=RiskBand.HIGH,
-    ),
-}
+DEFAULT_POLICY_FILE = Path(__file__).resolve().parents[2] / "configs" / "policy_profiles.json"
 
 
 def _append_unique(actions: list[HardeningAction], action: HardeningAction) -> None:
@@ -82,15 +37,71 @@ def _band_at_least(current: RiskBand, threshold: RiskBand) -> bool:
     return BAND_RANK[current] >= BAND_RANK[threshold]
 
 
-def get_policy_config(profile: PolicyProfile | str = PolicyProfile.BALANCED) -> PolicyConfig:
-    """Return a named baseline policy configuration."""
+def _load_raw_policy_payload(policy_file: str | Path | None = None) -> dict[str, object]:
+    """Load the raw JSON policy payload from disk."""
+    resolved = Path(policy_file) if policy_file is not None else DEFAULT_POLICY_FILE
+    return json.loads(resolved.read_text())
+
+
+def _policy_config_from_dict(data: dict[str, object]) -> PolicyConfig:
+    """Convert one JSON policy record into a typed config object."""
+    return PolicyConfig(
+        profile=PolicyProfile(str(data["profile"])),
+        exposure_weight=float(data["exposure_weight"]),
+        password_weight=float(data["password_weight"]),
+        warn_threshold=float(data["warn_threshold"]),
+        step_up_threshold=float(data["step_up_threshold"]),
+        enforce_mfa_threshold=float(data["enforce_mfa_threshold"]),
+        awareness_min_exposure_band=RiskBand(str(data["awareness_min_exposure_band"])),
+        step_up_min_exposure_band=RiskBand(str(data["step_up_min_exposure_band"])),
+        enforce_mfa_min_exposure_band=RiskBand(str(data["enforce_mfa_min_exposure_band"])),
+        require_stronger_min_password_band=RiskBand(str(data["require_stronger_min_password_band"])),
+        paired_require_stronger_password_band=RiskBand(
+            str(data["paired_require_stronger_password_band"])
+        ),
+        paired_require_stronger_min_exposure_band=RiskBand(
+            str(data["paired_require_stronger_min_exposure_band"])
+        ),
+        warn_min_password_band=RiskBand(str(data["warn_min_password_band"])),
+    )
+
+
+def load_policy_configs(
+    policy_file: str | Path | None = None,
+) -> dict[PolicyProfile, PolicyConfig]:
+    """Load all named policy configs from disk."""
+    payload = _load_raw_policy_payload(policy_file)
+    profiles = payload.get("profiles")
+    if not isinstance(profiles, list):
+        raise ValueError("policy payload must contain a 'profiles' list")
+
+    configs = {}
+    for item in profiles:
+        if not isinstance(item, dict):
+            raise ValueError("each policy profile entry must be an object")
+        config = _policy_config_from_dict(item)
+        configs[config.profile] = config
+
+    missing = [profile for profile in PolicyProfile if profile not in configs]
+    if missing:
+        raise ValueError(f"missing required policy profiles: {[profile.value for profile in missing]}")
+
+    return configs
+
+
+def get_policy_config(
+    profile: PolicyProfile | str = PolicyProfile.BALANCED,
+    policy_file: str | Path | None = None,
+) -> PolicyConfig:
+    """Return one named policy configuration."""
     resolved = profile if isinstance(profile, PolicyProfile) else PolicyProfile(profile)
-    return DEFAULT_POLICY_CONFIGS[resolved]
+    return load_policy_configs(policy_file)[resolved]
 
 
-def list_policy_configs() -> list[PolicyConfig]:
-    """Return all built-in policy configurations."""
-    return [DEFAULT_POLICY_CONFIGS[profile] for profile in PolicyProfile]
+def list_policy_configs(policy_file: str | Path | None = None) -> list[PolicyConfig]:
+    """Return all policy configurations from disk."""
+    configs = load_policy_configs(policy_file)
+    return [configs[profile] for profile in PolicyProfile]
 
 
 def recommend_hardening(
@@ -98,7 +109,7 @@ def recommend_hardening(
     password_risk: PasswordRiskAssessment,
     config: PolicyConfig | None = None,
 ) -> HardeningRecommendation:
-    """Combine exposure and password risk into a baseline hardening recommendation."""
+    """Combine exposure and password risk into a hardening recommendation."""
     if exposure.employee_id != password_risk.employee_id:
         raise ValueError("exposure and password_risk must refer to the same employee_id")
     resolved_config = config or get_policy_config()
@@ -180,9 +191,12 @@ def recommendation_to_json(
     return json.dumps(payload)
 
 
-def policy_configs_to_json(pretty: bool = False) -> str:
-    """Serialize all built-in policy profiles as JSON."""
-    payload = [config.to_dict() for config in list_policy_configs()]
+def policy_configs_to_json(
+    pretty: bool = False,
+    policy_file: str | Path | None = None,
+) -> str:
+    """Serialize all policy profiles as JSON."""
+    payload = [config.to_dict() for config in list_policy_configs(policy_file)]
     if pretty:
         return json.dumps(payload, indent=2)
     return json.dumps(payload)

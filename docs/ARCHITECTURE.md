@@ -18,6 +18,10 @@ and:
 
 `ExposureAssessment + PasswordRiskAssessment -> HardeningRecommendation`
 
+and:
+
+`Synthetic profile batch + policy profiles -> PolicyEvaluationSummary`
+
 These are still heuristic baselines, but they establish the core separation the project depends on:
 
 - exposure risk,
@@ -66,7 +70,16 @@ Responsibilities:
 - map them to a primary hardening action,
 - attach supporting actions such as MFA or awareness prioritization,
 - surface concise rationale for the recommendation,
-- support multiple named policy profiles for experiments.
+- support multiple named policy profiles for experiments,
+- load profile thresholds from a JSON config file.
+
+### `src/signallock/evaluation.py`
+
+Responsibilities:
+
+- generate safe synthetic password scenarios for evaluation only,
+- compare multiple policy profiles over the same synthetic profile batch,
+- emit summary metrics and optional detailed records.
 
 ### `src/signallock/cli.py`
 
@@ -99,6 +112,10 @@ Represents a baseline candidate-password risk score, component-level signals, an
 
 Represents a baseline policy output that combines both risk layers.
 
+### `PolicyEvaluationSummary`
+
+Represents aggregate outcomes for one policy profile over a synthetic evaluation run.
+
 ## Current Prototype Boundaries
 
 The current prototype intentionally:
@@ -114,6 +131,12 @@ The current prototype does not yet:
 - ingest live OSINT sources,
 - implement analyst dashboards,
 - run user studies or calibration experiments.
+
+The current prototype does support:
+
+- file-backed policy profiles under `configs/policy_profiles.json`,
+- comparative CLI evaluation across multiple profiles,
+- optional custom policy files for experiments.
 
 ## Near-Term Architecture Expansion
 

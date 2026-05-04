@@ -331,3 +331,46 @@ class PolicyConfig:
         )
         data["warn_min_password_band"] = self.warn_min_password_band.value
         return data
+
+
+@dataclass
+class PolicyEvaluationRecord:
+    """One synthetic evaluation result for a profile-policy-scenario combination."""
+
+    employee_id: str
+    scenario: str
+    password: str
+    policy_profile: PolicyProfile
+    exposure_band: RiskBand
+    password_band: RiskBand
+    primary_action: HardeningAction
+    combined_score: float
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the record to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["policy_profile"] = self.policy_profile.value
+        data["exposure_band"] = self.exposure_band.value
+        data["password_band"] = self.password_band.value
+        data["primary_action"] = self.primary_action.value
+        return data
+
+
+@dataclass
+class PolicyEvaluationSummary:
+    """Aggregate metrics for one policy profile over synthetic evaluation runs."""
+
+    policy_profile: PolicyProfile
+    sample_count: int
+    scenario_count: int
+    primary_action_counts: dict[str, int]
+    supporting_action_counts: dict[str, int]
+    average_combined_score: float
+    average_exposure_score: float
+    average_password_score: float
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the summary to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["policy_profile"] = self.policy_profile.value
+        return data

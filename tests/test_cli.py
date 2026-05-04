@@ -83,6 +83,29 @@ class CLITests(unittest.TestCase):
         self.assertGreaterEqual(len(decoded), 3)
         self.assertIn("profile", decoded[0])
 
+    def test_evaluate_policies_outputs_summaries(self) -> None:
+        stream = io.StringIO()
+        with contextlib.redirect_stdout(stream):
+            main(
+                [
+                    "evaluate-policies",
+                    "--count",
+                    "3",
+                    "--seed",
+                    "1",
+                    "--policy-profiles",
+                    "balanced",
+                    "strict",
+                    "--pretty",
+                ]
+            )
+
+        decoded = json.loads(stream.getvalue())
+        self.assertIn("summaries", decoded)
+        self.assertEqual(len(decoded["summaries"]), 2)
+        self.assertIn("policy_profile", decoded["summaries"][0])
+        self.assertIn("average_combined_score", decoded["summaries"][0])
+
 
 if __name__ == "__main__":
     unittest.main()
