@@ -20,8 +20,9 @@ This repository is in the research and design stage.
 
 Current contents:
 
-- a full LaTeX research proposal under [`proposal/`](proposal/),
 - a detailed implementation roadmap under [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md),
+- a formal threat model under [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md),
+- a feature taxonomy under [`docs/FEATURE_SCHEMA.md`](docs/FEATURE_SCHEMA.md),
 - an initial Python package scaffold under [`src/signallock/`](src/signallock/).
 
 Repository:
@@ -43,15 +44,18 @@ This separation is deliberate. Public exposure is not the same thing as weak pas
 ```text
 SignalLock/
 ├── docs/
-│   └── IMPLEMENTATION_PLAN.md
-├── proposal/
-│   ├── main.tex
-│   ├── README.md
-│   └── references.bib
+│   ├── FEATURE_SCHEMA.md
+│   ├── IMPLEMENTATION_PLAN.md
+│   └── THREAT_MODEL.md
 ├── src/
 │   └── signallock/
 │       ├── __init__.py
-│       └── cli.py
+│       ├── cli.py
+│       ├── schemas.py
+│       └── synthetic_profiles.py
+├── tests/
+│   ├── test_schemas.py
+│   └── test_synthetic_profiles.py
 ├── .gitignore
 ├── CONTRIBUTING.md
 ├── LICENSE
@@ -103,7 +107,7 @@ Non-goals:
 
 ## Quick Start
 
-This repository is currently documentation-first.
+This repository is in early implementation.
 
 ```bash
 pip install -e .
@@ -116,23 +120,23 @@ Or, without installation:
 PYTHONPATH=src python3 -m signallock
 ```
 
-The CLI is a placeholder today and will expand as implementation begins.
+Generate sample synthetic profiles:
 
-## Proposal
+```bash
+PYTHONPATH=src python3 -m signallock generate-profiles --count 3 --pretty
+```
 
-The current proposal draft is available at:
+## Internal Planning Artifacts
 
-- [`proposal/main.tex`](proposal/main.tex)
-
-Build notes are in:
-
-- [`proposal/README.md`](proposal/README.md)
+Research proposal drafts and agent-only context files are intentionally kept out of the public repository.
 
 ## Implementation Roadmap
 
 The engineering and research execution plan is documented in:
 
 - [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
+- [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md)
+- [`docs/FEATURE_SCHEMA.md`](docs/FEATURE_SCHEMA.md)
 
 ## License
 
