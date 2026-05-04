@@ -31,8 +31,9 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com"
-Repository = "https://github.com"
+Homepage = "https://github.com/sagarkishore-7/signallock"
+Repository = "https://github.com/sagarkishore-7/signallock"
+Issues = "https://github.com/sagarkishore-7/signallock/issues"
 
 [project.scripts]
 signallock = "signallock.cli:main"

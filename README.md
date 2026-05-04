@@ -24,6 +24,10 @@ Current contents:
 - a detailed implementation roadmap under [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md),
 - an initial Python package scaffold under [`src/signallock/`](src/signallock/).
 
+Repository:
+
+- <https://github.com/sagarkishore-7/signallock>
+
 ## Research Framing
 
 SignalLock is built around a dual-layer model:
