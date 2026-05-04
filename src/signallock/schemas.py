@@ -37,6 +37,17 @@ class RiskBand(str, Enum):
     CRITICAL = "CRITICAL"
 
 
+class HardeningAction(str, Enum):
+    """Supported hardening actions for the baseline policy engine."""
+
+    ALLOW = "ALLOW"
+    WARN = "WARN"
+    REQUIRE_STRONGER_PASSWORD = "REQUIRE_STRONGER_PASSWORD"
+    ENFORCE_MFA = "ENFORCE_MFA"
+    STEP_UP_AUTHENTICATION = "STEP_UP_AUTHENTICATION"
+    PRIORITIZE_AWARENESS_TRAINING = "PRIORITIZE_AWARENESS_TRAINING"
+
+
 def _normalize_list(values: list[str]) -> list[str]:
     """Lower noise in list fields while preserving order."""
     seen: set[str] = set()
@@ -222,4 +233,40 @@ class PasswordRiskAssessment:
         """Convert the assessment to a JSON-serializable dictionary."""
         data = asdict(self)
         data["band"] = self.band.value
+        return data
+
+
+@dataclass
+class HardeningRecommendation:
+    """Baseline policy recommendation derived from exposure and password risk."""
+
+    employee_id: str
+    exposure_score: float
+    exposure_band: RiskBand
+    password_score: float
+    password_band: RiskBand
+    combined_score: float
+    primary_action: HardeningAction
+    supporting_actions: list[HardeningAction]
+    rationale: list[str]
+
+    def __post_init__(self) -> None:
+        """Validate core recommendation shape."""
+        self.employee_id = self.employee_id.strip()
+        if not self.employee_id:
+            raise ValueError("employee_id must be non-empty")
+        if not 0.0 <= self.exposure_score <= 100.0:
+            raise ValueError("exposure_score must be between 0 and 100")
+        if not 0.0 <= self.password_score <= 100.0:
+            raise ValueError("password_score must be between 0 and 100")
+        if not 0.0 <= self.combined_score <= 100.0:
+            raise ValueError("combined_score must be between 0 and 100")
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the recommendation to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["exposure_band"] = self.exposure_band.value
+        data["password_band"] = self.password_band.value
+        data["primary_action"] = self.primary_action.value
+        data["supporting_actions"] = [action.value for action in self.supporting_actions]
         return data

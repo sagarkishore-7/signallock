@@ -26,6 +26,7 @@ Current contents:
 - a feature taxonomy under [`docs/FEATURE_SCHEMA.md`](docs/FEATURE_SCHEMA.md),
 - a baseline exposure scoring pipeline under [`src/signallock/exposure.py`](src/signallock/exposure.py),
 - a baseline password-risk scoring pipeline under [`src/signallock/password_risk.py`](src/signallock/password_risk.py),
+- a baseline hardening policy engine under [`src/signallock/policy.py`](src/signallock/policy.py),
 - an initial Python package scaffold under [`src/signallock/`](src/signallock/).
 
 Repository:
@@ -57,12 +58,14 @@ SignalLock/
 │       ├── cli.py
 │       ├── exposure.py
 │       ├── password_risk.py
+│       ├── policy.py
 │       ├── schemas.py
 │       └── synthetic_profiles.py
 ├── tests/
 │   ├── test_cli.py
 │   ├── test_exposure.py
 │   ├── test_password_risk.py
+│   ├── test_policy.py
 │   ├── test_schemas.py
 │   └── test_synthetic_profiles.py
 ├── .gitignore
@@ -151,6 +154,16 @@ PYTHONPATH=src python3 -m signallock score-password \
   --pretty
 ```
 
+Generate a hardening recommendation from both layers:
+
+```bash
+PYTHONPATH=src python3 -m signallock recommend-hardening \
+  --password "Priya2014!" \
+  --seed 1 \
+  --profile-index 0 \
+  --pretty
+```
+
 Run the current test suite:
 
 ```bash
@@ -163,6 +176,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - normalize public profile data into attribute vectors,
 - compute a transparent baseline exposure score,
 - compute a transparent baseline password-risk score conditioned on profile context,
+- compute a baseline hardening recommendation from both scores,
 - inspect outputs through a CLI-first workflow with test coverage.
 
 ## Current Limitations
@@ -170,7 +184,8 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - scoring is heuristic and not yet calibrated against empirical study data,
 - no ML models are in the loop yet,
 - password scoring currently operates on one synthetic profile context at a time,
-- no policy engine or dashboard has been added yet.
+- the policy engine is heuristic and not yet calibrated against user or org study data,
+- no dashboard has been added yet.
 
 ## Internal Planning Artifacts
 

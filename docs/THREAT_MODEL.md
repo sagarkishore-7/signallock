@@ -166,4 +166,5 @@ Current implementation status:
 - synthetic profile generation is implemented,
 - baseline exposure scoring is implemented,
 - baseline candidate-password scoring is implemented,
-- policy mapping remains future work.
+- baseline policy mapping is implemented,
+- calibration and deployment tuning remain future work.

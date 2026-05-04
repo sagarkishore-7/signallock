@@ -46,6 +46,30 @@ class CLITests(unittest.TestCase):
         self.assertIn("assessment", decoded)
         self.assertIn("score", decoded["assessment"])
 
+    def test_recommend_hardening_outputs_recommendation(self) -> None:
+        stream = io.StringIO()
+        with contextlib.redirect_stdout(stream):
+            main(
+                [
+                    "recommend-hardening",
+                    "--password",
+                    "Priya2014!",
+                    "--count",
+                    "3",
+                    "--seed",
+                    "1",
+                    "--profile-index",
+                    "0",
+                    "--pretty",
+                ]
+            )
+
+        decoded = json.loads(stream.getvalue())
+        self.assertIn("exposure", decoded)
+        self.assertIn("password_assessment", decoded)
+        self.assertIn("recommendation", decoded)
+        self.assertIn("primary_action", decoded["recommendation"])
+
 
 if __name__ == "__main__":
     unittest.main()

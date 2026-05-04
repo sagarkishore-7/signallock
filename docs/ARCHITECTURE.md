@@ -14,6 +14,10 @@ and now:
 
 `Synthetic PublicProfile + candidate password -> PasswordRiskAssessment`
 
+and:
+
+`ExposureAssessment + PasswordRiskAssessment -> HardeningRecommendation`
+
 These are still heuristic baselines, but they establish the core separation the project depends on:
 
 - exposure risk,
@@ -54,6 +58,15 @@ Responsibilities:
 - combine generic weakness signals with context-overlap signals,
 - return bounded risk bands and interpretable factors.
 
+### `src/signallock/policy.py`
+
+Responsibilities:
+
+- combine exposure and password-risk outputs,
+- map them to a primary hardening action,
+- attach supporting actions such as MFA or awareness prioritization,
+- surface concise rationale for the recommendation.
+
 ### `src/signallock/cli.py`
 
 Responsibilities:
@@ -81,6 +94,10 @@ Represents a baseline exposure score and component-level contributing factors.
 
 Represents a baseline candidate-password risk score, component-level signals, and matched contextual tokens.
 
+### `HardeningRecommendation`
+
+Represents a baseline policy output that combines both risk layers.
+
 ## Current Prototype Boundaries
 
 The current prototype intentionally:
@@ -94,7 +111,6 @@ The current prototype does not yet:
 
 - train or use ML models,
 - ingest live OSINT sources,
-- implement policy recommendations,
 - implement analyst dashboards,
 - run user studies or calibration experiments.
 

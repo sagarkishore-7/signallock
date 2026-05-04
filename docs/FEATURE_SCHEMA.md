@@ -84,6 +84,27 @@ Optional fields:
 - `matched_tokens`
 - `top_factors`
 
+### `HardeningAction`
+
+- `ALLOW`
+- `WARN`
+- `REQUIRE_STRONGER_PASSWORD`
+- `ENFORCE_MFA`
+- `STEP_UP_AUTHENTICATION`
+- `PRIORITIZE_AWARENESS_TRAINING`
+
+### `HardeningRecommendation`
+
+- `employee_id`
+- `exposure_score`
+- `exposure_band`
+- `password_score`
+- `password_band`
+- `combined_score`
+- `primary_action`
+- `supporting_actions`
+- `rationale`
+
 ## Exposure-Oriented Fields
 
 These features should influence exposure scoring, not password scoring by themselves.
