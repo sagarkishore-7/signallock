@@ -28,6 +28,12 @@ from .figures import (
 )
 from .password_risk import score_password_for_profile
 from .policy import get_policy_config, policy_configs_to_json, recommend_hardening
+from .preset_aggregates import (
+    DEFAULT_PRESET_AGGREGATE_OUTPUT_DIR,
+    aggregate_preset_results,
+    preset_aggregate_results_to_json,
+    write_preset_aggregate_artifacts,
+)
 from .presets import execute_preset, get_preset, presets_to_json
 from .reporting import (
     DEFAULT_EVALUATION_OUTPUT_DIR,
@@ -496,6 +502,42 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pretty-print JSON output.",
     )
 
+    aggregate_presets_parser = subparsers.add_parser(
+        "aggregate-presets",
+        help="Aggregate preset summaries into paper-style cross-preset result tables.",
+    )
+    aggregate_presets_parser.add_argument(
+        "--input-dir",
+        default=str(DEFAULT_PRESET_INPUT_DIR),
+        help="Directory containing saved preset run subdirectories.",
+    )
+    aggregate_presets_parser.add_argument(
+        "--preset-names",
+        nargs="*",
+        default=None,
+        help="Optional subset of preset names to include in the aggregation.",
+    )
+    aggregate_presets_parser.add_argument(
+        "--include-tables",
+        action="store_true",
+        help="Include markdown aggregate tables in the JSON output.",
+    )
+    aggregate_presets_parser.add_argument(
+        "--save-aggregates",
+        action="store_true",
+        help="Write a timestamped preset aggregate bundle to disk.",
+    )
+    aggregate_presets_parser.add_argument(
+        "--output-dir",
+        default=str(DEFAULT_PRESET_AGGREGATE_OUTPUT_DIR),
+        help="Optional directory for saved preset aggregate artifacts.",
+    )
+    aggregate_presets_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+
     return parser
 
 
@@ -799,6 +841,49 @@ def main(argv: list[str] | None = None) -> None:
                 comparison_table_markdown=(
                     comparison_table if args.include_tables else None
                 ),
+                artifacts=artifacts.to_dict() if artifacts else None,
+            )
+        )
+        return
+
+    if args.command == "aggregate-presets":
+        results_overview, run_records, policy_records, comparison_records = (
+            summarize_preset_runs(
+                input_dir=args.input_dir,
+                selected_presets=args.preset_names,
+            )
+        )
+        (
+            aggregate_overview,
+            preset_policy_records,
+            preset_comparison_records,
+            cross_policy_records,
+            cross_comparison_records,
+        ) = aggregate_preset_results(
+            results_overview,
+            run_records,
+            policy_records,
+            comparison_records,
+        )
+        artifacts = None
+        if args.save_aggregates:
+            artifacts = write_preset_aggregate_artifacts(
+                aggregate_overview,
+                preset_policy_records,
+                preset_comparison_records,
+                cross_policy_records,
+                cross_comparison_records,
+                output_dir=args.output_dir,
+            )
+        print(
+            preset_aggregate_results_to_json(
+                aggregate_overview,
+                preset_policy_records,
+                preset_comparison_records,
+                cross_policy_records,
+                cross_comparison_records,
+                pretty=args.pretty,
+                include_tables=args.include_tables,
                 artifacts=artifacts.to_dict() if artifacts else None,
             )
         )

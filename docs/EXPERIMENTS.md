@@ -18,6 +18,7 @@ The goal is not large-scale benchmarking yet. The goal is to make iterative rese
 8. Generate lightweight SVG figures and aggregate policy tables.
 9. Execute named presets that orchestrate the entire workflow automatically.
 10. Summarize executed preset bundles into thesis-friendly markdown and CSV outputs.
+11. Aggregate preset summaries into paper-style cross-preset result tables.
 
 ## CLI Example
 
@@ -104,6 +105,22 @@ These bundles currently contain:
 - `preset_policy_summary_table.md`
 - `preset_comparison_summary_table.md` when comparisons exist
 
+Preset aggregate bundles can also be written under:
+
+`artifacts/preset_aggregates/<timestamp>/`
+
+These bundles currently contain:
+
+- `preset_aggregate_summary.json`
+- `preset_policy_aggregates.csv`
+- `preset_comparison_aggregates.csv`
+- `cross_preset_policy_aggregates.csv`
+- `cross_preset_comparison_aggregates.csv`
+- `preset_policy_aggregate_table.md`
+- `preset_comparison_aggregate_table.md`
+- `cross_preset_policy_aggregate_table.md`
+- `cross_preset_comparison_aggregate_table.md` when comparisons exist
+
 ## File Semantics
 
 ### `report.json`
@@ -179,6 +196,16 @@ Aggregate view across one or more executed preset bundles, including:
 - per-policy preset summaries
 - per-candidate preset comparison summaries
 - embedded markdown tables for quick reporting
+
+### `preset_aggregate_summary.json`
+
+Higher-level aggregate view across executed preset summaries, including:
+
+- within-preset policy aggregates
+- within-preset baseline-versus-candidate aggregates
+- cross-preset policy aggregates
+- cross-preset comparison aggregates
+- embedded markdown tables that are easier to lift into a thesis draft
 
 ## Cross-Run Analysis
 
@@ -288,6 +315,24 @@ Optional flags:
 - `--include-policy-summaries` to include per-policy preset summaries in JSON
 - `--include-comparison-summaries` to include comparison summaries in JSON
 
+## Preset Aggregates
+
+Build paper-style aggregate tables from executed preset bundles:
+
+```bash
+PYTHONPATH=src python3 -m signallock aggregate-presets \
+  --input-dir artifacts/presets \
+  --include-tables \
+  --save-aggregates \
+  --pretty
+```
+
+Optional flags:
+
+- `--preset-names` to focus on selected preset families
+- `--output-dir` to control where aggregate bundles are written
+- `--include-tables` to embed the markdown tables directly in JSON
+
 ## Reproducibility Notes
 
 - Use `--seed` for stable synthetic profile generation.
@@ -303,5 +348,6 @@ Optional flags:
 - Pairwise comparisons are based on saved synthetic run summaries, so they are useful for ablation-style iteration rather than definitive deployment claims.
 - Preset orchestration improves reproducibility, but it still operates on heuristic synthetic pipelines rather than calibrated study data.
 - Preset summaries are designed for traceability and draft reporting, not final statistical claims.
+- Preset aggregates are useful for paper-style comparison and framing, but they still summarize heuristic synthetic experiments.
 - No calibration or confidence intervals are produced yet.
 - The artifact format is stable enough for local iteration, but may evolve as the research design matures.

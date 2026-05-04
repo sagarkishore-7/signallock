@@ -379,6 +379,83 @@ Optional fields:
 - `policy_table_file`
 - `comparison_table_file`
 
+### `PresetPolicyAggregateRecord`
+
+- `preset_name`
+- `policy_profile`
+- `preset_run_count`
+- `mean_combined_score`
+- `std_combined_score`
+- `mean_exposure_score`
+- `mean_password_score`
+- `dominant_top_action`
+- `baseline_run_ratio`
+
+### `PresetComparisonAggregateRecord`
+
+- `preset_name`
+- `baseline_profile`
+- `candidate_profile`
+- `preset_run_count`
+- `mean_combined_score_delta`
+- `std_combined_score_delta`
+- `mean_exposure_score_delta`
+- `mean_password_score_delta`
+- `mean_candidate_higher_ratio`
+- `mean_action_change_ratio`
+- `dominant_transition`
+
+### `CrossPresetPolicyAggregateRecord`
+
+- `policy_profile`
+- `preset_name_count`
+- `preset_run_count`
+- `mean_combined_score`
+- `std_combined_score`
+- `mean_exposure_score`
+- `mean_password_score`
+- `dominant_top_action`
+
+### `CrossPresetComparisonAggregateRecord`
+
+- `baseline_profile`
+- `candidate_profile`
+- `preset_name_count`
+- `preset_run_count`
+- `mean_combined_score_delta`
+- `std_combined_score_delta`
+- `mean_exposure_score_delta`
+- `mean_password_score_delta`
+- `mean_candidate_higher_ratio`
+- `mean_action_change_ratio`
+- `dominant_transition`
+
+### `PresetAggregateOverview`
+
+- `input_dir`
+- `preset_run_count`
+- `preset_policy_aggregate_count`
+- `preset_comparison_aggregate_count`
+- `cross_policy_aggregate_count`
+- `cross_comparison_aggregate_count`
+- `preset_names`
+- `policy_profiles`
+
+### `PresetAggregateArtifacts`
+
+- `run_id`
+- `generated_at`
+- `output_dir`
+- `summary_file`
+- `preset_policy_csv_file`
+- `preset_comparison_csv_file`
+- `cross_policy_csv_file`
+- `cross_comparison_csv_file`
+- `preset_policy_table_file`
+- `preset_comparison_table_file`
+- `cross_policy_table_file`
+- `cross_comparison_table_file`
+
 ## Exposure-Oriented Fields
 
 These features should influence exposure scoring, not password scoring by themselves.
@@ -514,5 +591,11 @@ The current implementation already supports:
 - `PresetComparisonSummaryRecord`
 - `PresetResultsOverview`
 - `PresetResultsArtifacts`
+- `PresetPolicyAggregateRecord`
+- `PresetComparisonAggregateRecord`
+- `CrossPresetPolicyAggregateRecord`
+- `CrossPresetComparisonAggregateRecord`
+- `PresetAggregateOverview`
+- `PresetAggregateArtifacts`
 
 The scoring outputs remain heuristic baselines and should be treated as transparent placeholders pending later calibration and evaluation.

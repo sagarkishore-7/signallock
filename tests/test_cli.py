@@ -384,6 +384,82 @@ class CLITests(unittest.TestCase):
             self.assertIn("artifacts", decoded)
             self.assertTrue(Path(decoded["artifacts"]["summary_file"]).exists())
 
+    def test_aggregate_presets_outputs_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            preset_file = Path(temp_dir) / "presets.json"
+            preset_file.write_text(
+                json.dumps(
+                    {
+                        "presets": [
+                            {
+                                "name": "mini_strict",
+                                "description": "Small strict-focused preset for aggregate CLI coverage.",
+                                "organization": "ExampleCorp",
+                                "profile_count": 2,
+                                "seeds": [1, 2],
+                                "policy_profiles": ["balanced", "strict"],
+                                "baseline_profile": "balanced",
+                                "comparison_candidates": ["strict"],
+                                "include_records": False,
+                            },
+                            {
+                                "name": "mini_usability",
+                                "description": "Small usability-focused preset for aggregate CLI coverage.",
+                                "organization": "ExampleCorp",
+                                "profile_count": 2,
+                                "seeds": [1, 2],
+                                "policy_profiles": ["balanced", "usability"],
+                                "baseline_profile": "balanced",
+                                "comparison_candidates": ["usability"],
+                                "include_records": False,
+                            },
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            for preset_name in ("mini_strict", "mini_usability"):
+                run_stream = io.StringIO()
+                with contextlib.redirect_stdout(run_stream):
+                    main(
+                        [
+                            "run-preset",
+                            "--preset",
+                            preset_name,
+                            "--preset-file",
+                            str(preset_file),
+                            "--output-dir",
+                            temp_dir,
+                        ]
+                    )
+
+            aggregate_stream = io.StringIO()
+            with contextlib.redirect_stdout(aggregate_stream):
+                main(
+                    [
+                        "aggregate-presets",
+                        "--input-dir",
+                        temp_dir,
+                        "--include-tables",
+                        "--save-aggregates",
+                        "--output-dir",
+                        temp_dir,
+                        "--pretty",
+                    ]
+                )
+
+            decoded = json.loads(aggregate_stream.getvalue())
+            self.assertIn("overview", decoded)
+            self.assertIn("preset_policy_aggregates", decoded)
+            self.assertIn("preset_comparison_aggregates", decoded)
+            self.assertIn("cross_policy_aggregates", decoded)
+            self.assertIn("cross_comparison_aggregates", decoded)
+            self.assertIn("preset_policy_table_markdown", decoded)
+            self.assertIn("cross_policy_table_markdown", decoded)
+            self.assertIn("artifacts", decoded)
+            self.assertTrue(Path(decoded["artifacts"]["summary_file"]).exists())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -38,6 +38,7 @@ Current contents:
 - a lightweight SVG figure layer under [`src/signallock/figures.py`](src/signallock/figures.py),
 - a preset-based orchestration layer under [`src/signallock/presets.py`](src/signallock/presets.py),
 - a preset-results summary layer under [`src/signallock/results.py`](src/signallock/results.py),
+- a paper-style preset aggregate layer under [`src/signallock/preset_aggregates.py`](src/signallock/preset_aggregates.py),
 - an initial Python package scaffold under [`src/signallock/`](src/signallock/).
 
 Repository:
@@ -79,6 +80,7 @@ SignalLock/
 │       ├── exposure.py
 │       ├── figures.py
 │       ├── password_risk.py
+│       ├── preset_aggregates.py
 │       ├── policy.py
 │       ├── presets.py
 │       ├── reporting.py
@@ -96,6 +98,7 @@ SignalLock/
 │   ├── test_reporting.py
 │   ├── test_results.py
 │   ├── test_password_risk.py
+│   ├── test_preset_aggregates.py
 │   ├── test_policy.py
 │   ├── test_schemas.py
 │   └── test_synthetic_profiles.py
@@ -272,6 +275,16 @@ PYTHONPATH=src python3 -m signallock summarize-presets \
   --include-comparison-summaries \
   --include-tables \
   --save-summary \
+  --pretty
+```
+
+Aggregate those preset summaries into paper-style cross-preset result tables:
+
+```bash
+PYTHONPATH=src python3 -m signallock aggregate-presets \
+  --input-dir artifacts/presets \
+  --include-tables \
+  --save-aggregates \
   --pretty
 ```
 

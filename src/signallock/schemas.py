@@ -798,3 +798,132 @@ class PresetResultsArtifacts:
     def to_dict(self) -> dict[str, object]:
         """Convert artifact references to a JSON-serializable dictionary."""
         return asdict(self)
+
+
+@dataclass
+class PresetPolicyAggregateRecord:
+    """Aggregated policy metrics within one preset family across multiple preset runs."""
+
+    preset_name: str
+    policy_profile: PolicyProfile
+    preset_run_count: int
+    mean_combined_score: float
+    std_combined_score: float
+    mean_exposure_score: float
+    mean_password_score: float
+    dominant_top_action: str
+    baseline_run_ratio: float
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the preset policy aggregate to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["policy_profile"] = self.policy_profile.value
+        return data
+
+
+@dataclass
+class PresetComparisonAggregateRecord:
+    """Aggregated comparison metrics within one preset family across multiple preset runs."""
+
+    preset_name: str
+    baseline_profile: PolicyProfile
+    candidate_profile: PolicyProfile
+    preset_run_count: int
+    mean_combined_score_delta: float
+    std_combined_score_delta: float
+    mean_exposure_score_delta: float
+    mean_password_score_delta: float
+    mean_candidate_higher_ratio: float
+    mean_action_change_ratio: float
+    dominant_transition: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the preset comparison aggregate to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["baseline_profile"] = self.baseline_profile.value
+        data["candidate_profile"] = self.candidate_profile.value
+        return data
+
+
+@dataclass
+class CrossPresetPolicyAggregateRecord:
+    """Aggregated policy metrics across all preset families."""
+
+    policy_profile: PolicyProfile
+    preset_name_count: int
+    preset_run_count: int
+    mean_combined_score: float
+    std_combined_score: float
+    mean_exposure_score: float
+    mean_password_score: float
+    dominant_top_action: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the cross-preset policy aggregate to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["policy_profile"] = self.policy_profile.value
+        return data
+
+
+@dataclass
+class CrossPresetComparisonAggregateRecord:
+    """Aggregated comparison metrics across all preset families."""
+
+    baseline_profile: PolicyProfile
+    candidate_profile: PolicyProfile
+    preset_name_count: int
+    preset_run_count: int
+    mean_combined_score_delta: float
+    std_combined_score_delta: float
+    mean_exposure_score_delta: float
+    mean_password_score_delta: float
+    mean_candidate_higher_ratio: float
+    mean_action_change_ratio: float
+    dominant_transition: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the cross-preset comparison aggregate to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["baseline_profile"] = self.baseline_profile.value
+        data["candidate_profile"] = self.candidate_profile.value
+        return data
+
+
+@dataclass
+class PresetAggregateOverview:
+    """High-level metadata for preset aggregate analysis."""
+
+    input_dir: str
+    preset_run_count: int
+    preset_policy_aggregate_count: int
+    preset_comparison_aggregate_count: int
+    cross_policy_aggregate_count: int
+    cross_comparison_aggregate_count: int
+    preset_names: list[str]
+    policy_profiles: list[str]
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the overview to a JSON-serializable dictionary."""
+        return asdict(self)
+
+
+@dataclass
+class PresetAggregateArtifacts:
+    """Filesystem artifact references for saved preset aggregate bundles."""
+
+    run_id: str
+    generated_at: str
+    output_dir: str
+    summary_file: str
+    preset_policy_csv_file: str
+    preset_comparison_csv_file: str
+    cross_policy_csv_file: str
+    cross_comparison_csv_file: str
+    preset_policy_table_file: str
+    preset_comparison_table_file: str
+    cross_policy_table_file: str
+    cross_comparison_table_file: str | None = None
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert artifact references to a JSON-serializable dictionary."""
+        return asdict(self)

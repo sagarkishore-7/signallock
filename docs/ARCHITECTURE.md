@@ -46,6 +46,10 @@ and now:
 
 `saved preset manifests -> preset-level policy/comparison summaries -> thesis-friendly markdown/CSV bundle`
 
+and now:
+
+`preset summary bundles -> within-preset and cross-preset aggregates -> paper-style result tables`
+
 These are still heuristic baselines, but they establish the core separation the project depends on:
 
 - exposure risk,
@@ -167,6 +171,15 @@ Responsibilities:
 - render thesis-friendly markdown tables and CSV outputs,
 - save timestamped preset-results summary bundles for later analysis and writing.
 
+### `src/signallock/preset_aggregates.py`
+
+Responsibilities:
+
+- aggregate preset-summary outputs across repeated preset executions,
+- compute within-preset and cross-preset policy/comparison summaries,
+- render paper-style markdown tables and CSV outputs,
+- save timestamped aggregate bundles for thesis and report preparation.
+
 ## Current Output Types
 
 ### `PublicProfile`
@@ -265,6 +278,30 @@ Represents high-level metadata for aggregated preset-summary operations.
 
 Represents the saved filesystem outputs for one timestamped preset-results bundle.
 
+### `PresetPolicyAggregateRecord`
+
+Represents one within-preset aggregate row for a policy profile.
+
+### `PresetComparisonAggregateRecord`
+
+Represents one within-preset aggregate row for a baseline-versus-candidate comparison.
+
+### `CrossPresetPolicyAggregateRecord`
+
+Represents one policy-level aggregate row across multiple preset families.
+
+### `CrossPresetComparisonAggregateRecord`
+
+Represents one comparison-level aggregate row across multiple preset families.
+
+### `PresetAggregateOverview`
+
+Represents high-level metadata for one preset aggregate analysis operation.
+
+### `PresetAggregateArtifacts`
+
+Represents the saved filesystem outputs for one timestamped preset aggregate bundle.
+
 ## Current Prototype Boundaries
 
 The current prototype intentionally:
@@ -292,6 +329,7 @@ The current prototype does support:
 - dependency-light SVG figure bundles derived from cross-run aggregates,
 - preset-driven orchestration across the full experiment workflow.
 - preset-level summary bundles for higher-level experiment reporting.
+- paper-style aggregate bundles for higher-level cross-preset interpretation.
 
 ## Near-Term Architecture Expansion
 
