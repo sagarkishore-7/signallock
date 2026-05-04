@@ -193,6 +193,56 @@ Optional fields:
 - `comparison_table_file`
 - `policy_matrix_file`
 
+### `PolicyComparisonOverview`
+
+- `input_dir`
+- `baseline_profile`
+- `candidate_profiles`
+- `total_runs_scanned`
+- `matched_run_count`
+- `summary_count`
+
+### `PolicyComparisonRunDelta`
+
+- `run_id`
+- `generated_at`
+- `organization`
+- `profile_count`
+- `seed`
+- `baseline_profile`
+- `candidate_profile`
+- `baseline_top_action`
+- `candidate_top_action`
+- `action_changed`
+- `baseline_combined_score`
+- `candidate_combined_score`
+- `combined_score_delta`
+- `exposure_score_delta`
+- `password_score_delta`
+
+### `PolicyComparisonSummary`
+
+- `baseline_profile`
+- `candidate_profile`
+- `matched_run_count`
+- `mean_combined_score_delta`
+- `mean_exposure_score_delta`
+- `mean_password_score_delta`
+- `candidate_higher_combined_ratio`
+- `action_change_count`
+- `dominant_transition`
+- `action_transition_counts`
+
+### `ComparisonArtifacts`
+
+- `run_id`
+- `generated_at`
+- `output_dir`
+- `summary_file`
+- `comparison_table_file`
+- `run_deltas_file`
+- `delta_chart_file`
+
 ### `PolicyAggregateRecord`
 
 - `policy_profile`
@@ -335,6 +385,10 @@ The current implementation already supports:
 - `EvaluationRunSummaryRecord`
 - `EvaluationRunAnalysisOverview`
 - `AnalysisArtifacts`
+- `PolicyComparisonOverview`
+- `PolicyComparisonRunDelta`
+- `PolicyComparisonSummary`
+- `ComparisonArtifacts`
 - `PolicyAggregateRecord`
 - `FigureArtifacts`
 

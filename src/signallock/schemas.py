@@ -484,3 +484,89 @@ class FigureArtifacts:
     def to_dict(self) -> dict[str, object]:
         """Convert figure artifact references to a JSON-serializable dictionary."""
         return asdict(self)
+
+
+@dataclass
+class PolicyComparisonOverview:
+    """High-level metadata for a pairwise policy comparison analysis."""
+
+    input_dir: str
+    baseline_profile: PolicyProfile
+    candidate_profiles: list[str]
+    total_runs_scanned: int
+    matched_run_count: int
+    summary_count: int
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert comparison overview metadata to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["baseline_profile"] = self.baseline_profile.value
+        return data
+
+
+@dataclass
+class PolicyComparisonRunDelta:
+    """Per-run delta between a baseline policy and a candidate policy."""
+
+    run_id: str
+    generated_at: str
+    organization: str
+    profile_count: int
+    seed: int | None
+    baseline_profile: PolicyProfile
+    candidate_profile: PolicyProfile
+    baseline_top_action: str
+    candidate_top_action: str
+    action_changed: bool
+    baseline_combined_score: float
+    candidate_combined_score: float
+    combined_score_delta: float
+    exposure_score_delta: float
+    password_score_delta: float
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert a per-run comparison delta to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["baseline_profile"] = self.baseline_profile.value
+        data["candidate_profile"] = self.candidate_profile.value
+        return data
+
+
+@dataclass
+class PolicyComparisonSummary:
+    """Aggregate comparison summary for one candidate profile versus a baseline."""
+
+    baseline_profile: PolicyProfile
+    candidate_profile: PolicyProfile
+    matched_run_count: int
+    mean_combined_score_delta: float
+    mean_exposure_score_delta: float
+    mean_password_score_delta: float
+    candidate_higher_combined_ratio: float
+    action_change_count: int
+    dominant_transition: str
+    action_transition_counts: dict[str, int]
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert a comparison summary to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["baseline_profile"] = self.baseline_profile.value
+        data["candidate_profile"] = self.candidate_profile.value
+        return data
+
+
+@dataclass
+class ComparisonArtifacts:
+    """Filesystem artifact references for a saved policy comparison bundle."""
+
+    run_id: str
+    generated_at: str
+    output_dir: str
+    summary_file: str
+    comparison_table_file: str
+    run_deltas_file: str
+    delta_chart_file: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert comparison artifact references to a JSON-serializable dictionary."""
+        return asdict(self)

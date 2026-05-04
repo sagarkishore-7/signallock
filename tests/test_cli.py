@@ -214,6 +214,51 @@ class CLITests(unittest.TestCase):
             self.assertIn("artifacts", decoded)
             self.assertTrue(Path(decoded["artifacts"]["score_chart_file"]).exists())
 
+    def test_compare_policies_outputs_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            evaluate_stream = io.StringIO()
+            with contextlib.redirect_stdout(evaluate_stream):
+                main(
+                    [
+                        "evaluate-policies",
+                        "--count",
+                        "2",
+                        "--seed",
+                        "1",
+                        "--save-run",
+                        "--output-dir",
+                        temp_dir,
+                    ]
+                )
+
+            comparison_stream = io.StringIO()
+            with contextlib.redirect_stdout(comparison_stream):
+                main(
+                    [
+                        "compare-policies",
+                        "--input-dir",
+                        temp_dir,
+                        "--baseline-profile",
+                        "balanced",
+                        "--candidate-profiles",
+                        "strict",
+                        "--include-run-deltas",
+                        "--include-table",
+                        "--save-comparison",
+                        "--output-dir",
+                        temp_dir,
+                        "--pretty",
+                    ]
+                )
+
+            decoded = json.loads(comparison_stream.getvalue())
+            self.assertIn("overview", decoded)
+            self.assertIn("summaries", decoded)
+            self.assertIn("run_deltas", decoded)
+            self.assertIn("comparison_table_markdown", decoded)
+            self.assertIn("artifacts", decoded)
+            self.assertTrue(Path(decoded["artifacts"]["delta_chart_file"]).exists())
+
 
 if __name__ == "__main__":
     unittest.main()

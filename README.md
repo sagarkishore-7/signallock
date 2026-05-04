@@ -32,6 +32,7 @@ Current contents:
 - a synthetic evaluation harness under [`src/signallock/evaluation.py`](src/signallock/evaluation.py),
 - a reproducible experiment reporting layer under [`src/signallock/reporting.py`](src/signallock/reporting.py),
 - a cross-run analysis layer under [`src/signallock/analysis.py`](src/signallock/analysis.py),
+- a pairwise comparison layer under [`src/signallock/comparison.py`](src/signallock/comparison.py),
 - a lightweight SVG figure layer under [`src/signallock/figures.py`](src/signallock/figures.py),
 - an initial Python package scaffold under [`src/signallock/`](src/signallock/).
 
@@ -67,6 +68,7 @@ SignalLock/
 │       ├── __init__.py
 │       ├── analysis.py
 │       ├── cli.py
+│       ├── comparison.py
 │       ├── evaluation.py
 │       ├── exposure.py
 │       ├── figures.py
@@ -78,6 +80,7 @@ SignalLock/
 ├── tests/
 │   ├── test_cli.py
 │   ├── test_analysis.py
+│   ├── test_comparison.py
 │   ├── test_evaluation.py
 │   ├── test_exposure.py
 │   ├── test_figures.py
@@ -222,6 +225,19 @@ PYTHONPATH=src python3 -m signallock generate-figures \
   --pretty
 ```
 
+Compare a baseline policy directly against candidate policies across saved runs:
+
+```bash
+PYTHONPATH=src python3 -m signallock compare-policies \
+  --input-dir artifacts/evaluations \
+  --baseline-profile balanced \
+  --candidate-profiles strict usability \
+  --include-run-deltas \
+  --include-table \
+  --save-comparison \
+  --pretty
+```
+
 Run the current test suite:
 
 ```bash
@@ -240,6 +256,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - compare policy profiles across synthetic evaluation scenarios,
 - export timestamped evaluation artifact bundles with markdown comparison tables,
 - aggregate saved runs into markdown and CSV comparison outputs,
+- compare baseline and candidate policies with run-level deltas and action transitions,
 - generate lightweight SVG charts and aggregate policy tables from saved runs,
 - inspect outputs through a CLI-first workflow with test coverage.
 
@@ -251,6 +268,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - the policy engine is heuristic and not yet calibrated against user or org study data,
 - policy profiles are loaded from JSON but still limited to the current named profile set,
 - no dashboard has been added yet,
+- comparisons operate on aggregate synthetic-run summaries rather than real deployment telemetry,
 - built-in figures are intentionally lightweight SVG outputs rather than full plotting-library workflows.
 
 ## Internal Planning Artifacts

@@ -12,6 +12,12 @@ from .analysis import (
     render_run_analysis_table,
     write_run_analysis_artifacts,
 )
+from .comparison import (
+    compare_policy_profiles,
+    comparison_results_to_json,
+    render_policy_comparison_table as render_policy_delta_table,
+    write_policy_comparison_artifacts,
+)
 from .evaluation import evaluate_policy_profiles, evaluation_results_to_json
 from .exposure import assessments_to_json, score_profiles_exposure
 from .figures import (
@@ -24,7 +30,7 @@ from .password_risk import score_password_for_profile
 from .policy import get_policy_config, policy_configs_to_json, recommend_hardening
 from .reporting import (
     DEFAULT_EVALUATION_OUTPUT_DIR,
-    render_policy_comparison_table,
+    render_policy_comparison_table as render_evaluation_comparison_table,
     write_evaluation_artifacts,
 )
 from .schemas import PolicyProfile
@@ -341,6 +347,54 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pretty-print JSON output.",
     )
 
+    compare_parser = subparsers.add_parser(
+        "compare-policies",
+        help="Compare one baseline policy profile against candidate profiles across saved runs.",
+    )
+    compare_parser.add_argument(
+        "--input-dir",
+        default=str(DEFAULT_EVALUATION_OUTPUT_DIR),
+        help="Directory containing saved evaluation run subdirectories.",
+    )
+    compare_parser.add_argument(
+        "--baseline-profile",
+        choices=[profile.value for profile in PolicyProfile],
+        default=PolicyProfile.BALANCED.value,
+        help="Baseline policy profile to compare against.",
+    )
+    compare_parser.add_argument(
+        "--candidate-profiles",
+        nargs="*",
+        choices=[profile.value for profile in PolicyProfile],
+        default=None,
+        help="Optional candidate policy profiles to compare against the baseline.",
+    )
+    compare_parser.add_argument(
+        "--include-run-deltas",
+        action="store_true",
+        help="Include per-run policy deltas in the JSON output.",
+    )
+    compare_parser.add_argument(
+        "--include-table",
+        action="store_true",
+        help="Include a markdown comparison table in the JSON output.",
+    )
+    compare_parser.add_argument(
+        "--save-comparison",
+        action="store_true",
+        help="Write a timestamped comparison bundle to disk.",
+    )
+    compare_parser.add_argument(
+        "--output-dir",
+        default=None,
+        help="Optional directory for saved comparison artifacts.",
+    )
+    compare_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+
     return parser
 
 
@@ -444,7 +498,7 @@ def main(argv: list[str] | None = None) -> None:
             "policy_file": str(Path(args.policy_file).resolve()) if args.policy_file else None,
         }
         comparison_table = (
-            render_policy_comparison_table(summaries)
+            render_evaluation_comparison_table(summaries)
             if args.include_table or args.save_run
             else None
         )
@@ -464,6 +518,52 @@ def main(argv: list[str] | None = None) -> None:
                 include_records=args.include_records,
                 pretty=args.pretty,
                 metadata=metadata,
+                comparison_table_markdown=comparison_table if args.include_table else None,
+                artifacts=artifacts.to_dict() if artifacts else None,
+            )
+        )
+        return
+
+    if args.command == "compare-policies":
+        baseline_profile = PolicyProfile(args.baseline_profile)
+        candidate_profiles = (
+            [PolicyProfile(profile) for profile in args.candidate_profiles]
+            if args.candidate_profiles
+            else None
+        )
+        selected_profiles = [baseline_profile]
+        if candidate_profiles:
+            selected_profiles.extend(profile for profile in candidate_profiles if profile not in selected_profiles)
+        analysis_overview, rows = analyze_evaluation_runs(
+            input_dir=args.input_dir,
+            selected_profiles=selected_profiles if candidate_profiles else None,
+        )
+        comparison_overview, summaries, run_deltas = compare_policy_profiles(
+            analysis_overview,
+            rows,
+            baseline_profile=baseline_profile,
+            candidate_profiles=candidate_profiles,
+        )
+        comparison_table = (
+            render_policy_delta_table(summaries)
+            if args.include_table or args.save_comparison
+            else None
+        )
+        artifacts = None
+        if args.save_comparison:
+            artifacts = write_policy_comparison_artifacts(
+                comparison_overview,
+                summaries,
+                run_deltas,
+                output_dir=args.output_dir,
+            )
+        print(
+            comparison_results_to_json(
+                comparison_overview,
+                summaries,
+                run_deltas,
+                include_run_deltas=args.include_run_deltas,
+                pretty=args.pretty,
                 comparison_table_markdown=comparison_table if args.include_table else None,
                 artifacts=artifacts.to_dict() if artifacts else None,
             )

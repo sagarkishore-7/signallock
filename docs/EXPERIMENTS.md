@@ -14,7 +14,8 @@ The goal is not large-scale benchmarking yet. The goal is to make iterative rese
 4. Save the run to a timestamped artifact directory.
 5. Inspect the JSON summaries and markdown comparison table.
 6. Aggregate multiple saved runs into cross-run markdown and CSV outputs.
-7. Generate lightweight SVG figures and aggregate policy tables.
+7. Compare baseline and candidate policies across saved runs.
+8. Generate lightweight SVG figures and aggregate policy tables.
 
 ## CLI Example
 
@@ -63,6 +64,17 @@ These bundles currently contain:
 - `policy_summary_table.md`
 - `policy_score_summary.svg`
 - `policy_action_summary.svg`
+
+Comparison bundles can also be written under:
+
+`artifacts/comparisons/<timestamp>/`
+
+These bundles currently contain:
+
+- `comparison_summary.json`
+- `comparison_table.md`
+- `run_deltas.csv`
+- `comparison_deltas.svg`
 
 ## File Semantics
 
@@ -115,6 +127,18 @@ Grouped bar chart comparing mean combined, exposure, and password scores by poli
 
 Stacked distribution chart showing how dominant recommendation actions vary by policy across runs.
 
+### `comparison_summary.json`
+
+Pairwise baseline-versus-candidate comparison metadata and aggregate delta summaries.
+
+### `run_deltas.csv`
+
+Per-run policy deltas for candidate-versus-baseline comparisons.
+
+### `comparison_deltas.svg`
+
+Mean delta chart showing how candidate profiles differ from the baseline across key scores.
+
 ## Cross-Run Analysis
 
 Use the saved run directories as input to:
@@ -132,6 +156,27 @@ Optional flags:
 - `--policy-profiles` to focus on one or more policy profiles
 - `--include-rows` to emit flattened per-run rows in JSON
 - `--output-dir` to control where analysis bundles are written
+
+## Policy Comparison
+
+Compare one baseline profile against one or more candidate profiles:
+
+```bash
+PYTHONPATH=src python3 -m signallock compare-policies \
+  --input-dir artifacts/evaluations \
+  --baseline-profile balanced \
+  --candidate-profiles strict usability \
+  --include-run-deltas \
+  --include-table \
+  --save-comparison \
+  --pretty
+```
+
+Optional flags:
+
+- `--candidate-profiles` to compare a subset rather than all non-baseline profiles
+- `--include-run-deltas` to include per-run deltas in JSON
+- `--output-dir` to control where comparison bundles are written
 
 ## Figure Generation
 
@@ -165,5 +210,6 @@ Optional flags:
 - The markdown table is summary-focused, not publication-grade plotting.
 - The CSV is intentionally flat and minimal rather than analysis-framework-specific.
 - The SVG figures are lightweight and dependency-free, but not a replacement for final publication plotting.
+- Pairwise comparisons are based on saved synthetic run summaries, so they are useful for ablation-style iteration rather than definitive deployment claims.
 - No calibration or confidence intervals are produced yet.
 - The artifact format is stable enough for local iteration, but may evolve as the research design matures.

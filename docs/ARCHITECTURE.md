@@ -34,6 +34,10 @@ and now:
 
 `cross-run analysis rows -> aggregate policy metrics -> SVG/CSV figure bundle`
 
+and:
+
+`cross-run analysis rows -> baseline/candidate matching -> policy comparison bundle`
+
 These are still heuristic baselines, but they establish the core separation the project depends on:
 
 - exposure risk,
@@ -110,6 +114,15 @@ Responsibilities:
 - render cross-run markdown and CSV outputs,
 - save timestamped analysis bundles for later research work.
 
+### `src/signallock/comparison.py`
+
+Responsibilities:
+
+- match baseline and candidate policy rows within the same saved run,
+- compute run-level deltas and aggregate comparison summaries,
+- render markdown, CSV, and lightweight SVG delta outputs,
+- save timestamped comparison bundles for ablation-style analysis.
+
 ### `src/signallock/figures.py`
 
 Responsibilities:
@@ -170,6 +183,22 @@ Represents top-level metadata for a cross-run analysis operation.
 
 Represents the saved filesystem outputs for one timestamped cross-run analysis bundle.
 
+### `PolicyComparisonOverview`
+
+Represents high-level metadata for one baseline-versus-candidate comparison batch.
+
+### `PolicyComparisonRunDelta`
+
+Represents one per-run delta between a baseline policy and a candidate policy.
+
+### `PolicyComparisonSummary`
+
+Represents aggregate candidate-versus-baseline deltas across matched runs.
+
+### `ComparisonArtifacts`
+
+Represents the saved filesystem outputs for one timestamped policy comparison bundle.
+
 ### `PolicyAggregateRecord`
 
 Represents cross-run aggregate metrics for one policy profile.
@@ -201,6 +230,7 @@ The current prototype does support:
 - optional custom policy files for experiments,
 - timestamped local artifact bundles for reproducible evaluation runs,
 - cross-run markdown and CSV exports derived from saved runs,
+- baseline-versus-candidate comparison bundles derived from matched runs,
 - dependency-light SVG figure bundles derived from cross-run aggregates.
 
 ## Near-Term Architecture Expansion
@@ -223,6 +253,7 @@ Today the repository is CLI-first. A typical prototype loop is:
 5. Compare multiple policy profiles over the same synthetic scenarios.
 6. Save the run and inspect the generated artifact bundle.
 7. Aggregate multiple runs into cross-run analysis outputs.
-8. Generate score and action figures for research communication.
+8. Compare baseline and candidate policy profiles.
+9. Generate score and action figures for research communication.
 
 That keeps the implementation transparent and testable before introducing more complex modeling.
