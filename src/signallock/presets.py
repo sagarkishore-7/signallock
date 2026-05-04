@@ -6,7 +6,11 @@ import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from .analysis import analyze_evaluation_runs, write_run_analysis_artifacts
+from .analysis import (
+    analyze_evaluation_calibration_runs,
+    analyze_evaluation_runs,
+    write_run_analysis_artifacts,
+)
 from .comparison import compare_policy_profiles, write_policy_comparison_artifacts
 from .evaluation import evaluate_policy_profiles
 from .figures import aggregate_policy_rows, write_figure_artifacts
@@ -97,9 +101,14 @@ def execute_preset(
         input_dir=evaluations_dir,
         selected_profiles=selected_profiles,
     )
+    calibration_rows = analyze_evaluation_calibration_runs(
+        input_dir=evaluations_dir,
+        selected_profiles=selected_profiles,
+    )
     analysis = write_run_analysis_artifacts(
         analysis_overview,
         rows,
+        calibration_rows=calibration_rows,
         output_dir=analysis_dir,
         generated_at=generated_at + timedelta(minutes=10),
     )

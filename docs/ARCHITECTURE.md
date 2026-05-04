@@ -36,6 +36,10 @@ and:
 
 and now:
 
+`saved evaluation artifacts -> cross-run calibration rows -> markdown/CSV calibration bundle`
+
+and now:
+
 `cross-run analysis rows -> aggregate policy metrics -> SVG/CSV figure bundle`
 
 and:
@@ -129,6 +133,7 @@ Responsibilities:
 
 - scan saved evaluation runs from disk,
 - flatten per-run policy summaries into comparison-friendly rows,
+- flatten per-run calibration summaries into comparison-friendly rows,
 - render cross-run markdown and CSV outputs,
 - save timestamped analysis bundles for later research work.
 
@@ -174,6 +179,7 @@ Responsibilities:
 
 - scan executed preset bundles from disk,
 - flatten preset runs, per-policy aggregates, and preset-level comparisons,
+- flatten per-policy preset calibration summaries,
 - render thesis-friendly markdown tables and CSV outputs,
 - save timestamped preset-results summary bundles for later analysis and writing.
 
@@ -182,7 +188,7 @@ Responsibilities:
 Responsibilities:
 
 - aggregate preset-summary outputs across repeated preset executions,
-- compute within-preset and cross-preset policy/comparison summaries,
+- compute within-preset and cross-preset policy/calibration/comparison summaries,
 - render paper-style markdown tables and CSV outputs,
 - save timestamped aggregate bundles for thesis and report preparation.
 
@@ -223,6 +229,10 @@ Represents the saved filesystem outputs for one timestamped experiment run.
 ### `EvaluationRunSummaryRecord`
 
 Represents one flattened policy summary row from one saved evaluation run.
+
+### `EvaluationRunCalibrationRecord`
+
+Represents one flattened calibration summary row from one saved evaluation run.
 
 ### `EvaluationRunAnalysisOverview`
 
@@ -276,6 +286,10 @@ Represents one flattened preset execution record for later analysis and reportin
 
 Represents one per-policy aggregate row extracted from a preset execution.
 
+### `PresetCalibrationSummaryRecord`
+
+Represents one per-policy calibration row extracted from a preset execution.
+
 ### `PresetComparisonSummaryRecord`
 
 Represents one per-candidate comparison row extracted from a preset execution.
@@ -292,6 +306,10 @@ Represents the saved filesystem outputs for one timestamped preset-results bundl
 
 Represents one within-preset aggregate row for a policy profile.
 
+### `PresetCalibrationAggregateRecord`
+
+Represents one within-preset aggregate row for calibration behavior.
+
 ### `PresetComparisonAggregateRecord`
 
 Represents one within-preset aggregate row for a baseline-versus-candidate comparison.
@@ -299,6 +317,10 @@ Represents one within-preset aggregate row for a baseline-versus-candidate compa
 ### `CrossPresetPolicyAggregateRecord`
 
 Represents one policy-level aggregate row across multiple preset families.
+
+### `CrossPresetCalibrationAggregateRecord`
+
+Represents one calibration-level aggregate row across multiple preset families.
 
 ### `CrossPresetComparisonAggregateRecord`
 

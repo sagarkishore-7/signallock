@@ -13,11 +13,14 @@ from pathlib import Path
 from .analysis import _create_unique_run_directory
 from .reporting import normalize_artifact_path
 from .schemas import (
+    CrossPresetCalibrationAggregateRecord,
     CrossPresetComparisonAggregateRecord,
     CrossPresetPolicyAggregateRecord,
     PolicyProfile,
     PresetAggregateArtifacts,
     PresetAggregateOverview,
+    PresetCalibrationAggregateRecord,
+    PresetCalibrationSummaryRecord,
     PresetComparisonAggregateRecord,
     PresetComparisonSummaryRecord,
     PresetPolicyAggregateRecord,
@@ -36,26 +39,33 @@ def aggregate_preset_results(
     results_overview: PresetResultsOverview,
     run_records: list[PresetRunRecord],
     policy_records: list[PresetPolicySummaryRecord],
+    calibration_records: list[PresetCalibrationSummaryRecord],
     comparison_records: list[PresetComparisonSummaryRecord],
 ) -> tuple[
     PresetAggregateOverview,
     list[PresetPolicyAggregateRecord],
+    list[PresetCalibrationAggregateRecord],
     list[PresetComparisonAggregateRecord],
     list[CrossPresetPolicyAggregateRecord],
+    list[CrossPresetCalibrationAggregateRecord],
     list[CrossPresetComparisonAggregateRecord],
 ]:
     """Aggregate preset-level summaries into paper-friendly grouped records."""
     preset_policy_aggregates = _aggregate_preset_policy_records(policy_records)
+    preset_calibration_aggregates = _aggregate_preset_calibration_records(calibration_records)
     preset_comparison_aggregates = _aggregate_preset_comparison_records(comparison_records)
     cross_policy_aggregates = _aggregate_cross_policy_records(policy_records)
+    cross_calibration_aggregates = _aggregate_cross_calibration_records(calibration_records)
     cross_comparison_aggregates = _aggregate_cross_comparison_records(comparison_records)
 
     overview = PresetAggregateOverview(
         input_dir=results_overview.input_dir,
         preset_run_count=len(run_records),
         preset_policy_aggregate_count=len(preset_policy_aggregates),
+        preset_calibration_aggregate_count=len(preset_calibration_aggregates),
         preset_comparison_aggregate_count=len(preset_comparison_aggregates),
         cross_policy_aggregate_count=len(cross_policy_aggregates),
+        cross_calibration_aggregate_count=len(cross_calibration_aggregates),
         cross_comparison_aggregate_count=len(cross_comparison_aggregates),
         preset_names=sorted({record.preset_name for record in run_records}),
         policy_profiles=sorted({record.policy_profile.value for record in policy_records}),
@@ -63,8 +73,10 @@ def aggregate_preset_results(
     return (
         overview,
         preset_policy_aggregates,
+        preset_calibration_aggregates,
         preset_comparison_aggregates,
         cross_policy_aggregates,
+        cross_calibration_aggregates,
         cross_comparison_aggregates,
     )
 
@@ -142,6 +154,48 @@ def render_preset_comparison_aggregate_table(
                     f"{record.mean_candidate_higher_ratio:.2f}",
                     f"{record.mean_action_change_ratio:.2f}",
                     record.dominant_transition,
+                )
+            )
+            + " |"
+        )
+    return "\n".join(lines) + "\n"
+
+
+def render_preset_calibration_aggregate_table(
+    records: list[PresetCalibrationAggregateRecord],
+) -> str:
+    """Render aggregated preset calibration metrics as a markdown table."""
+    headers = (
+        "Preset",
+        "Policy",
+        "Runs",
+        "Within Range",
+        "Under",
+        "Over",
+        "TP Proxy",
+        "FP Proxy",
+        "Block+",
+        "Mean Gap",
+    )
+    lines = [
+        "| " + " | ".join(headers) + " |",
+        "| " + " | ".join("---" for _ in headers) + " |",
+    ]
+    for record in records:
+        lines.append(
+            "| "
+            + " | ".join(
+                (
+                    record.preset_name,
+                    record.policy_profile.value,
+                    str(record.preset_run_count),
+                    f"{record.mean_within_expected_range_rate:.2f}",
+                    f"{record.mean_under_hardening_rate:.2f}",
+                    f"{record.mean_over_hardening_rate:.2f}",
+                    f"{record.mean_true_positive_proxy_rate:.2f}",
+                    f"{record.mean_false_positive_proxy_rate:.2f}",
+                    f"{record.mean_block_or_higher_rate:.2f}",
+                    f"{record.mean_action_severity_gap:+.2f}",
                 )
             )
             + " |"
@@ -227,11 +281,55 @@ def render_cross_comparison_aggregate_table(
     return "\n".join(lines) + "\n"
 
 
+def render_cross_calibration_aggregate_table(
+    records: list[CrossPresetCalibrationAggregateRecord],
+) -> str:
+    """Render cross-preset calibration aggregates as a markdown table."""
+    headers = (
+        "Policy",
+        "Preset Families",
+        "Preset Runs",
+        "Within Range",
+        "Under",
+        "Over",
+        "TP Proxy",
+        "FP Proxy",
+        "Block+",
+        "Mean Gap",
+    )
+    lines = [
+        "| " + " | ".join(headers) + " |",
+        "| " + " | ".join("---" for _ in headers) + " |",
+    ]
+    for record in records:
+        lines.append(
+            "| "
+            + " | ".join(
+                (
+                    record.policy_profile.value,
+                    str(record.preset_name_count),
+                    str(record.preset_run_count),
+                    f"{record.mean_within_expected_range_rate:.2f}",
+                    f"{record.mean_under_hardening_rate:.2f}",
+                    f"{record.mean_over_hardening_rate:.2f}",
+                    f"{record.mean_true_positive_proxy_rate:.2f}",
+                    f"{record.mean_false_positive_proxy_rate:.2f}",
+                    f"{record.mean_block_or_higher_rate:.2f}",
+                    f"{record.mean_action_severity_gap:+.2f}",
+                )
+            )
+            + " |"
+        )
+    return "\n".join(lines) + "\n"
+
+
 def write_preset_aggregate_artifacts(
     overview: PresetAggregateOverview,
     preset_policy_records: list[PresetPolicyAggregateRecord],
+    preset_calibration_records: list[PresetCalibrationAggregateRecord],
     preset_comparison_records: list[PresetComparisonAggregateRecord],
     cross_policy_records: list[CrossPresetPolicyAggregateRecord],
+    cross_calibration_records: list[CrossPresetCalibrationAggregateRecord],
     cross_comparison_records: list[CrossPresetComparisonAggregateRecord],
     output_dir: str | Path | None = None,
     generated_at: datetime | None = None,
@@ -243,10 +341,16 @@ def write_preset_aggregate_artifacts(
     run_dir, resolved_run_id = _create_unique_run_directory(root_dir, run_id)
 
     preset_policy_table = render_preset_policy_aggregate_table(preset_policy_records)
+    preset_calibration_table = render_preset_calibration_aggregate_table(
+        preset_calibration_records
+    )
     preset_comparison_table = render_preset_comparison_aggregate_table(
         preset_comparison_records
     )
     cross_policy_table = render_cross_policy_aggregate_table(cross_policy_records)
+    cross_calibration_table = render_cross_calibration_aggregate_table(
+        cross_calibration_records
+    )
     cross_comparison_table = (
         render_cross_comparison_aggregate_table(cross_comparison_records)
         if cross_comparison_records
@@ -258,27 +362,39 @@ def write_preset_aggregate_artifacts(
         "run_id": resolved_run_id,
         "overview": overview.to_dict(),
         "preset_policy_aggregates": [record.to_dict() for record in preset_policy_records],
+        "preset_calibration_aggregates": [
+            record.to_dict() for record in preset_calibration_records
+        ],
         "preset_comparison_aggregates": [
             record.to_dict() for record in preset_comparison_records
         ],
         "cross_policy_aggregates": [record.to_dict() for record in cross_policy_records],
+        "cross_calibration_aggregates": [
+            record.to_dict() for record in cross_calibration_records
+        ],
         "cross_comparison_aggregates": [
             record.to_dict() for record in cross_comparison_records
         ],
         "preset_policy_table_markdown": preset_policy_table,
+        "preset_calibration_table_markdown": preset_calibration_table,
         "preset_comparison_table_markdown": preset_comparison_table,
         "cross_policy_table_markdown": cross_policy_table,
+        "cross_calibration_table_markdown": cross_calibration_table,
         "cross_comparison_table_markdown": cross_comparison_table,
     }
 
     summary_path = run_dir / "preset_aggregate_summary.json"
     preset_policy_csv_path = run_dir / "preset_policy_aggregates.csv"
+    preset_calibration_csv_path = run_dir / "preset_calibration_aggregates.csv"
     preset_comparison_csv_path = run_dir / "preset_comparison_aggregates.csv"
     cross_policy_csv_path = run_dir / "cross_preset_policy_aggregates.csv"
+    cross_calibration_csv_path = run_dir / "cross_preset_calibration_aggregates.csv"
     cross_comparison_csv_path = run_dir / "cross_preset_comparison_aggregates.csv"
     preset_policy_table_path = run_dir / "preset_policy_aggregate_table.md"
+    preset_calibration_table_path = run_dir / "preset_calibration_aggregate_table.md"
     preset_comparison_table_path = run_dir / "preset_comparison_aggregate_table.md"
     cross_policy_table_path = run_dir / "cross_preset_policy_aggregate_table.md"
+    cross_calibration_table_path = run_dir / "cross_preset_calibration_aggregate_table.md"
     cross_comparison_table_path = (
         run_dir / "cross_preset_comparison_aggregate_table.md"
         if cross_comparison_table
@@ -290,18 +406,28 @@ def write_preset_aggregate_artifacts(
         _render_csv(preset_policy_records),
         encoding="utf-8",
     )
+    preset_calibration_csv_path.write_text(
+        _render_csv(preset_calibration_records),
+        encoding="utf-8",
+    )
     preset_comparison_csv_path.write_text(
         _render_csv(preset_comparison_records),
         encoding="utf-8",
     )
     cross_policy_csv_path.write_text(_render_csv(cross_policy_records), encoding="utf-8")
+    cross_calibration_csv_path.write_text(
+        _render_csv(cross_calibration_records),
+        encoding="utf-8",
+    )
     cross_comparison_csv_path.write_text(
         _render_csv(cross_comparison_records),
         encoding="utf-8",
     )
     preset_policy_table_path.write_text(preset_policy_table, encoding="utf-8")
+    preset_calibration_table_path.write_text(preset_calibration_table, encoding="utf-8")
     preset_comparison_table_path.write_text(preset_comparison_table, encoding="utf-8")
     cross_policy_table_path.write_text(cross_policy_table, encoding="utf-8")
+    cross_calibration_table_path.write_text(cross_calibration_table, encoding="utf-8")
     if cross_comparison_table_path is not None:
         cross_comparison_table_path.write_text(cross_comparison_table or "", encoding="utf-8")
 
@@ -311,12 +437,16 @@ def write_preset_aggregate_artifacts(
         output_dir=str(run_dir.resolve()),
         summary_file=str(summary_path.resolve()),
         preset_policy_csv_file=str(preset_policy_csv_path.resolve()),
+        preset_calibration_csv_file=str(preset_calibration_csv_path.resolve()),
         preset_comparison_csv_file=str(preset_comparison_csv_path.resolve()),
         cross_policy_csv_file=str(cross_policy_csv_path.resolve()),
+        cross_calibration_csv_file=str(cross_calibration_csv_path.resolve()),
         cross_comparison_csv_file=str(cross_comparison_csv_path.resolve()),
         preset_policy_table_file=str(preset_policy_table_path.resolve()),
+        preset_calibration_table_file=str(preset_calibration_table_path.resolve()),
         preset_comparison_table_file=str(preset_comparison_table_path.resolve()),
         cross_policy_table_file=str(cross_policy_table_path.resolve()),
+        cross_calibration_table_file=str(cross_calibration_table_path.resolve()),
         cross_comparison_table_file=(
             str(cross_comparison_table_path.resolve())
             if cross_comparison_table_path is not None
@@ -328,8 +458,10 @@ def write_preset_aggregate_artifacts(
 def preset_aggregate_results_to_json(
     overview: PresetAggregateOverview,
     preset_policy_records: list[PresetPolicyAggregateRecord],
+    preset_calibration_records: list[PresetCalibrationAggregateRecord],
     preset_comparison_records: list[PresetComparisonAggregateRecord],
     cross_policy_records: list[CrossPresetPolicyAggregateRecord],
+    cross_calibration_records: list[CrossPresetCalibrationAggregateRecord],
     cross_comparison_records: list[CrossPresetComparisonAggregateRecord],
     pretty: bool = False,
     include_tables: bool = False,
@@ -339,10 +471,16 @@ def preset_aggregate_results_to_json(
     payload: dict[str, object] = {
         "overview": overview.to_dict(),
         "preset_policy_aggregates": [record.to_dict() for record in preset_policy_records],
+        "preset_calibration_aggregates": [
+            record.to_dict() for record in preset_calibration_records
+        ],
         "preset_comparison_aggregates": [
             record.to_dict() for record in preset_comparison_records
         ],
         "cross_policy_aggregates": [record.to_dict() for record in cross_policy_records],
+        "cross_calibration_aggregates": [
+            record.to_dict() for record in cross_calibration_records
+        ],
         "cross_comparison_aggregates": [
             record.to_dict() for record in cross_comparison_records
         ],
@@ -351,11 +489,17 @@ def preset_aggregate_results_to_json(
         payload["preset_policy_table_markdown"] = render_preset_policy_aggregate_table(
             preset_policy_records
         )
+        payload["preset_calibration_table_markdown"] = (
+            render_preset_calibration_aggregate_table(preset_calibration_records)
+        )
         payload["preset_comparison_table_markdown"] = (
             render_preset_comparison_aggregate_table(preset_comparison_records)
         )
         payload["cross_policy_table_markdown"] = render_cross_policy_aggregate_table(
             cross_policy_records
+        )
+        payload["cross_calibration_table_markdown"] = (
+            render_cross_calibration_aggregate_table(cross_calibration_records)
         )
         payload["cross_comparison_table_markdown"] = (
             render_cross_comparison_aggregate_table(cross_comparison_records)
@@ -447,6 +591,49 @@ def _aggregate_preset_comparison_records(
     return aggregates
 
 
+def _aggregate_preset_calibration_records(
+    records: list[PresetCalibrationSummaryRecord],
+) -> list[PresetCalibrationAggregateRecord]:
+    grouped: dict[tuple[str, str], list[PresetCalibrationSummaryRecord]] = {}
+    for record in records:
+        grouped.setdefault((record.preset_name, record.policy_profile.value), []).append(record)
+
+    aggregates: list[PresetCalibrationAggregateRecord] = []
+    for (preset_name, _policy_name), group in sorted(grouped.items()):
+        aggregates.append(
+            PresetCalibrationAggregateRecord(
+                preset_name=preset_name,
+                policy_profile=group[0].policy_profile,
+                preset_run_count=len(group),
+                mean_within_expected_range_rate=_mean(
+                    record.mean_within_expected_range_rate for record in group
+                ),
+                mean_under_hardening_rate=_mean(
+                    record.mean_under_hardening_rate for record in group
+                ),
+                mean_over_hardening_rate=_mean(
+                    record.mean_over_hardening_rate for record in group
+                ),
+                mean_true_positive_proxy_rate=_mean(
+                    record.mean_true_positive_proxy_rate for record in group
+                ),
+                mean_false_positive_proxy_rate=_mean(
+                    record.mean_false_positive_proxy_rate for record in group
+                ),
+                mean_step_up_or_higher_rate=_mean(
+                    record.mean_step_up_or_higher_rate for record in group
+                ),
+                mean_block_or_higher_rate=_mean(
+                    record.mean_block_or_higher_rate for record in group
+                ),
+                mean_action_severity_gap=_mean(
+                    record.mean_action_severity_gap for record in group
+                ),
+            )
+        )
+    return aggregates
+
+
 def _aggregate_cross_policy_records(
     records: list[PresetPolicySummaryRecord],
 ) -> list[CrossPresetPolicyAggregateRecord]:
@@ -511,6 +698,49 @@ def _aggregate_cross_comparison_records(
                     for record in group
                 ),
                 dominant_transition=_most_common_value(transition_counts),
+            )
+        )
+    return aggregates
+
+
+def _aggregate_cross_calibration_records(
+    records: list[PresetCalibrationSummaryRecord],
+) -> list[CrossPresetCalibrationAggregateRecord]:
+    grouped: dict[str, list[PresetCalibrationSummaryRecord]] = {}
+    for record in records:
+        grouped.setdefault(record.policy_profile.value, []).append(record)
+
+    aggregates: list[CrossPresetCalibrationAggregateRecord] = []
+    for _policy_name, group in sorted(grouped.items()):
+        aggregates.append(
+            CrossPresetCalibrationAggregateRecord(
+                policy_profile=group[0].policy_profile,
+                preset_name_count=len({record.preset_name for record in group}),
+                preset_run_count=len(group),
+                mean_within_expected_range_rate=_mean(
+                    record.mean_within_expected_range_rate for record in group
+                ),
+                mean_under_hardening_rate=_mean(
+                    record.mean_under_hardening_rate for record in group
+                ),
+                mean_over_hardening_rate=_mean(
+                    record.mean_over_hardening_rate for record in group
+                ),
+                mean_true_positive_proxy_rate=_mean(
+                    record.mean_true_positive_proxy_rate for record in group
+                ),
+                mean_false_positive_proxy_rate=_mean(
+                    record.mean_false_positive_proxy_rate for record in group
+                ),
+                mean_step_up_or_higher_rate=_mean(
+                    record.mean_step_up_or_higher_rate for record in group
+                ),
+                mean_block_or_higher_rate=_mean(
+                    record.mean_block_or_higher_rate for record in group
+                ),
+                mean_action_severity_gap=_mean(
+                    record.mean_action_severity_gap for record in group
+                ),
             )
         )
     return aggregates

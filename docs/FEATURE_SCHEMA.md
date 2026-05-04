@@ -202,6 +202,28 @@ Optional fields:
 - `top_action`
 - `source_report_file`
 
+### `EvaluationRunCalibrationRecord`
+
+- `run_id`
+- `generated_at`
+- `organization`
+- `profile_count`
+- `seed`
+- `policy_profile`
+- `total_records`
+- `high_risk_record_count`
+- `low_risk_record_count`
+- `within_expected_range_rate`
+- `under_hardening_rate`
+- `over_hardening_rate`
+- `true_positive_proxy_rate`
+- `false_positive_proxy_rate`
+- `warn_or_higher_rate`
+- `step_up_or_higher_rate`
+- `block_or_higher_rate`
+- `mean_action_severity_gap`
+- `source_report_file`
+
 ### `EvaluationRunAnalysisOverview`
 
 - `input_dir`
@@ -218,6 +240,8 @@ Optional fields:
 - `analysis_file`
 - `comparison_table_file`
 - `policy_matrix_file`
+- `calibration_table_file`
+- `calibration_matrix_file`
 
 ### `PolicyComparisonOverview`
 
@@ -364,6 +388,25 @@ Optional fields:
 - `dominant_top_action`
 - `source_summary_file`
 
+### `PresetCalibrationSummaryRecord`
+
+- `preset_run_id`
+- `preset_name`
+- `generated_at`
+- `organization`
+- `profile_count`
+- `policy_profile`
+- `evaluation_run_count`
+- `mean_within_expected_range_rate`
+- `mean_under_hardening_rate`
+- `mean_over_hardening_rate`
+- `mean_true_positive_proxy_rate`
+- `mean_false_positive_proxy_rate`
+- `mean_step_up_or_higher_rate`
+- `mean_block_or_higher_rate`
+- `mean_action_severity_gap`
+- `source_manifest_file`
+
 ### `PresetComparisonSummaryRecord`
 
 - `preset_run_id`
@@ -387,6 +430,7 @@ Optional fields:
 - `input_dir`
 - `preset_run_count`
 - `policy_summary_count`
+- `calibration_summary_count`
 - `comparison_summary_count`
 - `preset_names`
 - `organizations`
@@ -400,9 +444,11 @@ Optional fields:
 - `summary_file`
 - `preset_runs_file`
 - `policy_summaries_file`
+- `calibration_summaries_file`
 - `comparison_summaries_file`
 - `preset_table_file`
 - `policy_table_file`
+- `calibration_table_file`
 - `comparison_table_file`
 
 ### `PresetPolicyAggregateRecord`
@@ -416,6 +462,20 @@ Optional fields:
 - `mean_password_score`
 - `dominant_top_action`
 - `baseline_run_ratio`
+
+### `PresetCalibrationAggregateRecord`
+
+- `preset_name`
+- `policy_profile`
+- `preset_run_count`
+- `mean_within_expected_range_rate`
+- `mean_under_hardening_rate`
+- `mean_over_hardening_rate`
+- `mean_true_positive_proxy_rate`
+- `mean_false_positive_proxy_rate`
+- `mean_step_up_or_higher_rate`
+- `mean_block_or_higher_rate`
+- `mean_action_severity_gap`
 
 ### `PresetComparisonAggregateRecord`
 
@@ -442,6 +502,20 @@ Optional fields:
 - `mean_password_score`
 - `dominant_top_action`
 
+### `CrossPresetCalibrationAggregateRecord`
+
+- `policy_profile`
+- `preset_name_count`
+- `preset_run_count`
+- `mean_within_expected_range_rate`
+- `mean_under_hardening_rate`
+- `mean_over_hardening_rate`
+- `mean_true_positive_proxy_rate`
+- `mean_false_positive_proxy_rate`
+- `mean_step_up_or_higher_rate`
+- `mean_block_or_higher_rate`
+- `mean_action_severity_gap`
+
 ### `CrossPresetComparisonAggregateRecord`
 
 - `baseline_profile`
@@ -461,8 +535,10 @@ Optional fields:
 - `input_dir`
 - `preset_run_count`
 - `preset_policy_aggregate_count`
+- `preset_calibration_aggregate_count`
 - `preset_comparison_aggregate_count`
 - `cross_policy_aggregate_count`
+- `cross_calibration_aggregate_count`
 - `cross_comparison_aggregate_count`
 - `preset_names`
 - `policy_profiles`
@@ -474,12 +550,16 @@ Optional fields:
 - `output_dir`
 - `summary_file`
 - `preset_policy_csv_file`
+- `preset_calibration_csv_file`
 - `preset_comparison_csv_file`
 - `cross_policy_csv_file`
+- `cross_calibration_csv_file`
 - `cross_comparison_csv_file`
 - `preset_policy_table_file`
+- `preset_calibration_table_file`
 - `preset_comparison_table_file`
 - `cross_policy_table_file`
+- `cross_calibration_table_file`
 - `cross_comparison_table_file`
 
 ## Exposure-Oriented Fields
@@ -602,6 +682,7 @@ The current implementation already supports:
 - `PolicyCalibrationSummary`
 - `EvaluationArtifacts`
 - `EvaluationRunSummaryRecord`
+- `EvaluationRunCalibrationRecord`
 - `EvaluationRunAnalysisOverview`
 - `AnalysisArtifacts`
 - `PolicyComparisonOverview`
@@ -615,12 +696,15 @@ The current implementation already supports:
 - `FigureArtifacts`
 - `PresetRunRecord`
 - `PresetPolicySummaryRecord`
+- `PresetCalibrationSummaryRecord`
 - `PresetComparisonSummaryRecord`
 - `PresetResultsOverview`
 - `PresetResultsArtifacts`
 - `PresetPolicyAggregateRecord`
+- `PresetCalibrationAggregateRecord`
 - `PresetComparisonAggregateRecord`
 - `CrossPresetPolicyAggregateRecord`
+- `CrossPresetCalibrationAggregateRecord`
 - `CrossPresetComparisonAggregateRecord`
 - `PresetAggregateOverview`
 - `PresetAggregateArtifacts`

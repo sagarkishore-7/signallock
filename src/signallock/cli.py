@@ -8,7 +8,9 @@ from pathlib import Path
 
 from .analysis import (
     analysis_results_to_json,
+    analyze_evaluation_calibration_runs,
     analyze_evaluation_runs,
+    render_run_calibration_table,
     render_run_analysis_table,
     write_run_analysis_artifacts,
 )
@@ -48,6 +50,7 @@ from .reporting import (
 from .results import (
     DEFAULT_PRESET_INPUT_DIR,
     preset_results_to_json,
+    render_preset_calibration_table,
     render_preset_comparison_table,
     render_preset_policy_table,
     render_preset_run_table,
@@ -744,8 +747,17 @@ def main(argv: list[str] | None = None) -> None:
             input_dir=args.input_dir,
             selected_profiles=selected_profiles,
         )
+        calibration_rows = analyze_evaluation_calibration_runs(
+            input_dir=args.input_dir,
+            selected_profiles=selected_profiles,
+        )
         comparison_table = (
             render_run_analysis_table(rows)
+            if args.include_table or args.save_analysis
+            else None
+        )
+        calibration_table = (
+            render_run_calibration_table(calibration_rows)
             if args.include_table or args.save_analysis
             else None
         )
@@ -754,15 +766,18 @@ def main(argv: list[str] | None = None) -> None:
             artifacts = write_run_analysis_artifacts(
                 overview,
                 rows,
+                calibration_rows=calibration_rows,
                 output_dir=args.output_dir,
             )
         print(
             analysis_results_to_json(
                 overview,
                 rows,
+                calibration_rows=calibration_rows,
                 include_rows=args.include_rows,
                 pretty=args.pretty,
                 comparison_table_markdown=comparison_table if args.include_table else None,
+                calibration_table_markdown=calibration_table if args.include_table else None,
                 artifacts=artifacts.to_dict() if artifacts else None,
             )
         )
@@ -815,7 +830,13 @@ def main(argv: list[str] | None = None) -> None:
         return
 
     if args.command == "summarize-presets":
-        overview, run_records, policy_records, comparison_records = summarize_preset_runs(
+        (
+            overview,
+            run_records,
+            policy_records,
+            calibration_records,
+            comparison_records,
+        ) = summarize_preset_runs(
             input_dir=args.input_dir,
             selected_presets=args.preset_names,
         )
@@ -826,6 +847,11 @@ def main(argv: list[str] | None = None) -> None:
         )
         policy_table = (
             render_preset_policy_table(policy_records)
+            if args.include_tables or args.save_summary
+            else None
+        )
+        calibration_table = (
+            render_preset_calibration_table(calibration_records)
             if args.include_tables or args.save_summary
             else None
         )
@@ -840,6 +866,7 @@ def main(argv: list[str] | None = None) -> None:
                 overview,
                 run_records,
                 policy_records,
+                calibration_records,
                 comparison_records,
                 output_dir=args.output_dir,
             )
@@ -848,13 +875,18 @@ def main(argv: list[str] | None = None) -> None:
                 overview,
                 run_records,
                 policy_records,
+                calibration_records,
                 comparison_records,
                 include_runs=args.include_runs,
                 include_policy_summaries=args.include_policy_summaries,
+                include_calibration_summaries=args.include_policy_summaries,
                 include_comparison_summaries=args.include_comparison_summaries,
                 pretty=args.pretty,
                 preset_table_markdown=preset_table if args.include_tables else None,
                 policy_table_markdown=policy_table if args.include_tables else None,
+                calibration_table_markdown=(
+                    calibration_table if args.include_tables else None
+                ),
                 comparison_table_markdown=(
                     comparison_table if args.include_tables else None
                 ),
@@ -864,7 +896,13 @@ def main(argv: list[str] | None = None) -> None:
         return
 
     if args.command == "aggregate-presets":
-        results_overview, run_records, policy_records, comparison_records = (
+        (
+            results_overview,
+            run_records,
+            policy_records,
+            calibration_records,
+            comparison_records,
+        ) = (
             summarize_preset_runs(
                 input_dir=args.input_dir,
                 selected_presets=args.preset_names,
@@ -873,13 +911,16 @@ def main(argv: list[str] | None = None) -> None:
         (
             aggregate_overview,
             preset_policy_records,
+            preset_calibration_records,
             preset_comparison_records,
             cross_policy_records,
+            cross_calibration_records,
             cross_comparison_records,
         ) = aggregate_preset_results(
             results_overview,
             run_records,
             policy_records,
+            calibration_records,
             comparison_records,
         )
         artifacts = None
@@ -887,8 +928,10 @@ def main(argv: list[str] | None = None) -> None:
             artifacts = write_preset_aggregate_artifacts(
                 aggregate_overview,
                 preset_policy_records,
+                preset_calibration_records,
                 preset_comparison_records,
                 cross_policy_records,
+                cross_calibration_records,
                 cross_comparison_records,
                 output_dir=args.output_dir,
             )
@@ -896,8 +939,10 @@ def main(argv: list[str] | None = None) -> None:
             preset_aggregate_results_to_json(
                 aggregate_overview,
                 preset_policy_records,
+                preset_calibration_records,
                 preset_comparison_records,
                 cross_policy_records,
+                cross_calibration_records,
                 cross_comparison_records,
                 pretty=args.pretty,
                 include_tables=args.include_tables,

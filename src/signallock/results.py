@@ -12,6 +12,7 @@ from .analysis import _create_unique_run_directory
 from .reporting import normalize_artifact_path
 from .schemas import (
     PolicyProfile,
+    PresetCalibrationSummaryRecord,
     PresetComparisonSummaryRecord,
     PresetPolicySummaryRecord,
     PresetResultsArtifacts,
@@ -31,6 +32,7 @@ def summarize_preset_runs(
     PresetResultsOverview,
     list[PresetRunRecord],
     list[PresetPolicySummaryRecord],
+    list[PresetCalibrationSummaryRecord],
     list[PresetComparisonSummaryRecord],
 ]:
     """Scan executed preset bundles and flatten them into summary-friendly records."""
@@ -41,6 +43,7 @@ def summarize_preset_runs(
     selected = {name.strip() for name in selected_presets or [] if name.strip()}
     run_records: list[PresetRunRecord] = []
     policy_records: list[PresetPolicySummaryRecord] = []
+    calibration_records: list[PresetCalibrationSummaryRecord] = []
     comparison_records: list[PresetComparisonSummaryRecord] = []
 
     for manifest_path in sorted(root_dir.glob("*/preset_manifest.json")):
@@ -73,6 +76,20 @@ def summarize_preset_runs(
         )
         run_records.append(run_record)
 
+        calibration_by_policy: dict[str, list[dict[str, object]]] = {}
+        for evaluation_artifact in payload.get("evaluation_artifacts", []):
+            if not isinstance(evaluation_artifact, dict):
+                continue
+            calibration_path = evaluation_artifact.get("calibration_summaries_file")
+            if not calibration_path:
+                continue
+            resolved = Path(str(calibration_path))
+            if not resolved.exists():
+                continue
+            for summary in json.loads(resolved.read_text(encoding="utf-8")):
+                policy_name = str(summary["policy_profile"])
+                calibration_by_policy.setdefault(policy_name, []).append(summary)
+
         figure_artifacts = payload.get("figure_artifacts", {})
         figure_summary_path = figure_artifacts.get("summary_file")
         if figure_summary_path and Path(figure_summary_path).exists():
@@ -96,6 +113,44 @@ def summarize_preset_runs(
                         source_summary_file=str(Path(figure_summary_path).resolve()),
                     )
                 )
+
+        for policy_name, calibration_group in sorted(calibration_by_policy.items()):
+            calibration_records.append(
+                PresetCalibrationSummaryRecord(
+                    preset_run_id=run_record.preset_run_id,
+                    preset_name=run_record.preset_name,
+                    generated_at=run_record.generated_at,
+                    organization=run_record.organization,
+                    profile_count=run_record.profile_count,
+                    policy_profile=PolicyProfile(policy_name),
+                    evaluation_run_count=len(calibration_group),
+                    mean_within_expected_range_rate=_mean(
+                        float(item["within_expected_range_rate"]) for item in calibration_group
+                    ),
+                    mean_under_hardening_rate=_mean(
+                        float(item["under_hardening_rate"]) for item in calibration_group
+                    ),
+                    mean_over_hardening_rate=_mean(
+                        float(item["over_hardening_rate"]) for item in calibration_group
+                    ),
+                    mean_true_positive_proxy_rate=_mean(
+                        float(item["true_positive_proxy_rate"]) for item in calibration_group
+                    ),
+                    mean_false_positive_proxy_rate=_mean(
+                        float(item["false_positive_proxy_rate"]) for item in calibration_group
+                    ),
+                    mean_step_up_or_higher_rate=_mean(
+                        float(item["step_up_or_higher_rate"]) for item in calibration_group
+                    ),
+                    mean_block_or_higher_rate=_mean(
+                        float(item["block_or_higher_rate"]) for item in calibration_group
+                    ),
+                    mean_action_severity_gap=_mean(
+                        float(item["mean_action_severity_gap"]) for item in calibration_group
+                    ),
+                    source_manifest_file=str(manifest_path.resolve()),
+                )
+            )
 
         comparison_artifacts = payload.get("comparison_artifacts")
         if comparison_artifacts:
@@ -137,6 +192,9 @@ def summarize_preset_runs(
     policy_records.sort(
         key=lambda record: (record.preset_name, record.generated_at, record.policy_profile.value)
     )
+    calibration_records.sort(
+        key=lambda record: (record.preset_name, record.generated_at, record.policy_profile.value)
+    )
     comparison_records.sort(
         key=lambda record: (
             record.preset_name,
@@ -149,12 +207,13 @@ def summarize_preset_runs(
         input_dir=str(root_dir.resolve()),
         preset_run_count=len(run_records),
         policy_summary_count=len(policy_records),
+        calibration_summary_count=len(calibration_records),
         comparison_summary_count=len(comparison_records),
         preset_names=sorted({record.preset_name for record in run_records}),
         organizations=sorted({record.organization for record in run_records}),
         policy_profiles=sorted({record.policy_profile.value for record in policy_records}),
     )
-    return overview, run_records, policy_records, comparison_records
+    return overview, run_records, policy_records, calibration_records, comparison_records
 
 
 def render_preset_run_table(run_records: list[PresetRunRecord]) -> str:
@@ -222,6 +281,48 @@ def render_preset_policy_table(policy_records: list[PresetPolicySummaryRecord]) 
                     f"{record.mean_exposure_score:.2f}",
                     f"{record.mean_password_score:.2f}",
                     record.dominant_top_action,
+                )
+            )
+            + " |"
+        )
+    return "\n".join(lines) + "\n"
+
+
+def render_preset_calibration_table(
+    calibration_records: list[PresetCalibrationSummaryRecord],
+) -> str:
+    """Render per-policy preset calibration summaries as a markdown table."""
+    headers = (
+        "Preset",
+        "Run",
+        "Policy",
+        "Within Range",
+        "Under",
+        "Over",
+        "TP Proxy",
+        "FP Proxy",
+        "Block+",
+        "Mean Gap",
+    )
+    lines = [
+        "| " + " | ".join(headers) + " |",
+        "| " + " | ".join("---" for _ in headers) + " |",
+    ]
+    for record in calibration_records:
+        lines.append(
+            "| "
+            + " | ".join(
+                (
+                    record.preset_name,
+                    record.preset_run_id,
+                    record.policy_profile.value,
+                    f"{record.mean_within_expected_range_rate:.2f}",
+                    f"{record.mean_under_hardening_rate:.2f}",
+                    f"{record.mean_over_hardening_rate:.2f}",
+                    f"{record.mean_true_positive_proxy_rate:.2f}",
+                    f"{record.mean_false_positive_proxy_rate:.2f}",
+                    f"{record.mean_block_or_higher_rate:.2f}",
+                    f"{record.mean_action_severity_gap:+.2f}",
                 )
             )
             + " |"
@@ -349,10 +450,41 @@ def render_preset_comparison_csv(
     return buffer.getvalue()
 
 
+def render_preset_calibration_csv(
+    calibration_records: list[PresetCalibrationSummaryRecord],
+) -> str:
+    """Render flattened preset calibration summaries as CSV."""
+    fieldnames = [
+        "preset_run_id",
+        "preset_name",
+        "generated_at",
+        "organization",
+        "profile_count",
+        "policy_profile",
+        "evaluation_run_count",
+        "mean_within_expected_range_rate",
+        "mean_under_hardening_rate",
+        "mean_over_hardening_rate",
+        "mean_true_positive_proxy_rate",
+        "mean_false_positive_proxy_rate",
+        "mean_step_up_or_higher_rate",
+        "mean_block_or_higher_rate",
+        "mean_action_severity_gap",
+        "source_manifest_file",
+    ]
+    buffer = StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=fieldnames)
+    writer.writeheader()
+    for record in calibration_records:
+        writer.writerow(record.to_dict())
+    return buffer.getvalue()
+
+
 def write_preset_results_artifacts(
     overview: PresetResultsOverview,
     run_records: list[PresetRunRecord],
     policy_records: list[PresetPolicySummaryRecord],
+    calibration_records: list[PresetCalibrationSummaryRecord],
     comparison_records: list[PresetComparisonSummaryRecord],
     output_dir: str | Path | None = None,
     generated_at: datetime | None = None,
@@ -365,11 +497,13 @@ def write_preset_results_artifacts(
 
     preset_table = render_preset_run_table(run_records)
     policy_table = render_preset_policy_table(policy_records)
+    calibration_table = render_preset_calibration_table(calibration_records)
     comparison_table = (
         render_preset_comparison_table(comparison_records) if comparison_records else None
     )
     run_csv = render_preset_runs_csv(run_records)
     policy_csv = render_preset_policy_csv(policy_records)
+    calibration_csv = render_preset_calibration_csv(calibration_records)
     comparison_csv = render_preset_comparison_csv(comparison_records)
 
     summary_payload = {
@@ -378,18 +512,22 @@ def write_preset_results_artifacts(
         "overview": overview.to_dict(),
         "preset_runs": [record.to_dict() for record in run_records],
         "policy_summaries": [record.to_dict() for record in policy_records],
+        "calibration_summaries": [record.to_dict() for record in calibration_records],
         "comparison_summaries": [record.to_dict() for record in comparison_records],
         "preset_table_markdown": preset_table,
         "policy_table_markdown": policy_table,
+        "calibration_table_markdown": calibration_table,
         "comparison_table_markdown": comparison_table,
     }
 
     summary_path = run_dir / "preset_results_summary.json"
     preset_runs_path = run_dir / "preset_runs.csv"
     policy_summaries_path = run_dir / "preset_policy_summaries.csv"
+    calibration_summaries_path = run_dir / "preset_calibration_summaries.csv"
     comparison_summaries_path = run_dir / "preset_comparison_summaries.csv"
     preset_table_path = run_dir / "preset_summary_table.md"
     policy_table_path = run_dir / "preset_policy_summary_table.md"
+    calibration_table_path = run_dir / "preset_calibration_summary_table.md"
     comparison_table_path = (
         run_dir / "preset_comparison_summary_table.md" if comparison_table else None
     )
@@ -397,9 +535,11 @@ def write_preset_results_artifacts(
     summary_path.write_text(json.dumps(summary_payload, indent=2) + "\n", encoding="utf-8")
     preset_runs_path.write_text(run_csv, encoding="utf-8")
     policy_summaries_path.write_text(policy_csv, encoding="utf-8")
+    calibration_summaries_path.write_text(calibration_csv, encoding="utf-8")
     comparison_summaries_path.write_text(comparison_csv, encoding="utf-8")
     preset_table_path.write_text(preset_table, encoding="utf-8")
     policy_table_path.write_text(policy_table, encoding="utf-8")
+    calibration_table_path.write_text(calibration_table, encoding="utf-8")
     if comparison_table_path is not None:
         comparison_table_path.write_text(comparison_table or "", encoding="utf-8")
 
@@ -410,9 +550,11 @@ def write_preset_results_artifacts(
         summary_file=str(summary_path.resolve()),
         preset_runs_file=str(preset_runs_path.resolve()),
         policy_summaries_file=str(policy_summaries_path.resolve()),
+        calibration_summaries_file=str(calibration_summaries_path.resolve()),
         comparison_summaries_file=str(comparison_summaries_path.resolve()),
         preset_table_file=str(preset_table_path.resolve()),
         policy_table_file=str(policy_table_path.resolve()),
+        calibration_table_file=str(calibration_table_path.resolve()),
         comparison_table_file=(
             str(comparison_table_path.resolve()) if comparison_table_path is not None else None
         ),
@@ -423,13 +565,16 @@ def preset_results_to_json(
     overview: PresetResultsOverview,
     run_records: list[PresetRunRecord],
     policy_records: list[PresetPolicySummaryRecord],
+    calibration_records: list[PresetCalibrationSummaryRecord],
     comparison_records: list[PresetComparisonSummaryRecord],
     include_runs: bool = False,
     include_policy_summaries: bool = False,
+    include_calibration_summaries: bool = False,
     include_comparison_summaries: bool = False,
     pretty: bool = False,
     preset_table_markdown: str | None = None,
     policy_table_markdown: str | None = None,
+    calibration_table_markdown: str | None = None,
     comparison_table_markdown: str | None = None,
     artifacts: dict[str, object] | None = None,
 ) -> str:
@@ -441,6 +586,8 @@ def preset_results_to_json(
         payload["preset_table_markdown"] = preset_table_markdown
     if policy_table_markdown is not None:
         payload["policy_table_markdown"] = policy_table_markdown
+    if calibration_table_markdown is not None:
+        payload["calibration_table_markdown"] = calibration_table_markdown
     if comparison_table_markdown is not None:
         payload["comparison_table_markdown"] = comparison_table_markdown
     if artifacts is not None:
@@ -449,9 +596,20 @@ def preset_results_to_json(
         payload["preset_runs"] = [record.to_dict() for record in run_records]
     if include_policy_summaries:
         payload["policy_summaries"] = [record.to_dict() for record in policy_records]
+    if include_calibration_summaries:
+        payload["calibration_summaries"] = [
+            record.to_dict() for record in calibration_records
+        ]
     if include_comparison_summaries:
         payload["comparison_summaries"] = [record.to_dict() for record in comparison_records]
 
     if pretty:
         return json.dumps(payload, indent=2)
     return json.dumps(payload)
+
+
+def _mean(values: object) -> float:
+    data = [float(value) for value in values]
+    if not data:
+        return 0.0
+    return round(sum(data) / len(data), 2)

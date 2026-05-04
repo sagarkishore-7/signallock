@@ -20,12 +20,13 @@ The current evaluation layer also attaches proxy calibration targets to each syn
 3. Evaluate one or more policy profiles over the same scenario set.
 4. Save the run to a timestamped artifact directory.
 5. Inspect the JSON summaries and markdown comparison table.
-6. Aggregate multiple saved runs into cross-run markdown and CSV outputs.
-7. Compare baseline and candidate policies across saved runs.
-8. Generate lightweight SVG figures and aggregate policy tables.
-9. Execute named presets that orchestrate the entire workflow automatically.
-10. Summarize executed preset bundles into thesis-friendly markdown and CSV outputs.
-11. Aggregate preset summaries into paper-style cross-preset result tables.
+6. Inspect the proxy calibration summaries and markdown calibration table.
+7. Aggregate multiple saved runs into cross-run markdown and CSV outputs.
+8. Compare baseline and candidate policies across saved runs.
+9. Generate lightweight SVG figures and aggregate policy tables.
+10. Execute named presets that orchestrate the entire workflow automatically.
+11. Summarize executed preset bundles into thesis-friendly markdown and CSV outputs.
+12. Aggregate preset summaries into paper-style cross-preset result tables.
 
 ## CLI Example
 
@@ -64,6 +65,8 @@ These bundles currently contain:
 - `analysis.json`
 - `comparison_table.md`
 - `policy_matrix.csv`
+- `calibration_table.md`
+- `calibration_matrix.csv`
 
 Figure bundles can also be written under:
 
@@ -109,9 +112,11 @@ These bundles currently contain:
 - `preset_results_summary.json`
 - `preset_runs.csv`
 - `preset_policy_summaries.csv`
+- `preset_calibration_summaries.csv`
 - `preset_comparison_summaries.csv`
 - `preset_summary_table.md`
 - `preset_policy_summary_table.md`
+- `preset_calibration_summary_table.md`
 - `preset_comparison_summary_table.md` when comparisons exist
 
 Preset aggregate bundles can also be written under:
@@ -122,12 +127,16 @@ These bundles currently contain:
 
 - `preset_aggregate_summary.json`
 - `preset_policy_aggregates.csv`
+- `preset_calibration_aggregates.csv`
 - `preset_comparison_aggregates.csv`
 - `cross_preset_policy_aggregates.csv`
+- `cross_preset_calibration_aggregates.csv`
 - `cross_preset_comparison_aggregates.csv`
 - `preset_policy_aggregate_table.md`
+- `preset_calibration_aggregate_table.md`
 - `preset_comparison_aggregate_table.md`
 - `cross_preset_policy_aggregate_table.md`
+- `cross_preset_calibration_aggregate_table.md`
 - `cross_preset_comparison_aggregate_table.md` when comparisons exist
 
 ## File Semantics
@@ -186,11 +195,17 @@ Cross-run analysis bundle containing:
 
 - overall run metadata
 - flattened per-run policy rows
+- flattened per-run calibration rows
 - embedded comparison table markdown
+- embedded calibration table markdown
 
 ### `policy_matrix.csv`
 
 Flat export intended for plotting, spreadsheet analysis, or later statistical work.
+
+### `calibration_matrix.csv`
+
+Flat export of cross-run calibration summaries intended for threshold review, false-positive proxy analysis, and later plotting.
 
 ### `figure_summary.json`
 
@@ -226,6 +241,7 @@ Aggregate view across one or more executed preset bundles, including:
 
 - preset-run metadata
 - per-policy preset summaries
+- per-policy preset calibration summaries
 - per-candidate preset comparison summaries
 - embedded markdown tables for quick reporting
 
@@ -234,8 +250,10 @@ Aggregate view across one or more executed preset bundles, including:
 Higher-level aggregate view across executed preset summaries, including:
 
 - within-preset policy aggregates
+- within-preset calibration aggregates
 - within-preset baseline-versus-candidate aggregates
 - cross-preset policy aggregates
+- cross-preset calibration aggregates
 - cross-preset comparison aggregates
 - embedded markdown tables that are easier to lift into a thesis draft
 
@@ -256,6 +274,8 @@ Optional flags:
 - `--policy-profiles` to focus on one or more policy profiles
 - `--include-rows` to emit flattened per-run rows in JSON
 - `--output-dir` to control where analysis bundles are written
+
+The `--include-rows` output now includes both score rows and calibration rows.
 
 ## Policy Comparison
 
@@ -346,6 +366,8 @@ Optional flags:
 - `--include-runs` to include flattened preset-run records in JSON
 - `--include-policy-summaries` to include per-policy preset summaries in JSON
 - `--include-comparison-summaries` to include comparison summaries in JSON
+
+The preset-summary JSON now also includes calibration summaries whenever `--include-policy-summaries` is enabled.
 
 ## Preset Aggregates
 

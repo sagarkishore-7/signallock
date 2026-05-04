@@ -9,7 +9,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from signallock.analysis import (
+    analyze_evaluation_calibration_runs,
     analyze_evaluation_runs,
+    render_run_calibration_csv,
+    render_run_calibration_table,
     render_run_analysis_csv,
     render_run_analysis_table,
     write_run_analysis_artifacts,
@@ -37,11 +40,14 @@ class AnalysisTests(unittest.TestCase):
             )
 
             overview, rows = analyze_evaluation_runs(temp_dir)
+            calibration_rows = analyze_evaluation_calibration_runs(temp_dir)
 
             self.assertEqual(overview.run_count, 2)
             self.assertEqual(overview.row_count, 6)
+            self.assertEqual(overview.calibration_row_count, 6)
             self.assertIn("balanced", overview.policy_profiles)
             self.assertEqual(rows[0].organization, "ExampleCorp")
+            self.assertEqual(calibration_rows[0].organization, "ExampleCorp")
 
     def test_analysis_outputs_table_csv_and_saved_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -51,15 +57,24 @@ class AnalysisTests(unittest.TestCase):
                 generated_at=datetime(2026, 5, 4, 20, 0, tzinfo=timezone.utc),
             )
             overview, rows = analyze_evaluation_runs(temp_dir, [PolicyProfile.BALANCED])
+            calibration_rows = analyze_evaluation_calibration_runs(
+                temp_dir,
+                [PolicyProfile.BALANCED],
+            )
             table = render_run_analysis_table(rows)
             csv_text = render_run_analysis_csv(rows)
+            calibration_table = render_run_calibration_table(calibration_rows)
+            calibration_csv = render_run_calibration_csv(calibration_rows)
 
             self.assertIn("| Run | Policy | Org |", table)
             self.assertIn("policy_profile", csv_text)
+            self.assertIn("| Run | Policy | Within Range |", calibration_table)
+            self.assertIn("within_expected_range_rate", calibration_csv)
 
             analysis = write_run_analysis_artifacts(
                 overview,
                 rows,
+                calibration_rows=calibration_rows,
                 output_dir=temp_dir,
                 generated_at=datetime(2026, 5, 4, 22, 0, tzinfo=timezone.utc),
             )
@@ -67,10 +82,13 @@ class AnalysisTests(unittest.TestCase):
             self.assertTrue(Path(analysis.analysis_file).exists())
             self.assertTrue(Path(analysis.comparison_table_file).exists())
             self.assertTrue(Path(analysis.policy_matrix_file).exists())
+            self.assertTrue(Path(analysis.calibration_table_file).exists())
+            self.assertTrue(Path(analysis.calibration_matrix_file).exists())
 
             payload = json.loads(Path(analysis.analysis_file).read_text())
             self.assertEqual(payload["overview"]["run_count"], 1)
             self.assertEqual(len(payload["rows"]), 1)
+            self.assertEqual(len(payload["calibration_rows"]), 1)
 
     def _create_run(self, output_dir: str, seed: int, generated_at: datetime) -> None:
         profiles = generate_synthetic_profiles(count=2, seed=seed)

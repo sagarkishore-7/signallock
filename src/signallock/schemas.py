@@ -457,12 +457,44 @@ class EvaluationRunSummaryRecord:
 
 
 @dataclass
+class EvaluationRunCalibrationRecord:
+    """Flattened view of one policy calibration summary from one saved evaluation run."""
+
+    run_id: str
+    generated_at: str
+    organization: str
+    profile_count: int
+    seed: int | None
+    policy_profile: PolicyProfile
+    total_records: int
+    high_risk_record_count: int
+    low_risk_record_count: int
+    within_expected_range_rate: float
+    under_hardening_rate: float
+    over_hardening_rate: float
+    true_positive_proxy_rate: float
+    false_positive_proxy_rate: float
+    warn_or_higher_rate: float
+    step_up_or_higher_rate: float
+    block_or_higher_rate: float
+    mean_action_severity_gap: float
+    source_report_file: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the flattened calibration record to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["policy_profile"] = self.policy_profile.value
+        return data
+
+
+@dataclass
 class EvaluationRunAnalysisOverview:
     """High-level metadata for a cross-run evaluation analysis."""
 
     input_dir: str
     run_count: int
     row_count: int
+    calibration_row_count: int
     policy_profiles: list[str]
     organizations: list[str]
 
@@ -481,6 +513,8 @@ class AnalysisArtifacts:
     analysis_file: str
     comparison_table_file: str
     policy_matrix_file: str
+    calibration_table_file: str | None = None
+    calibration_matrix_file: str | None = None
 
     def to_dict(self) -> dict[str, object]:
         """Convert analysis artifact references to a JSON-serializable dictionary."""
@@ -774,6 +808,34 @@ class PresetPolicySummaryRecord:
 
 
 @dataclass
+class PresetCalibrationSummaryRecord:
+    """Flattened per-policy calibration summary extracted from one preset execution."""
+
+    preset_run_id: str
+    preset_name: str
+    generated_at: str
+    organization: str
+    profile_count: int
+    policy_profile: PolicyProfile
+    evaluation_run_count: int
+    mean_within_expected_range_rate: float
+    mean_under_hardening_rate: float
+    mean_over_hardening_rate: float
+    mean_true_positive_proxy_rate: float
+    mean_false_positive_proxy_rate: float
+    mean_step_up_or_higher_rate: float
+    mean_block_or_higher_rate: float
+    mean_action_severity_gap: float
+    source_manifest_file: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the preset calibration summary to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["policy_profile"] = self.policy_profile.value
+        return data
+
+
+@dataclass
 class PresetComparisonSummaryRecord:
     """Flattened per-candidate comparison summary extracted from one preset execution."""
 
@@ -808,6 +870,7 @@ class PresetResultsOverview:
     input_dir: str
     preset_run_count: int
     policy_summary_count: int
+    calibration_summary_count: int
     comparison_summary_count: int
     preset_names: list[str]
     organizations: list[str]
@@ -828,9 +891,11 @@ class PresetResultsArtifacts:
     summary_file: str
     preset_runs_file: str
     policy_summaries_file: str
+    calibration_summaries_file: str
     comparison_summaries_file: str
     preset_table_file: str
     policy_table_file: str
+    calibration_table_file: str
     comparison_table_file: str | None = None
 
     def to_dict(self) -> dict[str, object]:
@@ -854,6 +919,29 @@ class PresetPolicyAggregateRecord:
 
     def to_dict(self) -> dict[str, object]:
         """Convert the preset policy aggregate to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["policy_profile"] = self.policy_profile.value
+        return data
+
+
+@dataclass
+class PresetCalibrationAggregateRecord:
+    """Aggregated calibration metrics within one preset family across multiple preset runs."""
+
+    preset_name: str
+    policy_profile: PolicyProfile
+    preset_run_count: int
+    mean_within_expected_range_rate: float
+    mean_under_hardening_rate: float
+    mean_over_hardening_rate: float
+    mean_true_positive_proxy_rate: float
+    mean_false_positive_proxy_rate: float
+    mean_step_up_or_higher_rate: float
+    mean_block_or_higher_rate: float
+    mean_action_severity_gap: float
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the preset calibration aggregate to a JSON-serializable dictionary."""
         data = asdict(self)
         data["policy_profile"] = self.policy_profile.value
         return data
@@ -904,6 +992,29 @@ class CrossPresetPolicyAggregateRecord:
 
 
 @dataclass
+class CrossPresetCalibrationAggregateRecord:
+    """Aggregated calibration metrics across all preset families."""
+
+    policy_profile: PolicyProfile
+    preset_name_count: int
+    preset_run_count: int
+    mean_within_expected_range_rate: float
+    mean_under_hardening_rate: float
+    mean_over_hardening_rate: float
+    mean_true_positive_proxy_rate: float
+    mean_false_positive_proxy_rate: float
+    mean_step_up_or_higher_rate: float
+    mean_block_or_higher_rate: float
+    mean_action_severity_gap: float
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the cross-preset calibration aggregate to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["policy_profile"] = self.policy_profile.value
+        return data
+
+
+@dataclass
 class CrossPresetComparisonAggregateRecord:
     """Aggregated comparison metrics across all preset families."""
 
@@ -934,8 +1045,10 @@ class PresetAggregateOverview:
     input_dir: str
     preset_run_count: int
     preset_policy_aggregate_count: int
+    preset_calibration_aggregate_count: int
     preset_comparison_aggregate_count: int
     cross_policy_aggregate_count: int
+    cross_calibration_aggregate_count: int
     cross_comparison_aggregate_count: int
     preset_names: list[str]
     policy_profiles: list[str]
@@ -954,12 +1067,16 @@ class PresetAggregateArtifacts:
     output_dir: str
     summary_file: str
     preset_policy_csv_file: str
+    preset_calibration_csv_file: str
     preset_comparison_csv_file: str
     cross_policy_csv_file: str
+    cross_calibration_csv_file: str
     cross_comparison_csv_file: str
     preset_policy_table_file: str
+    preset_calibration_table_file: str
     preset_comparison_table_file: str
     cross_policy_table_file: str
+    cross_calibration_table_file: str
     cross_comparison_table_file: str | None = None
 
     def to_dict(self) -> dict[str, object]:

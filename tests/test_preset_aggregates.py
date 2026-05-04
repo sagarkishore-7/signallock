@@ -35,26 +35,37 @@ class PresetAggregateTests(unittest.TestCase):
                 generated_at=datetime(2026, 5, 4, 21, 30, tzinfo=timezone.utc),
             )
 
-            results_overview, run_records, policy_records, comparison_records = (
+            (
+                results_overview,
+                run_records,
+                policy_records,
+                calibration_records,
+                comparison_records,
+            ) = (
                 summarize_preset_runs(input_dir=temp_dir)
             )
             (
                 aggregate_overview,
                 preset_policy_records,
+                preset_calibration_records,
                 preset_comparison_records,
                 cross_policy_records,
+                cross_calibration_records,
                 cross_comparison_records,
             ) = aggregate_preset_results(
                 results_overview,
                 run_records,
                 policy_records,
+                calibration_records,
                 comparison_records,
             )
 
             self.assertEqual(aggregate_overview.preset_run_count, 2)
             self.assertEqual(len(preset_policy_records), 4)
+            self.assertEqual(len(preset_calibration_records), 4)
             self.assertEqual(len(preset_comparison_records), 2)
             self.assertEqual(len(cross_policy_records), 3)
+            self.assertEqual(len(cross_calibration_records), 3)
             self.assertEqual(len(cross_comparison_records), 2)
             self.assertEqual(cross_policy_records[0].preset_run_count, 2)
 
@@ -74,13 +85,20 @@ class PresetAggregateTests(unittest.TestCase):
                 generated_at=datetime(2026, 5, 4, 21, 30, tzinfo=timezone.utc),
             )
 
-            results_overview, run_records, policy_records, comparison_records = (
+            (
+                results_overview,
+                run_records,
+                policy_records,
+                calibration_records,
+                comparison_records,
+            ) = (
                 summarize_preset_runs(input_dir=temp_dir)
             )
             aggregates = aggregate_preset_results(
                 results_overview,
                 run_records,
                 policy_records,
+                calibration_records,
                 comparison_records,
             )
             artifacts = write_preset_aggregate_artifacts(
@@ -91,17 +109,22 @@ class PresetAggregateTests(unittest.TestCase):
 
             self.assertTrue(Path(artifacts.summary_file).exists())
             self.assertTrue(Path(artifacts.preset_policy_csv_file).exists())
+            self.assertTrue(Path(artifacts.preset_calibration_csv_file).exists())
             self.assertTrue(Path(artifacts.preset_comparison_csv_file).exists())
             self.assertTrue(Path(artifacts.cross_policy_csv_file).exists())
+            self.assertTrue(Path(artifacts.cross_calibration_csv_file).exists())
             self.assertTrue(Path(artifacts.cross_comparison_csv_file).exists())
             self.assertTrue(Path(artifacts.preset_policy_table_file).exists())
+            self.assertTrue(Path(artifacts.preset_calibration_table_file).exists())
             self.assertTrue(Path(artifacts.preset_comparison_table_file).exists())
             self.assertTrue(Path(artifacts.cross_policy_table_file).exists())
+            self.assertTrue(Path(artifacts.cross_calibration_table_file).exists())
             self.assertTrue(Path(artifacts.cross_comparison_table_file).exists())
 
             payload = json.loads(Path(artifacts.summary_file).read_text())
             self.assertEqual(payload["overview"]["preset_run_count"], 2)
             self.assertEqual(len(payload["cross_policy_aggregates"]), 3)
+            self.assertEqual(len(payload["cross_calibration_aggregates"]), 3)
 
     def _write_preset_file(self, temp_dir: str) -> Path:
         payload = {

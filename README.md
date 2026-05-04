@@ -229,6 +229,8 @@ PYTHONPATH=src python3 -m signallock analyze-runs \
   --pretty
 ```
 
+That analysis flow now carries both score summaries and calibration summaries across runs.
+
 Generate aggregate SVG and CSV figures from saved runs:
 
 ```bash
@@ -280,6 +282,8 @@ PYTHONPATH=src python3 -m signallock summarize-presets \
   --pretty
 ```
 
+Those preset summaries now include per-policy calibration behavior aggregated across the evaluation runs inside each preset bundle.
+
 Aggregate those preset summaries into paper-style cross-preset result tables:
 
 ```bash
@@ -289,6 +293,8 @@ PYTHONPATH=src python3 -m signallock aggregate-presets \
   --save-aggregates \
   --pretty
 ```
+
+That aggregate flow now includes cross-preset calibration tables alongside the existing score- and action-oriented summaries.
 
 Run the current test suite:
 
