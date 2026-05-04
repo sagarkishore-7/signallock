@@ -306,6 +306,79 @@ Optional fields:
 - `score_chart_file`
 - `action_chart_file`
 
+### `PresetRunRecord`
+
+- `preset_run_id`
+- `preset_name`
+- `description`
+- `generated_at`
+- `organization`
+- `profile_count`
+- `evaluation_run_count`
+- `seed_count`
+- `baseline_profile`
+- `policy_profiles`
+- `comparison_candidates`
+- `output_dir`
+- `manifest_file`
+
+### `PresetPolicySummaryRecord`
+
+- `preset_run_id`
+- `preset_name`
+- `generated_at`
+- `organization`
+- `profile_count`
+- `policy_profile`
+- `is_baseline_profile`
+- `run_count`
+- `mean_combined_score`
+- `mean_exposure_score`
+- `mean_password_score`
+- `dominant_top_action`
+- `source_summary_file`
+
+### `PresetComparisonSummaryRecord`
+
+- `preset_run_id`
+- `preset_name`
+- `generated_at`
+- `organization`
+- `profile_count`
+- `baseline_profile`
+- `candidate_profile`
+- `matched_run_count`
+- `mean_combined_score_delta`
+- `mean_exposure_score_delta`
+- `mean_password_score_delta`
+- `candidate_higher_combined_ratio`
+- `action_change_count`
+- `dominant_transition`
+- `source_summary_file`
+
+### `PresetResultsOverview`
+
+- `input_dir`
+- `preset_run_count`
+- `policy_summary_count`
+- `comparison_summary_count`
+- `preset_names`
+- `organizations`
+- `policy_profiles`
+
+### `PresetResultsArtifacts`
+
+- `run_id`
+- `generated_at`
+- `output_dir`
+- `summary_file`
+- `preset_runs_file`
+- `policy_summaries_file`
+- `comparison_summaries_file`
+- `preset_table_file`
+- `policy_table_file`
+- `comparison_table_file`
+
 ## Exposure-Oriented Fields
 
 These features should influence exposure scoring, not password scoring by themselves.
@@ -436,5 +509,10 @@ The current implementation already supports:
 - `PresetExecutionSummary`
 - `PolicyAggregateRecord`
 - `FigureArtifacts`
+- `PresetRunRecord`
+- `PresetPolicySummaryRecord`
+- `PresetComparisonSummaryRecord`
+- `PresetResultsOverview`
+- `PresetResultsArtifacts`
 
 The scoring outputs remain heuristic baselines and should be treated as transparent placeholders pending later calibration and evaluation.

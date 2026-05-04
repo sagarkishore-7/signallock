@@ -42,6 +42,10 @@ and:
 
 `named experiment preset -> evaluation runs + analysis + comparison + figures`
 
+and now:
+
+`saved preset manifests -> preset-level policy/comparison summaries -> thesis-friendly markdown/CSV bundle`
+
 These are still heuristic baselines, but they establish the core separation the project depends on:
 
 - exposure risk,
@@ -154,6 +158,15 @@ Responsibilities:
 - score exposure,
 - score candidate passwords against synthetic profile context.
 
+### `src/signallock/results.py`
+
+Responsibilities:
+
+- scan executed preset bundles from disk,
+- flatten preset runs, per-policy aggregates, and preset-level comparisons,
+- render thesis-friendly markdown tables and CSV outputs,
+- save timestamped preset-results summary bundles for later analysis and writing.
+
 ## Current Output Types
 
 ### `PublicProfile`
@@ -232,6 +245,26 @@ Represents cross-run aggregate metrics for one policy profile.
 
 Represents the saved filesystem outputs for one timestamped figure bundle.
 
+### `PresetRunRecord`
+
+Represents one flattened preset execution record for later analysis and reporting.
+
+### `PresetPolicySummaryRecord`
+
+Represents one per-policy aggregate row extracted from a preset execution.
+
+### `PresetComparisonSummaryRecord`
+
+Represents one per-candidate comparison row extracted from a preset execution.
+
+### `PresetResultsOverview`
+
+Represents high-level metadata for aggregated preset-summary operations.
+
+### `PresetResultsArtifacts`
+
+Represents the saved filesystem outputs for one timestamped preset-results bundle.
+
 ## Current Prototype Boundaries
 
 The current prototype intentionally:
@@ -258,6 +291,7 @@ The current prototype does support:
 - baseline-versus-candidate comparison bundles derived from matched runs,
 - dependency-light SVG figure bundles derived from cross-run aggregates,
 - preset-driven orchestration across the full experiment workflow.
+- preset-level summary bundles for higher-level experiment reporting.
 
 ## Near-Term Architecture Expansion
 

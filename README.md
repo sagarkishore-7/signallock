@@ -37,6 +37,7 @@ Current contents:
 - a pairwise comparison layer under [`src/signallock/comparison.py`](src/signallock/comparison.py),
 - a lightweight SVG figure layer under [`src/signallock/figures.py`](src/signallock/figures.py),
 - a preset-based orchestration layer under [`src/signallock/presets.py`](src/signallock/presets.py),
+- a preset-results summary layer under [`src/signallock/results.py`](src/signallock/results.py),
 - an initial Python package scaffold under [`src/signallock/`](src/signallock/).
 
 Repository:
@@ -81,6 +82,7 @@ SignalLock/
 │       ├── policy.py
 │       ├── presets.py
 │       ├── reporting.py
+│       ├── results.py
 │       ├── schemas.py
 │       └── synthetic_profiles.py
 ├── tests/
@@ -92,6 +94,7 @@ SignalLock/
 │   ├── test_figures.py
 │   ├── test_presets.py
 │   ├── test_reporting.py
+│   ├── test_results.py
 │   ├── test_password_risk.py
 │   ├── test_policy.py
 │   ├── test_schemas.py
@@ -256,6 +259,19 @@ Execute a named preset end to end:
 ```bash
 PYTHONPATH=src python3 -m signallock run-preset \
   --preset baseline_matrix \
+  --pretty
+```
+
+Summarize executed preset bundles into thesis-friendly tables and CSV artifacts:
+
+```bash
+PYTHONPATH=src python3 -m signallock summarize-presets \
+  --input-dir artifacts/presets \
+  --include-runs \
+  --include-policy-summaries \
+  --include-comparison-summaries \
+  --include-tables \
+  --save-summary \
   --pretty
 ```
 

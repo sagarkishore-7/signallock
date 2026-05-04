@@ -315,6 +315,75 @@ class CLITests(unittest.TestCase):
             self.assertIn("preset_artifacts", decoded)
             self.assertTrue(Path(decoded["preset_artifacts"]["manifest_file"]).exists())
 
+    def test_summarize_presets_outputs_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            preset_file = Path(temp_dir) / "presets.json"
+            preset_file.write_text(
+                json.dumps(
+                    {
+                        "presets": [
+                            {
+                                "name": "mini_suite",
+                                "description": "Small preset for preset-summary CLI coverage.",
+                                "organization": "ExampleCorp",
+                                "profile_count": 2,
+                                "seeds": [1, 2],
+                                "policy_profiles": ["balanced", "strict"],
+                                "baseline_profile": "balanced",
+                                "comparison_candidates": ["strict"],
+                                "include_records": False,
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            run_stream = io.StringIO()
+            with contextlib.redirect_stdout(run_stream):
+                main(
+                    [
+                        "run-preset",
+                        "--preset",
+                        "mini_suite",
+                        "--preset-file",
+                        str(preset_file),
+                        "--output-dir",
+                        temp_dir,
+                    ]
+                )
+
+            summary_stream = io.StringIO()
+            with contextlib.redirect_stdout(summary_stream):
+                main(
+                    [
+                        "summarize-presets",
+                        "--input-dir",
+                        temp_dir,
+                        "--preset-names",
+                        "mini_suite",
+                        "--include-runs",
+                        "--include-policy-summaries",
+                        "--include-comparison-summaries",
+                        "--include-tables",
+                        "--save-summary",
+                        "--output-dir",
+                        temp_dir,
+                        "--pretty",
+                    ]
+                )
+
+            decoded = json.loads(summary_stream.getvalue())
+            self.assertIn("overview", decoded)
+            self.assertIn("preset_runs", decoded)
+            self.assertIn("policy_summaries", decoded)
+            self.assertIn("comparison_summaries", decoded)
+            self.assertIn("preset_table_markdown", decoded)
+            self.assertIn("policy_table_markdown", decoded)
+            self.assertIn("comparison_table_markdown", decoded)
+            self.assertIn("artifacts", decoded)
+            self.assertTrue(Path(decoded["artifacts"]["summary_file"]).exists())
+
 
 if __name__ == "__main__":
     unittest.main()

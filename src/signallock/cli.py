@@ -34,6 +34,15 @@ from .reporting import (
     render_policy_comparison_table as render_evaluation_comparison_table,
     write_evaluation_artifacts,
 )
+from .results import (
+    DEFAULT_PRESET_INPUT_DIR,
+    preset_results_to_json,
+    render_preset_comparison_table,
+    render_preset_policy_table,
+    render_preset_run_table,
+    summarize_preset_runs,
+    write_preset_results_artifacts,
+)
 from .schemas import PolicyProfile
 from .synthetic_profiles import generate_synthetic_profiles, profiles_to_json
 
@@ -436,6 +445,57 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pretty-print JSON output.",
     )
 
+    summarize_presets_parser = subparsers.add_parser(
+        "summarize-presets",
+        help="Summarize executed preset bundles into thesis-friendly tables and CSV artifacts.",
+    )
+    summarize_presets_parser.add_argument(
+        "--input-dir",
+        default=str(DEFAULT_PRESET_INPUT_DIR),
+        help="Directory containing saved preset run subdirectories.",
+    )
+    summarize_presets_parser.add_argument(
+        "--preset-names",
+        nargs="*",
+        default=None,
+        help="Optional subset of preset names to include in the summary.",
+    )
+    summarize_presets_parser.add_argument(
+        "--include-runs",
+        action="store_true",
+        help="Include flattened preset-run records in the JSON output.",
+    )
+    summarize_presets_parser.add_argument(
+        "--include-policy-summaries",
+        action="store_true",
+        help="Include per-policy preset summaries in the JSON output.",
+    )
+    summarize_presets_parser.add_argument(
+        "--include-comparison-summaries",
+        action="store_true",
+        help="Include per-candidate preset comparison summaries in the JSON output.",
+    )
+    summarize_presets_parser.add_argument(
+        "--include-tables",
+        action="store_true",
+        help="Include markdown summary tables in the JSON output.",
+    )
+    summarize_presets_parser.add_argument(
+        "--save-summary",
+        action="store_true",
+        help="Write a timestamped preset-results summary bundle to disk.",
+    )
+    summarize_presets_parser.add_argument(
+        "--output-dir",
+        default=None,
+        help="Optional directory for saved preset-results artifacts.",
+    )
+    summarize_presets_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+
     return parser
 
 
@@ -693,6 +753,55 @@ def main(argv: list[str] | None = None) -> None:
         from .presets import preset_execution_to_json  # local import keeps top import list tidy
 
         print(preset_execution_to_json(summary, pretty=args.pretty))
+        return
+
+    if args.command == "summarize-presets":
+        overview, run_records, policy_records, comparison_records = summarize_preset_runs(
+            input_dir=args.input_dir,
+            selected_presets=args.preset_names,
+        )
+        preset_table = (
+            render_preset_run_table(run_records)
+            if args.include_tables or args.save_summary
+            else None
+        )
+        policy_table = (
+            render_preset_policy_table(policy_records)
+            if args.include_tables or args.save_summary
+            else None
+        )
+        comparison_table = (
+            render_preset_comparison_table(comparison_records)
+            if comparison_records and (args.include_tables or args.save_summary)
+            else None
+        )
+        artifacts = None
+        if args.save_summary:
+            artifacts = write_preset_results_artifacts(
+                overview,
+                run_records,
+                policy_records,
+                comparison_records,
+                output_dir=args.output_dir,
+            )
+        print(
+            preset_results_to_json(
+                overview,
+                run_records,
+                policy_records,
+                comparison_records,
+                include_runs=args.include_runs,
+                include_policy_summaries=args.include_policy_summaries,
+                include_comparison_summaries=args.include_comparison_summaries,
+                pretty=args.pretty,
+                preset_table_markdown=preset_table if args.include_tables else None,
+                policy_table_markdown=policy_table if args.include_tables else None,
+                comparison_table_markdown=(
+                    comparison_table if args.include_tables else None
+                ),
+                artifacts=artifacts.to_dict() if artifacts else None,
+            )
+        )
         return
 
     print("SignalLock is in early implementation.")

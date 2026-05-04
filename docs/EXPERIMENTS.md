@@ -17,6 +17,7 @@ The goal is not large-scale benchmarking yet. The goal is to make iterative rese
 7. Compare baseline and candidate policies across saved runs.
 8. Generate lightweight SVG figures and aggregate policy tables.
 9. Execute named presets that orchestrate the entire workflow automatically.
+10. Summarize executed preset bundles into thesis-friendly markdown and CSV outputs.
 
 ## CLI Example
 
@@ -89,6 +90,20 @@ These bundles currently contain:
 - `comparisons/`
 - `figures/`
 
+Preset-results summary bundles can also be written under:
+
+`artifacts/results/<timestamp>/`
+
+These bundles currently contain:
+
+- `preset_results_summary.json`
+- `preset_runs.csv`
+- `preset_policy_summaries.csv`
+- `preset_comparison_summaries.csv`
+- `preset_summary_table.md`
+- `preset_policy_summary_table.md`
+- `preset_comparison_summary_table.md` when comparisons exist
+
 ## File Semantics
 
 ### `report.json`
@@ -155,6 +170,15 @@ Mean delta chart showing how candidate profiles differ from the baseline across 
 ### `preset_manifest.json`
 
 Top-level manifest for one preset execution, including the generated evaluation, analysis, comparison, and figure artifact paths.
+
+### `preset_results_summary.json`
+
+Aggregate view across one or more executed preset bundles, including:
+
+- preset-run metadata
+- per-policy preset summaries
+- per-candidate preset comparison summaries
+- embedded markdown tables for quick reporting
 
 ## Cross-Run Analysis
 
@@ -241,6 +265,29 @@ PYTHONPATH=src python3 -m signallock run-preset \
   --pretty
 ```
 
+## Preset Summaries
+
+Summarize previously executed preset bundles:
+
+```bash
+PYTHONPATH=src python3 -m signallock summarize-presets \
+  --input-dir artifacts/presets \
+  --include-runs \
+  --include-policy-summaries \
+  --include-comparison-summaries \
+  --include-tables \
+  --save-summary \
+  --pretty
+```
+
+Optional flags:
+
+- `--preset-names` to focus on a subset of named presets
+- `--output-dir` to control where summary bundles are written
+- `--include-runs` to include flattened preset-run records in JSON
+- `--include-policy-summaries` to include per-policy preset summaries in JSON
+- `--include-comparison-summaries` to include comparison summaries in JSON
+
 ## Reproducibility Notes
 
 - Use `--seed` for stable synthetic profile generation.
@@ -255,5 +302,6 @@ PYTHONPATH=src python3 -m signallock run-preset \
 - The SVG figures are lightweight and dependency-free, but not a replacement for final publication plotting.
 - Pairwise comparisons are based on saved synthetic run summaries, so they are useful for ablation-style iteration rather than definitive deployment claims.
 - Preset orchestration improves reproducibility, but it still operates on heuristic synthetic pipelines rather than calibrated study data.
+- Preset summaries are designed for traceability and draft reporting, not final statistical claims.
 - No calibration or confidence intervals are produced yet.
 - The artifact format is stable enough for local iteration, but may evolve as the research design matures.

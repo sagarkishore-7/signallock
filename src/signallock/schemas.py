@@ -683,3 +683,118 @@ class PresetExecutionSummary:
             "figure_artifacts": self.figure_artifacts,
             "preset_artifacts": self.preset_artifacts,
         }
+
+
+@dataclass
+class PresetRunRecord:
+    """Flattened summary of one executed preset bundle."""
+
+    preset_run_id: str
+    preset_name: str
+    description: str
+    generated_at: str
+    organization: str
+    profile_count: int
+    evaluation_run_count: int
+    seed_count: int
+    baseline_profile: PolicyProfile
+    policy_profiles: list[str]
+    comparison_candidates: list[str]
+    output_dir: str
+    manifest_file: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the flattened preset run record to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["baseline_profile"] = self.baseline_profile.value
+        return data
+
+
+@dataclass
+class PresetPolicySummaryRecord:
+    """Flattened per-policy summary extracted from one preset execution."""
+
+    preset_run_id: str
+    preset_name: str
+    generated_at: str
+    organization: str
+    profile_count: int
+    policy_profile: PolicyProfile
+    is_baseline_profile: bool
+    run_count: int
+    mean_combined_score: float
+    mean_exposure_score: float
+    mean_password_score: float
+    dominant_top_action: str
+    source_summary_file: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the preset policy summary to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["policy_profile"] = self.policy_profile.value
+        return data
+
+
+@dataclass
+class PresetComparisonSummaryRecord:
+    """Flattened per-candidate comparison summary extracted from one preset execution."""
+
+    preset_run_id: str
+    preset_name: str
+    generated_at: str
+    organization: str
+    profile_count: int
+    baseline_profile: PolicyProfile
+    candidate_profile: PolicyProfile
+    matched_run_count: int
+    mean_combined_score_delta: float
+    mean_exposure_score_delta: float
+    mean_password_score_delta: float
+    candidate_higher_combined_ratio: float
+    action_change_count: int
+    dominant_transition: str
+    source_summary_file: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the preset comparison summary to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["baseline_profile"] = self.baseline_profile.value
+        data["candidate_profile"] = self.candidate_profile.value
+        return data
+
+
+@dataclass
+class PresetResultsOverview:
+    """High-level metadata for aggregated preset results."""
+
+    input_dir: str
+    preset_run_count: int
+    policy_summary_count: int
+    comparison_summary_count: int
+    preset_names: list[str]
+    organizations: list[str]
+    policy_profiles: list[str]
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the overview to a JSON-serializable dictionary."""
+        return asdict(self)
+
+
+@dataclass
+class PresetResultsArtifacts:
+    """Filesystem artifact references for a saved preset-results summary bundle."""
+
+    run_id: str
+    generated_at: str
+    output_dir: str
+    summary_file: str
+    preset_runs_file: str
+    policy_summaries_file: str
+    comparison_summaries_file: str
+    preset_table_file: str
+    policy_table_file: str
+    comparison_table_file: str | None = None
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert artifact references to a JSON-serializable dictionary."""
+        return asdict(self)
