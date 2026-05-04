@@ -133,6 +133,47 @@ class CLITests(unittest.TestCase):
             self.assertTrue(Path(decoded["artifacts"]["report_file"]).exists())
             self.assertTrue(Path(decoded["artifacts"]["comparison_table_file"]).exists())
 
+    def test_analyze_runs_outputs_overview_and_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            evaluate_stream = io.StringIO()
+            with contextlib.redirect_stdout(evaluate_stream):
+                main(
+                    [
+                        "evaluate-policies",
+                        "--count",
+                        "2",
+                        "--seed",
+                        "1",
+                        "--save-run",
+                        "--output-dir",
+                        temp_dir,
+                    ]
+                )
+
+            analysis_stream = io.StringIO()
+            with contextlib.redirect_stdout(analysis_stream):
+                main(
+                    [
+                        "analyze-runs",
+                        "--input-dir",
+                        temp_dir,
+                        "--include-rows",
+                        "--include-table",
+                        "--save-analysis",
+                        "--output-dir",
+                        temp_dir,
+                        "--pretty",
+                    ]
+                )
+
+            decoded = json.loads(analysis_stream.getvalue())
+            self.assertIn("overview", decoded)
+            self.assertIn("rows", decoded)
+            self.assertIn("comparison_table_markdown", decoded)
+            self.assertIn("artifacts", decoded)
+            self.assertEqual(decoded["overview"]["run_count"], 1)
+            self.assertTrue(Path(decoded["artifacts"]["analysis_file"]).exists())
+
 
 if __name__ == "__main__":
     unittest.main()

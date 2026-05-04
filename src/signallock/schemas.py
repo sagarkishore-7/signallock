@@ -391,3 +391,59 @@ class EvaluationArtifacts:
     def to_dict(self) -> dict[str, object]:
         """Convert artifact references to a JSON-serializable dictionary."""
         return asdict(self)
+
+
+@dataclass
+class EvaluationRunSummaryRecord:
+    """Flattened view of one policy summary from one saved evaluation run."""
+
+    run_id: str
+    generated_at: str
+    organization: str
+    profile_count: int
+    seed: int | None
+    policy_profile: PolicyProfile
+    sample_count: int
+    scenario_count: int
+    average_combined_score: float
+    average_exposure_score: float
+    average_password_score: float
+    top_action: str
+    source_report_file: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the flattened record to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["policy_profile"] = self.policy_profile.value
+        return data
+
+
+@dataclass
+class EvaluationRunAnalysisOverview:
+    """High-level metadata for a cross-run evaluation analysis."""
+
+    input_dir: str
+    run_count: int
+    row_count: int
+    policy_profiles: list[str]
+    organizations: list[str]
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the overview to a JSON-serializable dictionary."""
+        return asdict(self)
+
+
+@dataclass
+class AnalysisArtifacts:
+    """Filesystem artifact references for a saved cross-run analysis."""
+
+    run_id: str
+    generated_at: str
+    output_dir: str
+    analysis_file: str
+    comparison_table_file: str
+    policy_matrix_file: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert analysis artifact references to a JSON-serializable dictionary."""
+        return asdict(self)

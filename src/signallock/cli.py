@@ -6,11 +6,21 @@ import argparse
 import json
 from pathlib import Path
 
+from .analysis import (
+    analysis_results_to_json,
+    analyze_evaluation_runs,
+    render_run_analysis_table,
+    write_run_analysis_artifacts,
+)
 from .evaluation import evaluate_policy_profiles, evaluation_results_to_json
 from .exposure import assessments_to_json, score_profiles_exposure
 from .password_risk import score_password_for_profile
 from .policy import get_policy_config, policy_configs_to_json, recommend_hardening
-from .reporting import render_policy_comparison_table, write_evaluation_artifacts
+from .reporting import (
+    DEFAULT_EVALUATION_OUTPUT_DIR,
+    render_policy_comparison_table,
+    write_evaluation_artifacts,
+)
 from .schemas import PolicyProfile
 from .synthetic_profiles import generate_synthetic_profiles, profiles_to_json
 
@@ -241,6 +251,48 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pretty-print JSON output.",
     )
 
+    analyze_parser = subparsers.add_parser(
+        "analyze-runs",
+        help="Aggregate saved evaluation runs into cross-run comparison outputs.",
+    )
+    analyze_parser.add_argument(
+        "--input-dir",
+        default=str(DEFAULT_EVALUATION_OUTPUT_DIR),
+        help="Directory containing saved evaluation run subdirectories.",
+    )
+    analyze_parser.add_argument(
+        "--policy-profiles",
+        nargs="*",
+        choices=[profile.value for profile in PolicyProfile],
+        default=None,
+        help="Optional subset of policy profiles to include in the analysis.",
+    )
+    analyze_parser.add_argument(
+        "--include-rows",
+        action="store_true",
+        help="Include flattened per-run rows in the JSON output.",
+    )
+    analyze_parser.add_argument(
+        "--include-table",
+        action="store_true",
+        help="Include a markdown comparison table in the JSON output.",
+    )
+    analyze_parser.add_argument(
+        "--save-analysis",
+        action="store_true",
+        help="Write a timestamped cross-run analysis bundle to disk.",
+    )
+    analyze_parser.add_argument(
+        "--output-dir",
+        default=None,
+        help="Optional directory for saved analysis artifacts.",
+    )
+    analyze_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+
     return parser
 
 
@@ -364,6 +416,40 @@ def main(argv: list[str] | None = None) -> None:
                 include_records=args.include_records,
                 pretty=args.pretty,
                 metadata=metadata,
+                comparison_table_markdown=comparison_table if args.include_table else None,
+                artifacts=artifacts.to_dict() if artifacts else None,
+            )
+        )
+        return
+
+    if args.command == "analyze-runs":
+        selected_profiles = (
+            [PolicyProfile(profile) for profile in args.policy_profiles]
+            if args.policy_profiles
+            else None
+        )
+        overview, rows = analyze_evaluation_runs(
+            input_dir=args.input_dir,
+            selected_profiles=selected_profiles,
+        )
+        comparison_table = (
+            render_run_analysis_table(rows)
+            if args.include_table or args.save_analysis
+            else None
+        )
+        artifacts = None
+        if args.save_analysis:
+            artifacts = write_run_analysis_artifacts(
+                overview,
+                rows,
+                output_dir=args.output_dir,
+            )
+        print(
+            analysis_results_to_json(
+                overview,
+                rows,
+                include_rows=args.include_rows,
+                pretty=args.pretty,
                 comparison_table_markdown=comparison_table if args.include_table else None,
                 artifacts=artifacts.to_dict() if artifacts else None,
             )

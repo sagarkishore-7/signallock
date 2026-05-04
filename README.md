@@ -31,6 +31,7 @@ Current contents:
 - a baseline hardening policy engine under [`src/signallock/policy.py`](src/signallock/policy.py),
 - a synthetic evaluation harness under [`src/signallock/evaluation.py`](src/signallock/evaluation.py),
 - a reproducible experiment reporting layer under [`src/signallock/reporting.py`](src/signallock/reporting.py),
+- a cross-run analysis layer under [`src/signallock/analysis.py`](src/signallock/analysis.py),
 - an initial Python package scaffold under [`src/signallock/`](src/signallock/).
 
 Repository:
@@ -63,6 +64,7 @@ SignalLock/
 ├── src/
 │   └── signallock/
 │       ├── __init__.py
+│       ├── analysis.py
 │       ├── cli.py
 │       ├── evaluation.py
 │       ├── exposure.py
@@ -73,6 +75,7 @@ SignalLock/
 │       └── synthetic_profiles.py
 ├── tests/
 │   ├── test_cli.py
+│   ├── test_analysis.py
 │   ├── test_evaluation.py
 │   ├── test_exposure.py
 │   ├── test_reporting.py
@@ -195,6 +198,16 @@ PYTHONPATH=src python3 -m signallock evaluate-policies \
   --pretty
 ```
 
+Analyze multiple saved runs and export cross-run comparison artifacts:
+
+```bash
+PYTHONPATH=src python3 -m signallock analyze-runs \
+  --input-dir artifacts/evaluations \
+  --include-table \
+  --save-analysis \
+  --pretty
+```
+
 Run the current test suite:
 
 ```bash
@@ -212,6 +225,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - load policy thresholds from a repo-backed JSON config file,
 - compare policy profiles across synthetic evaluation scenarios,
 - export timestamped evaluation artifact bundles with markdown comparison tables,
+- aggregate saved runs into markdown and CSV comparison outputs,
 - inspect outputs through a CLI-first workflow with test coverage.
 
 ## Current Limitations
@@ -222,7 +236,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - the policy engine is heuristic and not yet calibrated against user or org study data,
 - policy profiles are loaded from JSON but still limited to the current named profile set,
 - no dashboard has been added yet,
-- evaluation artifacts are local and markdown-based; richer analysis and visualization are still ahead.
+- analysis outputs are still summary-oriented and not yet connected to plotting libraries or statistical tests.
 
 ## Internal Planning Artifacts
 

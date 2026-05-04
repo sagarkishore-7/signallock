@@ -160,6 +160,39 @@ Optional fields:
 - `comparison_table_file`
 - `records_file`
 
+### `EvaluationRunSummaryRecord`
+
+- `run_id`
+- `generated_at`
+- `organization`
+- `profile_count`
+- `seed`
+- `policy_profile`
+- `sample_count`
+- `scenario_count`
+- `average_combined_score`
+- `average_exposure_score`
+- `average_password_score`
+- `top_action`
+- `source_report_file`
+
+### `EvaluationRunAnalysisOverview`
+
+- `input_dir`
+- `run_count`
+- `row_count`
+- `policy_profiles`
+- `organizations`
+
+### `AnalysisArtifacts`
+
+- `run_id`
+- `generated_at`
+- `output_dir`
+- `analysis_file`
+- `comparison_table_file`
+- `policy_matrix_file`
+
 ## Exposure-Oriented Fields
 
 These features should influence exposure scoring, not password scoring by themselves.
@@ -278,5 +311,8 @@ The current implementation already supports:
 - `PolicyEvaluationRecord`
 - `PolicyEvaluationSummary`
 - `EvaluationArtifacts`
+- `EvaluationRunSummaryRecord`
+- `EvaluationRunAnalysisOverview`
+- `AnalysisArtifacts`
 
 The scoring outputs remain heuristic baselines and should be treated as transparent placeholders pending later calibration and evaluation.

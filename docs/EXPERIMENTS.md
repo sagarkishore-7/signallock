@@ -13,6 +13,7 @@ The goal is not large-scale benchmarking yet. The goal is to make iterative rese
 3. Evaluate one or more policy profiles over the same scenario set.
 4. Save the run to a timestamped artifact directory.
 5. Inspect the JSON summaries and markdown comparison table.
+6. Aggregate multiple saved runs into cross-run markdown and CSV outputs.
 
 ## CLI Example
 
@@ -39,6 +40,16 @@ Each run currently contains:
 - `summaries.json`
 - `comparison_table.md`
 - `records.json` when `--include-records` is used
+
+Cross-run analysis bundles can also be written under:
+
+`artifacts/analysis/<timestamp>/`
+
+These bundles currently contain:
+
+- `analysis.json`
+- `comparison_table.md`
+- `policy_matrix.csv`
 
 ## File Semantics
 
@@ -67,6 +78,36 @@ Human-readable markdown table for notes, progress updates, or thesis draft figur
 
 Optional per-scenario output for more detailed debugging or later statistical analysis.
 
+### `analysis.json`
+
+Cross-run analysis bundle containing:
+
+- overall run metadata
+- flattened per-run policy rows
+- embedded comparison table markdown
+
+### `policy_matrix.csv`
+
+Flat export intended for plotting, spreadsheet analysis, or later statistical work.
+
+## Cross-Run Analysis
+
+Use the saved run directories as input to:
+
+```bash
+PYTHONPATH=src python3 -m signallock analyze-runs \
+  --input-dir artifacts/evaluations \
+  --include-table \
+  --save-analysis \
+  --pretty
+```
+
+Optional flags:
+
+- `--policy-profiles` to focus on one or more policy profiles
+- `--include-rows` to emit flattened per-run rows in JSON
+- `--output-dir` to control where analysis bundles are written
+
 ## Reproducibility Notes
 
 - Use `--seed` for stable synthetic profile generation.
@@ -77,5 +118,6 @@ Optional per-scenario output for more detailed debugging or later statistical an
 
 - The scenarios are still heuristic and synthetic.
 - The markdown table is summary-focused, not publication-grade plotting.
+- The CSV is intentionally flat and minimal rather than analysis-framework-specific.
 - No calibration or confidence intervals are produced yet.
 - The artifact format is stable enough for local iteration, but may evolve as the research design matures.

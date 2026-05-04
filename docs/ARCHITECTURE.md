@@ -26,6 +26,10 @@ and now:
 
 `PolicyEvaluationSummary + PolicyEvaluationRecord -> timestamped evaluation artifacts`
 
+and:
+
+`saved evaluation artifacts -> cross-run analysis rows -> markdown/CSV analysis bundle`
+
 These are still heuristic baselines, but they establish the core separation the project depends on:
 
 - exposure risk,
@@ -93,6 +97,15 @@ Responsibilities:
 - save evaluation runs to timestamped local artifact bundles,
 - keep experiment outputs reproducible without exposing them in git.
 
+### `src/signallock/analysis.py`
+
+Responsibilities:
+
+- scan saved evaluation runs from disk,
+- flatten per-run policy summaries into comparison-friendly rows,
+- render cross-run markdown and CSV outputs,
+- save timestamped analysis bundles for later research work.
+
 ### `src/signallock/cli.py`
 
 Responsibilities:
@@ -132,6 +145,18 @@ Represents aggregate outcomes for one policy profile over a synthetic evaluation
 
 Represents the saved filesystem outputs for one timestamped experiment run.
 
+### `EvaluationRunSummaryRecord`
+
+Represents one flattened policy summary row from one saved evaluation run.
+
+### `EvaluationRunAnalysisOverview`
+
+Represents top-level metadata for a cross-run analysis operation.
+
+### `AnalysisArtifacts`
+
+Represents the saved filesystem outputs for one timestamped cross-run analysis bundle.
+
 ## Current Prototype Boundaries
 
 The current prototype intentionally:
@@ -153,7 +178,8 @@ The current prototype does support:
 - file-backed policy profiles under `configs/policy_profiles.json`,
 - comparative CLI evaluation across multiple profiles,
 - optional custom policy files for experiments,
-- timestamped local artifact bundles for reproducible evaluation runs.
+- timestamped local artifact bundles for reproducible evaluation runs,
+- cross-run markdown and CSV exports derived from saved runs.
 
 ## Near-Term Architecture Expansion
 
@@ -162,7 +188,7 @@ The next likely modules are:
 - explanation renderer,
 - password feature calibration support,
 - dataset generation for controlled evaluation,
-- richer experiment analysis and plotting.
+- richer plotting and statistical evaluation beyond flat CSV output.
 
 ## CLI-Oriented Workflow
 
@@ -174,5 +200,6 @@ Today the repository is CLI-first. A typical prototype loop is:
 4. Apply a named hardening policy profile.
 5. Compare multiple policy profiles over the same synthetic scenarios.
 6. Save the run and inspect the generated artifact bundle.
+7. Aggregate multiple runs into cross-run analysis outputs.
 
 That keeps the implementation transparent and testable before introducing more complex modeling.

@@ -14,6 +14,22 @@ DEFAULT_EVALUATION_OUTPUT_DIR = (
 )
 
 
+def normalize_artifact_path(path: str | Path | None, default: Path) -> Path:
+    """Normalize artifact paths, including macOS `/tmp` to `/private/tmp` resolution."""
+    if path is None:
+        return default
+
+    candidate = Path(path).expanduser()
+    if candidate.exists():
+        return candidate
+
+    if str(candidate).startswith("/tmp/") or str(candidate) == "/tmp":
+        private_tmp = Path("/private") / str(candidate).lstrip("/")
+        return private_tmp
+
+    return candidate
+
+
 def render_policy_comparison_table(
     summaries: list[PolicyEvaluationSummary],
 ) -> str:
@@ -62,7 +78,7 @@ def write_evaluation_artifacts(
 ) -> EvaluationArtifacts:
     """Persist a timestamped evaluation run to disk."""
     generated_at = generated_at or datetime.now(timezone.utc)
-    root_dir = Path(output_dir) if output_dir else DEFAULT_EVALUATION_OUTPUT_DIR
+    root_dir = normalize_artifact_path(output_dir, DEFAULT_EVALUATION_OUTPUT_DIR)
     run_id = generated_at.strftime("%Y%m%dT%H%M%SZ")
     run_dir, resolved_run_id = _create_unique_run_directory(root_dir, run_id)
     comparison_table = render_policy_comparison_table(summaries)
