@@ -570,3 +570,116 @@ class ComparisonArtifacts:
     def to_dict(self) -> dict[str, object]:
         """Convert comparison artifact references to a JSON-serializable dictionary."""
         return asdict(self)
+
+
+@dataclass
+class ExperimentPreset:
+    """Named experiment preset for repeatable evaluation workflows."""
+
+    name: str
+    description: str
+    organization: str
+    profile_count: int
+    seeds: list[int]
+    policy_profiles: list[PolicyProfile]
+    baseline_profile: PolicyProfile
+    comparison_candidates: list[PolicyProfile]
+    include_records: bool = False
+
+    def __post_init__(self) -> None:
+        """Validate preset structure."""
+        self.name = self.name.strip()
+        self.description = self.description.strip()
+        self.organization = self.organization.strip()
+        if not self.name:
+            raise ValueError("preset name must be non-empty")
+        if not self.description:
+            raise ValueError("preset description must be non-empty")
+        if not self.organization:
+            raise ValueError("organization must be non-empty")
+        if self.profile_count <= 0:
+            raise ValueError("profile_count must be positive")
+        if not self.seeds:
+            raise ValueError("seeds must be non-empty")
+        if not self.policy_profiles:
+            raise ValueError("policy_profiles must be non-empty")
+        if self.baseline_profile not in self.policy_profiles:
+            raise ValueError("baseline_profile must be included in policy_profiles")
+        for candidate in self.comparison_candidates:
+            if candidate not in self.policy_profiles:
+                raise ValueError("comparison candidate must be included in policy_profiles")
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the preset to a JSON-serializable dictionary."""
+        return {
+            "name": self.name,
+            "description": self.description,
+            "organization": self.organization,
+            "profile_count": self.profile_count,
+            "seeds": self.seeds,
+            "policy_profiles": [profile.value for profile in self.policy_profiles],
+            "baseline_profile": self.baseline_profile.value,
+            "comparison_candidates": [profile.value for profile in self.comparison_candidates],
+            "include_records": self.include_records,
+        }
+
+
+@dataclass
+class PresetArtifacts:
+    """Filesystem artifact references for one executed experiment preset."""
+
+    run_id: str
+    generated_at: str
+    output_dir: str
+    evaluations_dir: str
+    analysis_dir: str
+    comparisons_dir: str
+    figures_dir: str
+    manifest_file: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert preset artifact references to a JSON-serializable dictionary."""
+        return asdict(self)
+
+
+@dataclass
+class PresetExecutionSummary:
+    """Summary of one executed experiment preset run."""
+
+    preset_name: str
+    description: str
+    organization: str
+    profile_count: int
+    seeds: list[int]
+    policy_profiles: list[PolicyProfile]
+    baseline_profile: PolicyProfile
+    comparison_candidates: list[PolicyProfile]
+    include_records: bool
+    generated_at: str
+    evaluation_run_count: int
+    evaluation_artifacts: list[dict[str, object]]
+    analysis_artifacts: dict[str, object]
+    comparison_artifacts: dict[str, object] | None
+    figure_artifacts: dict[str, object]
+    preset_artifacts: dict[str, object]
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert preset execution summary to a JSON-serializable dictionary."""
+        return {
+            "preset_name": self.preset_name,
+            "description": self.description,
+            "organization": self.organization,
+            "profile_count": self.profile_count,
+            "seeds": self.seeds,
+            "policy_profiles": [profile.value for profile in self.policy_profiles],
+            "baseline_profile": self.baseline_profile.value,
+            "comparison_candidates": [profile.value for profile in self.comparison_candidates],
+            "include_records": self.include_records,
+            "generated_at": self.generated_at,
+            "evaluation_run_count": self.evaluation_run_count,
+            "evaluation_artifacts": self.evaluation_artifacts,
+            "analysis_artifacts": self.analysis_artifacts,
+            "comparison_artifacts": self.comparison_artifacts,
+            "figure_artifacts": self.figure_artifacts,
+            "preset_artifacts": self.preset_artifacts,
+        }

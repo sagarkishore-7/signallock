@@ -22,10 +22,12 @@ Current contents:
 
 - a detailed implementation roadmap under [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md),
 - a current architecture summary under [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md),
+- a data-governance note under [`docs/DATA_POLICY.md`](docs/DATA_POLICY.md),
 - a policy-profile reference under [`docs/POLICY_PROFILES.md`](docs/POLICY_PROFILES.md),
 - an experiment workflow reference under [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md),
 - a formal threat model under [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md),
 - a feature taxonomy under [`docs/FEATURE_SCHEMA.md`](docs/FEATURE_SCHEMA.md),
+- a named experiment preset config under [`configs/experiment_presets.json`](configs/experiment_presets.json),
 - a baseline exposure scoring pipeline under [`src/signallock/exposure.py`](src/signallock/exposure.py),
 - a baseline password-risk scoring pipeline under [`src/signallock/password_risk.py`](src/signallock/password_risk.py),
 - a baseline hardening policy engine under [`src/signallock/policy.py`](src/signallock/policy.py),
@@ -34,6 +36,7 @@ Current contents:
 - a cross-run analysis layer under [`src/signallock/analysis.py`](src/signallock/analysis.py),
 - a pairwise comparison layer under [`src/signallock/comparison.py`](src/signallock/comparison.py),
 - a lightweight SVG figure layer under [`src/signallock/figures.py`](src/signallock/figures.py),
+- a preset-based orchestration layer under [`src/signallock/presets.py`](src/signallock/presets.py),
 - an initial Python package scaffold under [`src/signallock/`](src/signallock/).
 
 Repository:
@@ -56,12 +59,14 @@ This separation is deliberate. Public exposure is not the same thing as weak pas
 SignalLock/
 ├── docs/
 │   ├── ARCHITECTURE.md
+│   ├── DATA_POLICY.md
 │   ├── EXPERIMENTS.md
 │   ├── POLICY_PROFILES.md
 │   ├── FEATURE_SCHEMA.md
 │   ├── IMPLEMENTATION_PLAN.md
 │   └── THREAT_MODEL.md
 ├── configs/
+│   ├── experiment_presets.json
 │   └── policy_profiles.json
 ├── src/
 │   └── signallock/
@@ -74,6 +79,7 @@ SignalLock/
 │       ├── figures.py
 │       ├── password_risk.py
 │       ├── policy.py
+│       ├── presets.py
 │       ├── reporting.py
 │       ├── schemas.py
 │       └── synthetic_profiles.py
@@ -84,6 +90,7 @@ SignalLock/
 │   ├── test_evaluation.py
 │   ├── test_exposure.py
 │   ├── test_figures.py
+│   ├── test_presets.py
 │   ├── test_reporting.py
 │   ├── test_password_risk.py
 │   ├── test_policy.py
@@ -238,6 +245,20 @@ PYTHONPATH=src python3 -m signallock compare-policies \
   --pretty
 ```
 
+List available experiment presets:
+
+```bash
+PYTHONPATH=src python3 -m signallock list-experiment-presets --pretty
+```
+
+Execute a named preset end to end:
+
+```bash
+PYTHONPATH=src python3 -m signallock run-preset \
+  --preset baseline_matrix \
+  --pretty
+```
+
 Run the current test suite:
 
 ```bash
@@ -258,6 +279,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - aggregate saved runs into markdown and CSV comparison outputs,
 - compare baseline and candidate policies with run-level deltas and action transitions,
 - generate lightweight SVG charts and aggregate policy tables from saved runs,
+- execute repeatable experiment suites from named preset definitions,
 - inspect outputs through a CLI-first workflow with test coverage.
 
 ## Current Limitations
@@ -269,6 +291,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - policy profiles are loaded from JSON but still limited to the current named profile set,
 - no dashboard has been added yet,
 - comparisons operate on aggregate synthetic-run summaries rather than real deployment telemetry,
+- preset execution orchestrates synthetic experiments only and does not yet capture notebook-style statistical post-processing,
 - built-in figures are intentionally lightweight SVG outputs rather than full plotting-library workflows.
 
 ## Internal Planning Artifacts
@@ -281,6 +304,7 @@ The engineering and research execution plan is documented in:
 
 - [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- [`docs/DATA_POLICY.md`](docs/DATA_POLICY.md)
 - [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md)
 - [`docs/POLICY_PROFILES.md`](docs/POLICY_PROFILES.md)
 - [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md)

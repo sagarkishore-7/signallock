@@ -16,6 +16,7 @@ The goal is not large-scale benchmarking yet. The goal is to make iterative rese
 6. Aggregate multiple saved runs into cross-run markdown and CSV outputs.
 7. Compare baseline and candidate policies across saved runs.
 8. Generate lightweight SVG figures and aggregate policy tables.
+9. Execute named presets that orchestrate the entire workflow automatically.
 
 ## CLI Example
 
@@ -75,6 +76,18 @@ These bundles currently contain:
 - `comparison_table.md`
 - `run_deltas.csv`
 - `comparison_deltas.svg`
+
+Preset bundles can also be written under:
+
+`artifacts/presets/<timestamp>-<preset>/`
+
+These bundles currently contain:
+
+- `preset_manifest.json`
+- `evaluations/`
+- `analysis/`
+- `comparisons/`
+- `figures/`
 
 ## File Semantics
 
@@ -139,6 +152,10 @@ Per-run policy deltas for candidate-versus-baseline comparisons.
 
 Mean delta chart showing how candidate profiles differ from the baseline across key scores.
 
+### `preset_manifest.json`
+
+Top-level manifest for one preset execution, including the generated evaluation, analysis, comparison, and figure artifact paths.
+
 ## Cross-Run Analysis
 
 Use the saved run directories as input to:
@@ -198,6 +215,32 @@ Optional flags:
 - `--include-aggregates` to include aggregate metrics in JSON
 - `--include-table` to include the markdown summary table in JSON
 
+## Preset Execution
+
+List the available presets:
+
+```bash
+PYTHONPATH=src python3 -m signallock list-experiment-presets --pretty
+```
+
+Run a preset end to end:
+
+```bash
+PYTHONPATH=src python3 -m signallock run-preset \
+  --preset baseline_matrix \
+  --pretty
+```
+
+Use a custom preset file:
+
+```bash
+PYTHONPATH=src python3 -m signallock run-preset \
+  --preset mini_suite \
+  --preset-file /path/to/presets.json \
+  --output-dir /tmp/signallock-preset-runs \
+  --pretty
+```
+
 ## Reproducibility Notes
 
 - Use `--seed` for stable synthetic profile generation.
@@ -211,5 +254,6 @@ Optional flags:
 - The CSV is intentionally flat and minimal rather than analysis-framework-specific.
 - The SVG figures are lightweight and dependency-free, but not a replacement for final publication plotting.
 - Pairwise comparisons are based on saved synthetic run summaries, so they are useful for ablation-style iteration rather than definitive deployment claims.
+- Preset orchestration improves reproducibility, but it still operates on heuristic synthetic pipelines rather than calibrated study data.
 - No calibration or confidence intervals are produced yet.
 - The artifact format is stable enough for local iteration, but may evolve as the research design matures.

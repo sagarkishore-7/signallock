@@ -1,0 +1,37 @@
+{
+  "presets": [
+    {
+      "name": "baseline_matrix",
+      "description": "Small multi-seed baseline matrix comparing all built-in policy profiles.",
+      "organization": "ExampleCorp",
+      "profile_count": 3,
+      "seeds": [1, 2, 3],
+      "policy_profiles": ["balanced", "strict", "usability"],
+      "baseline_profile": "balanced",
+      "comparison_candidates": ["strict", "usability"],
+      "include_records": false
+    },
+    {
+      "name": "strict_focus",
+      "description": "Focused comparison of strict hardening against the balanced baseline.",
+      "organization": "ExampleCorp",
+      "profile_count": 4,
+      "seeds": [1, 2, 3, 4],
+      "policy_profiles": ["balanced", "strict"],
+      "baseline_profile": "balanced",
+      "comparison_candidates": ["strict"],
+      "include_records": false
+    },
+    {
+      "name": "usability_focus",
+      "description": "Focused comparison of usability-oriented hardening against the balanced baseline.",
+      "organization": "ExampleCorp",
+      "profile_count": 4,
+      "seeds": [1, 2, 3, 4],
+      "policy_profiles": ["balanced", "usability"],
+      "baseline_profile": "balanced",
+      "comparison_candidates": ["usability"],
+      "include_records": false
+    }
+  ]
+}

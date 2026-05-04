@@ -38,6 +38,10 @@ and:
 
 `cross-run analysis rows -> baseline/candidate matching -> policy comparison bundle`
 
+and:
+
+`named experiment preset -> evaluation runs + analysis + comparison + figures`
+
 These are still heuristic baselines, but they establish the core separation the project depends on:
 
 - exposure risk,
@@ -123,6 +127,15 @@ Responsibilities:
 - render markdown, CSV, and lightweight SVG delta outputs,
 - save timestamped comparison bundles for ablation-style analysis.
 
+### `src/signallock/presets.py`
+
+Responsibilities:
+
+- load named experiment presets from configuration,
+- execute multi-seed evaluation suites,
+- orchestrate downstream analysis, comparisons, and figures,
+- save one manifest-driven bundle for reproducible experiment reruns.
+
 ### `src/signallock/figures.py`
 
 Responsibilities:
@@ -199,6 +212,18 @@ Represents aggregate candidate-versus-baseline deltas across matched runs.
 
 Represents the saved filesystem outputs for one timestamped policy comparison bundle.
 
+### `ExperimentPreset`
+
+Represents a named, versionable experiment configuration.
+
+### `PresetArtifacts`
+
+Represents the top-level directories and manifest for one preset execution.
+
+### `PresetExecutionSummary`
+
+Represents the combined outcome of one preset run across all downstream artifact types.
+
 ### `PolicyAggregateRecord`
 
 Represents cross-run aggregate metrics for one policy profile.
@@ -231,7 +256,8 @@ The current prototype does support:
 - timestamped local artifact bundles for reproducible evaluation runs,
 - cross-run markdown and CSV exports derived from saved runs,
 - baseline-versus-candidate comparison bundles derived from matched runs,
-- dependency-light SVG figure bundles derived from cross-run aggregates.
+- dependency-light SVG figure bundles derived from cross-run aggregates,
+- preset-driven orchestration across the full experiment workflow.
 
 ## Near-Term Architecture Expansion
 
@@ -255,5 +281,6 @@ Today the repository is CLI-first. A typical prototype loop is:
 7. Aggregate multiple runs into cross-run analysis outputs.
 8. Compare baseline and candidate policy profiles.
 9. Generate score and action figures for research communication.
+10. Execute named presets for reproducible end-to-end experiment suites.
 
 That keeps the implementation transparent and testable before introducing more complex modeling.

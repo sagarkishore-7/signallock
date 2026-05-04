@@ -243,6 +243,48 @@ Optional fields:
 - `run_deltas_file`
 - `delta_chart_file`
 
+### `ExperimentPreset`
+
+- `name`
+- `description`
+- `organization`
+- `profile_count`
+- `seeds`
+- `policy_profiles`
+- `baseline_profile`
+- `comparison_candidates`
+- `include_records`
+
+### `PresetArtifacts`
+
+- `run_id`
+- `generated_at`
+- `output_dir`
+- `evaluations_dir`
+- `analysis_dir`
+- `comparisons_dir`
+- `figures_dir`
+- `manifest_file`
+
+### `PresetExecutionSummary`
+
+- `preset_name`
+- `description`
+- `organization`
+- `profile_count`
+- `seeds`
+- `policy_profiles`
+- `baseline_profile`
+- `comparison_candidates`
+- `include_records`
+- `generated_at`
+- `evaluation_run_count`
+- `evaluation_artifacts`
+- `analysis_artifacts`
+- `comparison_artifacts`
+- `figure_artifacts`
+- `preset_artifacts`
+
 ### `PolicyAggregateRecord`
 
 - `policy_profile`
@@ -389,6 +431,9 @@ The current implementation already supports:
 - `PolicyComparisonRunDelta`
 - `PolicyComparisonSummary`
 - `ComparisonArtifacts`
+- `ExperimentPreset`
+- `PresetArtifacts`
+- `PresetExecutionSummary`
 - `PolicyAggregateRecord`
 - `FigureArtifacts`
 

@@ -28,6 +28,7 @@ from .figures import (
 )
 from .password_risk import score_password_for_profile
 from .policy import get_policy_config, policy_configs_to_json, recommend_hardening
+from .presets import execute_preset, get_preset, presets_to_json
 from .reporting import (
     DEFAULT_EVALUATION_OUTPUT_DIR,
     render_policy_comparison_table as render_evaluation_comparison_table,
@@ -395,6 +396,46 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pretty-print JSON output.",
     )
 
+    presets_parser = subparsers.add_parser(
+        "list-experiment-presets",
+        help="List built-in experiment presets for repeatable research workflows.",
+    )
+    presets_parser.add_argument(
+        "--preset-file",
+        default=None,
+        help="Optional path to an experiment preset JSON file.",
+    )
+    presets_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+
+    run_preset_parser = subparsers.add_parser(
+        "run-preset",
+        help="Execute a named experiment preset and save a full artifact bundle.",
+    )
+    run_preset_parser.add_argument(
+        "--preset",
+        required=True,
+        help="Name of the preset to execute.",
+    )
+    run_preset_parser.add_argument(
+        "--preset-file",
+        default=None,
+        help="Optional path to an experiment preset JSON file.",
+    )
+    run_preset_parser.add_argument(
+        "--output-dir",
+        default=None,
+        help="Optional directory for the saved preset bundle.",
+    )
+    run_preset_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+
     return parser
 
 
@@ -472,6 +513,10 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.command == "list-policy-profiles":
         print(policy_configs_to_json(pretty=args.pretty, policy_file=args.policy_file))
+        return
+
+    if args.command == "list-experiment-presets":
+        print(presets_to_json(pretty=args.pretty, preset_file=args.preset_file))
         return
 
     if args.command == "evaluate-policies":
@@ -637,6 +682,17 @@ def main(argv: list[str] | None = None) -> None:
                 artifacts=artifacts.to_dict() if artifacts else None,
             )
         )
+        return
+
+    if args.command == "run-preset":
+        preset = get_preset(args.preset, preset_file=args.preset_file)
+        summary = execute_preset(
+            preset,
+            output_dir=args.output_dir,
+        )
+        from .presets import preset_execution_to_json  # local import keeps top import list tidy
+
+        print(preset_execution_to_json(summary, pretty=args.pretty))
         return
 
     print("SignalLock is in early implementation.")

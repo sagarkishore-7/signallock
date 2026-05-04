@@ -259,6 +259,62 @@ class CLITests(unittest.TestCase):
             self.assertIn("artifacts", decoded)
             self.assertTrue(Path(decoded["artifacts"]["delta_chart_file"]).exists())
 
+    def test_list_experiment_presets_outputs_json(self) -> None:
+        stream = io.StringIO()
+        with contextlib.redirect_stdout(stream):
+            main(["list-experiment-presets", "--pretty"])
+
+        decoded = json.loads(stream.getvalue())
+        self.assertGreaterEqual(len(decoded), 3)
+        self.assertIn("name", decoded[0])
+
+    def test_run_preset_outputs_full_bundle(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            preset_file = Path(temp_dir) / "presets.json"
+            preset_file.write_text(
+                json.dumps(
+                    {
+                        "presets": [
+                            {
+                                "name": "mini_suite",
+                                "description": "Small preset for automated CLI coverage.",
+                                "organization": "ExampleCorp",
+                                "profile_count": 2,
+                                "seeds": [1, 2],
+                                "policy_profiles": ["balanced", "strict"],
+                                "baseline_profile": "balanced",
+                                "comparison_candidates": ["strict"],
+                                "include_records": False,
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            stream = io.StringIO()
+            with contextlib.redirect_stdout(stream):
+                main(
+                    [
+                        "run-preset",
+                        "--preset",
+                        "mini_suite",
+                        "--preset-file",
+                        str(preset_file),
+                        "--output-dir",
+                        temp_dir,
+                        "--pretty",
+                    ]
+                )
+
+            decoded = json.loads(stream.getvalue())
+            self.assertEqual(decoded["preset_name"], "mini_suite")
+            self.assertEqual(decoded["evaluation_run_count"], 2)
+            self.assertIn("analysis_artifacts", decoded)
+            self.assertIn("figure_artifacts", decoded)
+            self.assertIn("preset_artifacts", decoded)
+            self.assertTrue(Path(decoded["preset_artifacts"]["manifest_file"]).exists())
+
 
 if __name__ == "__main__":
     unittest.main()
