@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 
+from .exposure import assessments_to_json, score_profiles_exposure
 from .synthetic_profiles import generate_synthetic_profiles, profiles_to_json
 
 
@@ -45,6 +46,33 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pretty-print JSON output.",
     )
 
+    score_parser = subparsers.add_parser(
+        "score-exposure",
+        help="Generate synthetic profiles and score their baseline exposure.",
+    )
+    score_parser.add_argument(
+        "--count",
+        type=int,
+        default=5,
+        help="Number of synthetic profiles to generate.",
+    )
+    score_parser.add_argument(
+        "--organization",
+        default="ExampleCorp",
+        help="Organization name to embed in generated profiles.",
+    )
+    score_parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Optional random seed for reproducible output.",
+    )
+    score_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+
     return parser
 
 
@@ -62,6 +90,16 @@ def main(argv: list[str] | None = None) -> None:
         print(profiles_to_json(profiles, pretty=args.pretty))
         return
 
+    if args.command == "score-exposure":
+        profiles = generate_synthetic_profiles(
+            count=args.count,
+            organization=args.organization,
+            seed=args.seed,
+        )
+        assessments = score_profiles_exposure(profiles)
+        print(assessments_to_json(assessments, pretty=args.pretty))
+        return
+
     print("SignalLock is in early implementation.")
     print("Start with docs/THREAT_MODEL.md, docs/FEATURE_SCHEMA.md, and the CLI help.")
-    print("Try: PYTHONPATH=src python3 -m signallock generate-profiles --count 3 --pretty")
+    print("Try: PYTHONPATH=src python3 -m signallock score-exposure --count 3 --pretty")

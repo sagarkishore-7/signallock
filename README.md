@@ -126,6 +126,12 @@ Generate sample synthetic profiles:
 PYTHONPATH=src python3 -m signallock generate-profiles --count 3 --pretty
 ```
 
+Generate baseline exposure assessments:
+
+```bash
+PYTHONPATH=src python3 -m signallock score-exposure --count 3 --pretty
+```
+
 ## Internal Planning Artifacts
 
 Research proposal drafts and agent-only context files are intentionally kept out of the public repository.

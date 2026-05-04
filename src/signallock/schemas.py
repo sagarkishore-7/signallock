@@ -55,6 +55,23 @@ def _normalize_list(values: list[str]) -> list[str]:
     return normalized
 
 
+def _normalize_tokens(values: list[str]) -> list[str]:
+    """Normalize token lists to unique lowercase values."""
+    seen: set[str] = set()
+    normalized: list[str] = []
+
+    for value in values:
+        cleaned = value.strip().lower()
+        if not cleaned:
+            continue
+        if cleaned in seen:
+            continue
+        seen.add(cleaned)
+        normalized.append(cleaned)
+
+    return normalized
+
+
 @dataclass
 class PublicProfile:
     """Organization-approved or synthetic public identity record."""
@@ -135,13 +152,11 @@ class AttributeVector:
 
     def __post_init__(self) -> None:
         """Normalize token sets."""
-        self.name_tokens = [token.lower().strip() for token in self.name_tokens if token.strip()]
-        self.organization_tokens = [
-            token.lower().strip() for token in self.organization_tokens if token.strip()
-        ]
-        self.temporal_tokens = [token.lower().strip() for token in self.temporal_tokens if token.strip()]
-        self.identity_tokens = [token.lower().strip() for token in self.identity_tokens if token.strip()]
-        self.context_tokens = [token.lower().strip() for token in self.context_tokens if token.strip()]
+        self.name_tokens = _normalize_tokens(self.name_tokens)
+        self.organization_tokens = _normalize_tokens(self.organization_tokens)
+        self.temporal_tokens = _normalize_tokens(self.temporal_tokens)
+        self.identity_tokens = _normalize_tokens(self.identity_tokens)
+        self.context_tokens = _normalize_tokens(self.context_tokens)
 
         if not self.employee_id.strip():
             raise ValueError("employee_id must be non-empty")
@@ -152,4 +167,29 @@ class AttributeVector:
         """Convert the vector to a JSON-serializable dictionary."""
         data = asdict(self)
         data["role_seniority"] = self.role_seniority.value
+        return data
+
+
+@dataclass
+class ExposureAssessment:
+    """Interpretable baseline exposure score output."""
+
+    employee_id: str
+    score: float
+    band: RiskBand
+    component_scores: dict[str, float]
+    top_factors: list[str]
+
+    def __post_init__(self) -> None:
+        """Validate core assessment shape."""
+        self.employee_id = self.employee_id.strip()
+        if not self.employee_id:
+            raise ValueError("employee_id must be non-empty")
+        if not 0.0 <= self.score <= 100.0:
+            raise ValueError("score must be between 0 and 100")
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the assessment to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["band"] = self.band.value
         return data
