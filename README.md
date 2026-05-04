@@ -217,6 +217,8 @@ PYTHONPATH=src python3 -m signallock evaluate-policies \
   --pretty
 ```
 
+That command now emits proxy calibration summaries as part of the evaluation output, including within-range agreement, under-hardening rate, over-hardening rate, and low-risk false-positive proxies.
+
 Analyze multiple saved runs and export cross-run comparison artifacts:
 
 ```bash

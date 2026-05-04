@@ -24,7 +24,11 @@ and:
 
 and now:
 
-`PolicyEvaluationSummary + PolicyEvaluationRecord -> timestamped evaluation artifacts`
+`synthetic scenario expectations + PolicyEvaluationRecord -> PolicyCalibrationSummary`
+
+and now:
+
+`PolicyEvaluationSummary + PolicyCalibrationSummary + PolicyEvaluationRecord -> timestamped evaluation artifacts`
 
 and:
 
@@ -106,14 +110,16 @@ Responsibilities:
 Responsibilities:
 
 - generate safe synthetic password scenarios for evaluation only,
+- attach proxy expectation ranges to those synthetic scenarios,
 - compare multiple policy profiles over the same synthetic profile batch,
-- emit summary metrics and optional detailed records.
+- emit summary metrics, proxy calibration metrics, and optional detailed records.
 
 ### `src/signallock/reporting.py`
 
 Responsibilities:
 
 - render aggregate policy comparisons as markdown tables,
+- render proxy calibration summaries as markdown tables,
 - save evaluation runs to timestamped local artifact bundles,
 - keep experiment outputs reproducible without exposing them in git.
 
@@ -205,6 +211,10 @@ Represents a baseline policy output that combines both risk layers.
 ### `PolicyEvaluationSummary`
 
 Represents aggregate outcomes for one policy profile over a synthetic evaluation run.
+
+### `PolicyCalibrationSummary`
+
+Represents proxy calibration outcomes for one policy profile over a synthetic evaluation run.
 
 ### `EvaluationArtifacts`
 

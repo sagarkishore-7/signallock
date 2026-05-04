@@ -8,8 +8,12 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 
-from signallock.evaluation import evaluate_policy_profiles
-from signallock.reporting import render_policy_comparison_table, write_evaluation_artifacts
+from signallock.evaluation import evaluate_policy_profiles, summarize_policy_calibration
+from signallock.reporting import (
+    render_policy_calibration_table,
+    render_policy_comparison_table,
+    write_evaluation_artifacts,
+)
 from signallock.schemas import PolicyProfile
 from signallock.synthetic_profiles import generate_synthetic_profiles
 
@@ -45,12 +49,24 @@ class ReportingTests(unittest.TestCase):
             self.assertTrue(Path(artifacts.report_file).exists())
             self.assertTrue(Path(artifacts.summaries_file).exists())
             self.assertTrue(Path(artifacts.comparison_table_file).exists())
+            self.assertTrue(Path(artifacts.calibration_summaries_file).exists())
+            self.assertTrue(Path(artifacts.calibration_table_file).exists())
             self.assertTrue(Path(artifacts.records_file).exists())
 
             report_payload = json.loads(Path(artifacts.report_file).read_text())
             self.assertEqual(report_payload["metadata"]["seed"], 1)
             self.assertIn("comparison_table_markdown", report_payload)
+            self.assertIn("calibration_table_markdown", report_payload)
+            self.assertIn("calibration_summaries", report_payload)
             self.assertEqual(len(report_payload["records"]), len(records))
+
+    def test_render_policy_calibration_table_outputs_markdown(self) -> None:
+        profiles = generate_synthetic_profiles(count=2, seed=1)
+        _, records = evaluate_policy_profiles(profiles, [PolicyProfile.BALANCED])
+        calibration = summarize_policy_calibration(records, [PolicyProfile.BALANCED])
+        table = render_policy_calibration_table(calibration)
+
+        self.assertIn("| Policy | Records | Within Range |", table)
 
 
 if __name__ == "__main__":

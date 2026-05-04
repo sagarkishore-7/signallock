@@ -6,7 +6,13 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .schemas import EvaluationArtifacts, PolicyEvaluationRecord, PolicyEvaluationSummary
+from .evaluation import summarize_policy_calibration
+from .schemas import (
+    EvaluationArtifacts,
+    PolicyCalibrationSummary,
+    PolicyEvaluationRecord,
+    PolicyEvaluationSummary,
+)
 
 
 DEFAULT_EVALUATION_OUTPUT_DIR = (
@@ -68,12 +74,57 @@ def render_policy_comparison_table(
     return "\n".join(lines) + "\n"
 
 
+def render_policy_calibration_table(
+    calibration_summaries: list[PolicyCalibrationSummary],
+) -> str:
+    """Render proxy calibration summaries as a compact markdown table."""
+    headers = (
+        "Policy",
+        "Records",
+        "Within Range",
+        "Under",
+        "Over",
+        "TP Proxy",
+        "FP Proxy",
+        "Step-Up+",
+        "Block+",
+        "Mean Gap",
+    )
+    lines = [
+        "| " + " | ".join(headers) + " |",
+        "| " + " | ".join("---" for _ in headers) + " |",
+    ]
+
+    for summary in calibration_summaries:
+        lines.append(
+            "| "
+            + " | ".join(
+                (
+                    summary.policy_profile.value,
+                    str(summary.total_records),
+                    f"{summary.within_expected_range_rate:.2f}",
+                    f"{summary.under_hardening_rate:.2f}",
+                    f"{summary.over_hardening_rate:.2f}",
+                    f"{summary.true_positive_proxy_rate:.2f}",
+                    f"{summary.false_positive_proxy_rate:.2f}",
+                    f"{summary.step_up_or_higher_rate:.2f}",
+                    f"{summary.block_or_higher_rate:.2f}",
+                    f"{summary.mean_action_severity_gap:+.2f}",
+                )
+            )
+            + " |"
+        )
+
+    return "\n".join(lines) + "\n"
+
+
 def write_evaluation_artifacts(
     summaries: list[PolicyEvaluationSummary],
     records: list[PolicyEvaluationRecord],
     output_dir: str | Path | None = None,
     include_records: bool = False,
     metadata: dict[str, object] | None = None,
+    calibration_summaries: list[PolicyCalibrationSummary] | None = None,
     generated_at: datetime | None = None,
 ) -> EvaluationArtifacts:
     """Persist a timestamped evaluation run to disk."""
@@ -82,13 +133,19 @@ def write_evaluation_artifacts(
     run_id = generated_at.strftime("%Y%m%dT%H%M%SZ")
     run_dir, resolved_run_id = _create_unique_run_directory(root_dir, run_id)
     comparison_table = render_policy_comparison_table(summaries)
+    resolved_calibration = calibration_summaries or summarize_policy_calibration(records)
+    calibration_table = render_policy_calibration_table(resolved_calibration)
 
     report_payload = {
         "generated_at": generated_at.isoformat(),
         "run_id": resolved_run_id,
         "metadata": metadata or {},
         "comparison_table_markdown": comparison_table,
+        "calibration_table_markdown": calibration_table,
         "summaries": [summary.to_dict() for summary in summaries],
+        "calibration_summaries": [
+            summary.to_dict() for summary in resolved_calibration
+        ],
     }
     if include_records:
         report_payload["records"] = [record.to_dict() for record in records]
@@ -96,6 +153,8 @@ def write_evaluation_artifacts(
     report_path = run_dir / "report.json"
     summaries_path = run_dir / "summaries.json"
     comparison_path = run_dir / "comparison_table.md"
+    calibration_summaries_path = run_dir / "calibration_summaries.json"
+    calibration_table_path = run_dir / "calibration_table.md"
     records_path = run_dir / "records.json"
 
     report_path.write_text(json.dumps(report_payload, indent=2) + "\n", encoding="utf-8")
@@ -104,6 +163,11 @@ def write_evaluation_artifacts(
         encoding="utf-8",
     )
     comparison_path.write_text(comparison_table, encoding="utf-8")
+    calibration_summaries_path.write_text(
+        json.dumps([summary.to_dict() for summary in resolved_calibration], indent=2) + "\n",
+        encoding="utf-8",
+    )
+    calibration_table_path.write_text(calibration_table, encoding="utf-8")
 
     artifact_records_path: str | None = None
     if include_records:
@@ -120,6 +184,8 @@ def write_evaluation_artifacts(
         report_file=str(report_path.resolve()),
         summaries_file=str(summaries_path.resolve()),
         comparison_table_file=str(comparison_path.resolve()),
+        calibration_summaries_file=str(calibration_summaries_path.resolve()),
+        calibration_table_file=str(calibration_table_path.resolve()),
         records_file=artifact_records_path,
     )
 

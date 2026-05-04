@@ -136,6 +136,13 @@ Optional fields:
 - `policy_profile`
 - `exposure_band`
 - `password_band`
+- `expected_risk_band`
+- `expected_action_floor`
+- `expected_action_ceiling`
+- `within_expected_range`
+- `under_hardening`
+- `over_hardening`
+- `action_severity_gap`
 - `primary_action`
 - `combined_score`
 
@@ -150,6 +157,23 @@ Optional fields:
 - `average_exposure_score`
 - `average_password_score`
 
+### `PolicyCalibrationSummary`
+
+- `policy_profile`
+- `total_records`
+- `high_risk_record_count`
+- `low_risk_record_count`
+- `floor_action_match_rate`
+- `within_expected_range_rate`
+- `under_hardening_rate`
+- `over_hardening_rate`
+- `true_positive_proxy_rate`
+- `false_positive_proxy_rate`
+- `warn_or_higher_rate`
+- `step_up_or_higher_rate`
+- `block_or_higher_rate`
+- `mean_action_severity_gap`
+
 ### `EvaluationArtifacts`
 
 - `run_id`
@@ -158,6 +182,8 @@ Optional fields:
 - `report_file`
 - `summaries_file`
 - `comparison_table_file`
+- `calibration_summaries_file`
+- `calibration_table_file`
 - `records_file`
 
 ### `EvaluationRunSummaryRecord`
@@ -573,6 +599,7 @@ The current implementation already supports:
 - `PolicyConfig`
 - `PolicyEvaluationRecord`
 - `PolicyEvaluationSummary`
+- `PolicyCalibrationSummary`
 - `EvaluationArtifacts`
 - `EvaluationRunSummaryRecord`
 - `EvaluationRunAnalysisOverview`
@@ -599,3 +626,5 @@ The current implementation already supports:
 - `PresetAggregateArtifacts`
 
 The scoring outputs remain heuristic baselines and should be treated as transparent placeholders pending later calibration and evaluation.
+
+The current evaluation layer does support proxy calibration targets for synthetic scenarios, but these are intentionally synthetic expectations rather than real-user labels.

@@ -6,6 +6,13 @@ SignalLock now supports a lightweight experiment workflow for comparing policy p
 
 The goal is not large-scale benchmarking yet. The goal is to make iterative research work traceable and easy to review.
 
+The current evaluation layer also attaches proxy calibration targets to each synthetic scenario so we can estimate:
+
+- whether a policy under-hardens high-risk synthetic passwords,
+- whether a policy over-hardens low-risk synthetic passwords,
+- how often recommendations stay within an expected severity range,
+- and how strict each policy behaves across the same scenario mix.
+
 ## Current Workflow
 
 1. Generate a reproducible batch of synthetic public profiles.
@@ -44,6 +51,8 @@ Each run currently contains:
 - `report.json`
 - `summaries.json`
 - `comparison_table.md`
+- `calibration_summaries.json`
+- `calibration_table.md`
 - `records.json` when `--include-records` is used
 
 Cross-run analysis bundles can also be written under:
@@ -133,8 +142,10 @@ Contains:
 - run id
 - CLI metadata such as seed and selected policy profiles
 - aggregate summaries
+- proxy calibration summaries
 - optional per-scenario records
 - embedded markdown comparison table
+- embedded markdown calibration table
 
 ### `summaries.json`
 
@@ -144,9 +155,30 @@ Focused aggregate output for quick parsing and scriptable comparisons.
 
 Human-readable markdown table for notes, progress updates, or thesis draft figures.
 
+### `calibration_table.md`
+
+Human-readable markdown table summarizing proxy calibration behavior per policy.
+
+Columns currently emphasize:
+
+- within-range agreement,
+- under-hardening rate,
+- over-hardening rate,
+- true-positive proxy rate on higher-risk scenarios,
+- false-positive proxy rate on low-risk scenarios,
+- and action-severity gap.
+
 ### `records.json`
 
 Optional per-scenario output for more detailed debugging or later statistical analysis.
+
+The current record payload now includes proxy expectations for each synthetic scenario, such as:
+
+- expected risk band,
+- expected action floor,
+- expected action ceiling,
+- whether the chosen action fell within that range,
+- and whether the policy under- or over-hardened the scenario.
 
 ### `analysis.json`
 
@@ -342,6 +374,7 @@ Optional flags:
 ## Current Limitations
 
 - The scenarios are still heuristic and synthetic.
+- The calibration metrics are proxy measures over synthetic expectations, not real-world ground truth.
 - The markdown table is summary-focused, not publication-grade plotting.
 - The CSV is intentionally flat and minimal rather than analysis-framework-specific.
 - The SVG figures are lightweight and dependency-free, but not a replacement for final publication plotting.

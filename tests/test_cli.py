@@ -104,6 +104,7 @@ class CLITests(unittest.TestCase):
 
         decoded = json.loads(stream.getvalue())
         self.assertIn("summaries", decoded)
+        self.assertIn("calibration_summaries", decoded)
         self.assertEqual(len(decoded["summaries"]), 2)
         self.assertIn("policy_profile", decoded["summaries"][0])
         self.assertIn("average_combined_score", decoded["summaries"][0])
@@ -130,8 +131,12 @@ class CLITests(unittest.TestCase):
             decoded = json.loads(stream.getvalue())
             self.assertIn("artifacts", decoded)
             self.assertIn("comparison_table_markdown", decoded)
+            self.assertIn("calibration_table_markdown", decoded)
+            self.assertIn("calibration_summaries", decoded)
             self.assertTrue(Path(decoded["artifacts"]["report_file"]).exists())
             self.assertTrue(Path(decoded["artifacts"]["comparison_table_file"]).exists())
+            self.assertTrue(Path(decoded["artifacts"]["calibration_summaries_file"]).exists())
+            self.assertTrue(Path(decoded["artifacts"]["calibration_table_file"]).exists())
 
     def test_analyze_runs_outputs_overview_and_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

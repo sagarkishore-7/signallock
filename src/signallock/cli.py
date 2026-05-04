@@ -18,7 +18,11 @@ from .comparison import (
     render_policy_comparison_table as render_policy_delta_table,
     write_policy_comparison_artifacts,
 )
-from .evaluation import evaluate_policy_profiles, evaluation_results_to_json
+from .evaluation import (
+    evaluate_policy_profiles,
+    evaluation_results_to_json,
+    summarize_policy_calibration,
+)
 from .exposure import assessments_to_json, score_profiles_exposure
 from .figures import (
     aggregate_policy_rows,
@@ -37,6 +41,7 @@ from .preset_aggregates import (
 from .presets import execute_preset, get_preset, presets_to_json
 from .reporting import (
     DEFAULT_EVALUATION_OUTPUT_DIR,
+    render_policy_calibration_table,
     render_policy_comparison_table as render_evaluation_comparison_table,
     write_evaluation_artifacts,
 )
@@ -637,6 +642,10 @@ def main(argv: list[str] | None = None) -> None:
             selected_profiles,
             policy_file=args.policy_file,
         )
+        calibration_summaries = summarize_policy_calibration(
+            records,
+            selected_profiles=selected_profiles,
+        )
         metadata = {
             "organization": args.organization,
             "profile_count": args.count,
@@ -649,6 +658,11 @@ def main(argv: list[str] | None = None) -> None:
             if args.include_table or args.save_run
             else None
         )
+        calibration_table = (
+            render_policy_calibration_table(calibration_summaries)
+            if args.include_table or args.save_run
+            else None
+        )
         artifacts = None
         if args.save_run:
             artifacts = write_evaluation_artifacts(
@@ -657,15 +671,18 @@ def main(argv: list[str] | None = None) -> None:
                 output_dir=args.output_dir,
                 include_records=args.include_records,
                 metadata=metadata,
+                calibration_summaries=calibration_summaries,
             )
         print(
             evaluation_results_to_json(
                 summaries,
                 records,
+                calibration_summaries=calibration_summaries,
                 include_records=args.include_records,
                 pretty=args.pretty,
                 metadata=metadata,
                 comparison_table_markdown=comparison_table if args.include_table else None,
+                calibration_table_markdown=calibration_table if args.include_table else None,
                 artifacts=artifacts.to_dict() if artifacts else None,
             )
         )

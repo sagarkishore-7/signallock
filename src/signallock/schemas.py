@@ -343,6 +343,13 @@ class PolicyEvaluationRecord:
     policy_profile: PolicyProfile
     exposure_band: RiskBand
     password_band: RiskBand
+    expected_risk_band: RiskBand
+    expected_action_floor: HardeningAction
+    expected_action_ceiling: HardeningAction
+    within_expected_range: bool
+    under_hardening: bool
+    over_hardening: bool
+    action_severity_gap: int
     primary_action: HardeningAction
     combined_score: float
 
@@ -352,6 +359,9 @@ class PolicyEvaluationRecord:
         data["policy_profile"] = self.policy_profile.value
         data["exposure_band"] = self.exposure_band.value
         data["password_band"] = self.password_band.value
+        data["expected_risk_band"] = self.expected_risk_band.value
+        data["expected_action_floor"] = self.expected_action_floor.value
+        data["expected_action_ceiling"] = self.expected_action_ceiling.value
         data["primary_action"] = self.primary_action.value
         return data
 
@@ -377,6 +387,32 @@ class PolicyEvaluationSummary:
 
 
 @dataclass
+class PolicyCalibrationSummary:
+    """Proxy calibration metrics for one policy profile over synthetic evaluation runs."""
+
+    policy_profile: PolicyProfile
+    total_records: int
+    high_risk_record_count: int
+    low_risk_record_count: int
+    floor_action_match_rate: float
+    within_expected_range_rate: float
+    under_hardening_rate: float
+    over_hardening_rate: float
+    true_positive_proxy_rate: float
+    false_positive_proxy_rate: float
+    warn_or_higher_rate: float
+    step_up_or_higher_rate: float
+    block_or_higher_rate: float
+    mean_action_severity_gap: float
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the calibration summary to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["policy_profile"] = self.policy_profile.value
+        return data
+
+
+@dataclass
 class EvaluationArtifacts:
     """Filesystem artifact references for a saved evaluation run."""
 
@@ -386,6 +422,8 @@ class EvaluationArtifacts:
     report_file: str
     summaries_file: str
     comparison_table_file: str
+    calibration_summaries_file: str | None = None
+    calibration_table_file: str | None = None
     records_file: str | None = None
 
     def to_dict(self) -> dict[str, object]:
