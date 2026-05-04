@@ -65,6 +65,25 @@ Optional fields:
 - `HIGH`
 - `CRITICAL`
 
+### `ExposureAssessment`
+
+- `employee_id`
+- `score`
+- `band`
+- `component_scores`
+- `top_factors`
+
+### `PasswordRiskAssessment`
+
+- `employee_id`
+- `password_length`
+- `score`
+- `band`
+- `generic_signals`
+- `contextual_signals`
+- `matched_tokens`
+- `top_factors`
+
 ## Exposure-Oriented Fields
 
 These features should influence exposure scoring, not password scoring by themselves.
@@ -91,6 +110,7 @@ These features are computed only when a candidate password is present.
 - overlap with location tokens
 - overlap with interests
 - presence of common contextual structures such as name-plus-year or org-plus-symbol
+- generic weakness features such as short length, low character diversity, repetition, and simple sequences
 
 ## Token Categories
 
@@ -168,3 +188,14 @@ Possible later additions:
 - policy configuration objects
 
 Those should be added only after the core profile schema is stable.
+
+## Current Prototype Note
+
+The current implementation already supports:
+
+- `PublicProfile`
+- `AttributeVector`
+- `ExposureAssessment`
+- `PasswordRiskAssessment`
+
+The scoring outputs remain heuristic baselines and should be treated as transparent placeholders pending later calibration and evaluation.

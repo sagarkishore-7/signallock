@@ -23,6 +23,29 @@ class CLITests(unittest.TestCase):
         self.assertIn("score", decoded[0])
         self.assertIn("band", decoded[0])
 
+    def test_score_password_outputs_profile_and_assessment(self) -> None:
+        stream = io.StringIO()
+        with contextlib.redirect_stdout(stream):
+            main(
+                [
+                    "score-password",
+                    "--password",
+                    "Priya2024!",
+                    "--count",
+                    "2",
+                    "--seed",
+                    "3",
+                    "--profile-index",
+                    "0",
+                    "--pretty",
+                ]
+            )
+
+        decoded = json.loads(stream.getvalue())
+        self.assertIn("profile", decoded)
+        self.assertIn("assessment", decoded)
+        self.assertIn("score", decoded["assessment"])
+
 
 if __name__ == "__main__":
     unittest.main()

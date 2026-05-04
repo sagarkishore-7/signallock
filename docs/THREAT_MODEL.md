@@ -160,3 +160,10 @@ The first code should support:
 - explicit profile and attribute schemas
 - a clear split between exposure data and password-conditioned features
 - CLI workflows that help test the model design without requiring real enterprise data
+
+Current implementation status:
+
+- synthetic profile generation is implemented,
+- baseline exposure scoring is implemented,
+- baseline candidate-password scoring is implemented,
+- policy mapping remains future work.

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import json
 
 from .exposure import assessments_to_json, score_profiles_exposure
+from .password_risk import score_password_for_profile
 from .synthetic_profiles import generate_synthetic_profiles, profiles_to_json
 
 
@@ -73,6 +75,44 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pretty-print JSON output.",
     )
 
+    password_parser = subparsers.add_parser(
+        "score-password",
+        help="Score a candidate password against a synthetic public profile context.",
+    )
+    password_parser.add_argument(
+        "--password",
+        required=True,
+        help="Candidate password to assess.",
+    )
+    password_parser.add_argument(
+        "--count",
+        type=int,
+        default=5,
+        help="Number of synthetic profiles to generate.",
+    )
+    password_parser.add_argument(
+        "--organization",
+        default="ExampleCorp",
+        help="Organization name to embed in generated profiles.",
+    )
+    password_parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Optional random seed for reproducible output.",
+    )
+    password_parser.add_argument(
+        "--profile-index",
+        type=int,
+        default=0,
+        help="Zero-based synthetic profile index to use as context.",
+    )
+    password_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+
     return parser
 
 
@@ -100,6 +140,27 @@ def main(argv: list[str] | None = None) -> None:
         print(assessments_to_json(assessments, pretty=args.pretty))
         return
 
+    if args.command == "score-password":
+        profiles = generate_synthetic_profiles(
+            count=args.count,
+            organization=args.organization,
+            seed=args.seed,
+        )
+        if args.profile_index < 0 or args.profile_index >= len(profiles):
+            parser.error("--profile-index must refer to a generated synthetic profile")
+
+        profile = profiles[args.profile_index]
+        assessment = score_password_for_profile(args.password, profile)
+        payload = {
+            "profile": profile.to_dict(),
+            "assessment": assessment.to_dict(),
+        }
+        if args.pretty:
+            print(json.dumps(payload, indent=2))
+        else:
+            print(json.dumps(payload))
+        return
+
     print("SignalLock is in early implementation.")
     print("Start with docs/THREAT_MODEL.md, docs/FEATURE_SCHEMA.md, and the CLI help.")
-    print("Try: PYTHONPATH=src python3 -m signallock score-exposure --count 3 --pretty")
+    print("Try: PYTHONPATH=src python3 -m signallock score-password --password 'Priya2014!' --seed 1 --profile-index 0 --pretty")

@@ -16,13 +16,16 @@ The long-term goal is a privacy-conscious toolchain that helps defenders:
 
 ## Project Status
 
-This repository is in the research and design stage.
+This repository is now in early prototype implementation.
 
 Current contents:
 
 - a detailed implementation roadmap under [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md),
+- a current architecture summary under [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md),
 - a formal threat model under [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md),
 - a feature taxonomy under [`docs/FEATURE_SCHEMA.md`](docs/FEATURE_SCHEMA.md),
+- a baseline exposure scoring pipeline under [`src/signallock/exposure.py`](src/signallock/exposure.py),
+- a baseline password-risk scoring pipeline under [`src/signallock/password_risk.py`](src/signallock/password_risk.py),
 - an initial Python package scaffold under [`src/signallock/`](src/signallock/).
 
 Repository:
@@ -39,11 +42,12 @@ SignalLock is built around a dual-layer model:
 
 This separation is deliberate. Public exposure is not the same thing as weak password choice, and the project treats them as distinct but related variables.
 
-## Planned Repository Structure
+## Repository Structure
 
 ```text
 SignalLock/
 ├── docs/
+│   ├── ARCHITECTURE.md
 │   ├── FEATURE_SCHEMA.md
 │   ├── IMPLEMENTATION_PLAN.md
 │   └── THREAT_MODEL.md
@@ -51,9 +55,14 @@ SignalLock/
 │   └── signallock/
 │       ├── __init__.py
 │       ├── cli.py
+│       ├── exposure.py
+│       ├── password_risk.py
 │       ├── schemas.py
 │       └── synthetic_profiles.py
 ├── tests/
+│   ├── test_cli.py
+│   ├── test_exposure.py
+│   ├── test_password_risk.py
 │   ├── test_schemas.py
 │   └── test_synthetic_profiles.py
 ├── .gitignore
@@ -132,6 +141,37 @@ Generate baseline exposure assessments:
 PYTHONPATH=src python3 -m signallock score-exposure --count 3 --pretty
 ```
 
+Score a candidate password against a synthetic profile context:
+
+```bash
+PYTHONPATH=src python3 -m signallock score-password \
+  --password "Priya2014!" \
+  --seed 1 \
+  --profile-index 0 \
+  --pretty
+```
+
+Run the current test suite:
+
+```bash
+PYTHONPATH=src python3 -m unittest discover -s tests -v
+```
+
+## Current Prototype Capabilities
+
+- generate reproducible synthetic public profiles for experiments,
+- normalize public profile data into attribute vectors,
+- compute a transparent baseline exposure score,
+- compute a transparent baseline password-risk score conditioned on profile context,
+- inspect outputs through a CLI-first workflow with test coverage.
+
+## Current Limitations
+
+- scoring is heuristic and not yet calibrated against empirical study data,
+- no ML models are in the loop yet,
+- password scoring currently operates on one synthetic profile context at a time,
+- no policy engine or dashboard has been added yet.
+
 ## Internal Planning Artifacts
 
 Research proposal drafts and agent-only context files are intentionally kept out of the public repository.
@@ -141,6 +181,7 @@ Research proposal drafts and agent-only context files are intentionally kept out
 The engineering and research execution plan is documented in:
 
 - [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md)
 - [`docs/FEATURE_SCHEMA.md`](docs/FEATURE_SCHEMA.md)
 

@@ -193,3 +193,33 @@ class ExposureAssessment:
         data = asdict(self)
         data["band"] = self.band.value
         return data
+
+
+@dataclass
+class PasswordRiskAssessment:
+    """Interpretable baseline password-risk score output."""
+
+    employee_id: str
+    password_length: int
+    score: float
+    band: RiskBand
+    generic_signals: dict[str, float]
+    contextual_signals: dict[str, float]
+    matched_tokens: dict[str, list[str]]
+    top_factors: list[str]
+
+    def __post_init__(self) -> None:
+        """Validate core assessment shape."""
+        self.employee_id = self.employee_id.strip()
+        if not self.employee_id:
+            raise ValueError("employee_id must be non-empty")
+        if self.password_length <= 0:
+            raise ValueError("password_length must be positive")
+        if not 0.0 <= self.score <= 100.0:
+            raise ValueError("score must be between 0 and 100")
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the assessment to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["band"] = self.band.value
+        return data
