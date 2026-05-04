@@ -22,6 +22,7 @@ Current contents:
 
 - a detailed implementation roadmap under [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md),
 - a current architecture summary under [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md),
+- a policy-profile reference under [`docs/POLICY_PROFILES.md`](docs/POLICY_PROFILES.md),
 - a formal threat model under [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md),
 - a feature taxonomy under [`docs/FEATURE_SCHEMA.md`](docs/FEATURE_SCHEMA.md),
 - a baseline exposure scoring pipeline under [`src/signallock/exposure.py`](src/signallock/exposure.py),
@@ -51,6 +52,7 @@ SignalLock/
 │   ├── ARCHITECTURE.md
 │   ├── FEATURE_SCHEMA.md
 │   ├── IMPLEMENTATION_PLAN.md
+│   ├── POLICY_PROFILES.md
 │   └── THREAT_MODEL.md
 ├── src/
 │   └── signallock/
@@ -161,7 +163,14 @@ PYTHONPATH=src python3 -m signallock recommend-hardening \
   --password "Priya2014!" \
   --seed 1 \
   --profile-index 0 \
+  --policy-profile balanced \
   --pretty
+```
+
+List the built-in policy profiles:
+
+```bash
+PYTHONPATH=src python3 -m signallock list-policy-profiles --pretty
 ```
 
 Run the current test suite:
@@ -177,6 +186,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - compute a transparent baseline exposure score,
 - compute a transparent baseline password-risk score conditioned on profile context,
 - compute a baseline hardening recommendation from both scores,
+- switch between named policy profiles for experiments,
 - inspect outputs through a CLI-first workflow with test coverage.
 
 ## Current Limitations
@@ -185,6 +195,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - no ML models are in the loop yet,
 - password scoring currently operates on one synthetic profile context at a time,
 - the policy engine is heuristic and not yet calibrated against user or org study data,
+- policy profiles are built-in only and not yet loaded from external config files,
 - no dashboard has been added yet.
 
 ## Internal Planning Artifacts
@@ -197,6 +208,7 @@ The engineering and research execution plan is documented in:
 
 - [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- [`docs/POLICY_PROFILES.md`](docs/POLICY_PROFILES.md)
 - [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md)
 - [`docs/FEATURE_SCHEMA.md`](docs/FEATURE_SCHEMA.md)
 

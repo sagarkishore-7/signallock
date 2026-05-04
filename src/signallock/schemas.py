@@ -48,6 +48,14 @@ class HardeningAction(str, Enum):
     PRIORITIZE_AWARENESS_TRAINING = "PRIORITIZE_AWARENESS_TRAINING"
 
 
+class PolicyProfile(str, Enum):
+    """Named policy profiles for baseline hardening behavior."""
+
+    BALANCED = "balanced"
+    STRICT = "strict"
+    USABILITY = "usability"
+
+
 def _normalize_list(values: list[str]) -> list[str]:
     """Lower noise in list fields while preserving order."""
     seen: set[str] = set()
@@ -246,6 +254,7 @@ class HardeningRecommendation:
     password_score: float
     password_band: RiskBand
     combined_score: float
+    policy_profile: PolicyProfile
     primary_action: HardeningAction
     supporting_actions: list[HardeningAction]
     rationale: list[str]
@@ -267,6 +276,58 @@ class HardeningRecommendation:
         data = asdict(self)
         data["exposure_band"] = self.exposure_band.value
         data["password_band"] = self.password_band.value
+        data["policy_profile"] = self.policy_profile.value
         data["primary_action"] = self.primary_action.value
         data["supporting_actions"] = [action.value for action in self.supporting_actions]
+        return data
+
+
+@dataclass
+class PolicyConfig:
+    """Configurable thresholds and weights for baseline policy decisions."""
+
+    profile: PolicyProfile
+    exposure_weight: float
+    password_weight: float
+    warn_threshold: float
+    step_up_threshold: float
+    enforce_mfa_threshold: float
+    awareness_min_exposure_band: RiskBand
+    step_up_min_exposure_band: RiskBand
+    enforce_mfa_min_exposure_band: RiskBand
+    require_stronger_min_password_band: RiskBand
+    paired_require_stronger_password_band: RiskBand
+    paired_require_stronger_min_exposure_band: RiskBand
+    warn_min_password_band: RiskBand
+
+    def __post_init__(self) -> None:
+        """Validate core policy configuration."""
+        if self.exposure_weight < 0 or self.password_weight < 0:
+            raise ValueError("policy weights must be non-negative")
+        weight_total = self.exposure_weight + self.password_weight
+        if abs(weight_total - 1.0) > 1e-9:
+            raise ValueError("policy weights must sum to 1.0")
+        thresholds = (
+            self.warn_threshold,
+            self.step_up_threshold,
+            self.enforce_mfa_threshold,
+        )
+        if any(threshold < 0.0 or threshold > 100.0 for threshold in thresholds):
+            raise ValueError("policy thresholds must be between 0 and 100")
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the config to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["profile"] = self.profile.value
+        data["awareness_min_exposure_band"] = self.awareness_min_exposure_band.value
+        data["step_up_min_exposure_band"] = self.step_up_min_exposure_band.value
+        data["enforce_mfa_min_exposure_band"] = self.enforce_mfa_min_exposure_band.value
+        data["require_stronger_min_password_band"] = self.require_stronger_min_password_band.value
+        data["paired_require_stronger_password_band"] = (
+            self.paired_require_stronger_password_band.value
+        )
+        data["paired_require_stronger_min_exposure_band"] = (
+            self.paired_require_stronger_min_exposure_band.value
+        )
+        data["warn_min_password_band"] = self.warn_min_password_band.value
         return data

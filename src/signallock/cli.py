@@ -7,7 +7,8 @@ import json
 
 from .exposure import assessments_to_json, score_profiles_exposure
 from .password_risk import score_password_for_profile
-from .policy import recommend_hardening
+from .policy import get_policy_config, policy_configs_to_json, recommend_hardening
+from .schemas import PolicyProfile
 from .synthetic_profiles import generate_synthetic_profiles, profiles_to_json
 
 
@@ -151,6 +152,22 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Pretty-print JSON output.",
     )
+    policy_parser.add_argument(
+        "--policy-profile",
+        choices=[profile.value for profile in PolicyProfile],
+        default=PolicyProfile.BALANCED.value,
+        help="Named hardening policy profile to apply.",
+    )
+
+    profiles_parser = subparsers.add_parser(
+        "list-policy-profiles",
+        help="List built-in hardening policy profiles and thresholds.",
+    )
+    profiles_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
 
     return parser
 
@@ -212,11 +229,13 @@ def main(argv: list[str] | None = None) -> None:
         profile = profiles[args.profile_index]
         exposure = score_profiles_exposure([profile])[0]
         password_assessment = score_password_for_profile(args.password, profile)
-        recommendation = recommend_hardening(exposure, password_assessment)
+        config = get_policy_config(args.policy_profile)
+        recommendation = recommend_hardening(exposure, password_assessment, config=config)
         payload = {
             "profile": profile.to_dict(),
             "exposure": exposure.to_dict(),
             "password_assessment": password_assessment.to_dict(),
+            "policy_config": config.to_dict(),
             "recommendation": recommendation.to_dict(),
         }
         if args.pretty:
@@ -225,9 +244,13 @@ def main(argv: list[str] | None = None) -> None:
             print(json.dumps(payload))
         return
 
+    if args.command == "list-policy-profiles":
+        print(policy_configs_to_json(pretty=args.pretty))
+        return
+
     print("SignalLock is in early implementation.")
     print("Start with docs/THREAT_MODEL.md, docs/FEATURE_SCHEMA.md, and the CLI help.")
     print(
         "Try: PYTHONPATH=src python3 -m signallock "
-        "recommend-hardening --password 'Priya2014!' --seed 1 --profile-index 0 --pretty"
+        "recommend-hardening --password 'Priya2014!' --seed 1 --profile-index 0 --policy-profile balanced --pretty"
     )

@@ -60,6 +60,8 @@ class CLITests(unittest.TestCase):
                     "1",
                     "--profile-index",
                     "0",
+                    "--policy-profile",
+                    "strict",
                     "--pretty",
                 ]
             )
@@ -67,8 +69,19 @@ class CLITests(unittest.TestCase):
         decoded = json.loads(stream.getvalue())
         self.assertIn("exposure", decoded)
         self.assertIn("password_assessment", decoded)
+        self.assertIn("policy_config", decoded)
         self.assertIn("recommendation", decoded)
         self.assertIn("primary_action", decoded["recommendation"])
+        self.assertEqual(decoded["recommendation"]["policy_profile"], "strict")
+
+    def test_list_policy_profiles_outputs_json(self) -> None:
+        stream = io.StringIO()
+        with contextlib.redirect_stdout(stream):
+            main(["list-policy-profiles", "--pretty"])
+
+        decoded = json.loads(stream.getvalue())
+        self.assertGreaterEqual(len(decoded), 3)
+        self.assertIn("profile", decoded[0])
 
 
 if __name__ == "__main__":

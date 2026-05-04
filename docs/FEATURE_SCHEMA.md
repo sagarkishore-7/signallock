@@ -101,9 +101,32 @@ Optional fields:
 - `password_score`
 - `password_band`
 - `combined_score`
+- `policy_profile`
 - `primary_action`
 - `supporting_actions`
 - `rationale`
+
+### `PolicyProfile`
+
+- `balanced`
+- `strict`
+- `usability`
+
+### `PolicyConfig`
+
+- `profile`
+- `exposure_weight`
+- `password_weight`
+- `warn_threshold`
+- `step_up_threshold`
+- `enforce_mfa_threshold`
+- `awareness_min_exposure_band`
+- `step_up_min_exposure_band`
+- `enforce_mfa_min_exposure_band`
+- `require_stronger_min_password_band`
+- `paired_require_stronger_password_band`
+- `paired_require_stronger_min_exposure_band`
+- `warn_min_password_band`
 
 ## Exposure-Oriented Fields
 

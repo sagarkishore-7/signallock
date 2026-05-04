@@ -65,7 +65,8 @@ Responsibilities:
 - combine exposure and password-risk outputs,
 - map them to a primary hardening action,
 - attach supporting actions such as MFA or awareness prioritization,
-- surface concise rationale for the recommendation.
+- surface concise rationale for the recommendation,
+- support multiple named policy profiles for experiments.
 
 ### `src/signallock/cli.py`
 
@@ -131,6 +132,7 @@ Today the repository is CLI-first. A typical prototype loop is:
 1. Generate synthetic profiles.
 2. Score exposure for those profiles.
 3. Score a candidate password against one profile context.
-4. Inspect component-level results and refine the scoring logic.
+4. Apply a named hardening policy profile.
+5. Inspect component-level results and refine the scoring logic.
 
 That keeps the implementation transparent and testable before introducing more complex modeling.
