@@ -447,3 +447,40 @@ class AnalysisArtifacts:
     def to_dict(self) -> dict[str, object]:
         """Convert analysis artifact references to a JSON-serializable dictionary."""
         return asdict(self)
+
+
+@dataclass
+class PolicyAggregateRecord:
+    """Aggregate cross-run metrics for one policy profile."""
+
+    policy_profile: PolicyProfile
+    run_count: int
+    mean_combined_score: float
+    mean_exposure_score: float
+    mean_password_score: float
+    dominant_top_action: str
+    top_action_counts: dict[str, int]
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the aggregate record to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["policy_profile"] = self.policy_profile.value
+        return data
+
+
+@dataclass
+class FigureArtifacts:
+    """Filesystem artifact references for saved figure outputs."""
+
+    run_id: str
+    generated_at: str
+    output_dir: str
+    summary_file: str
+    aggregate_csv_file: str
+    summary_table_file: str
+    score_chart_file: str
+    action_chart_file: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert figure artifact references to a JSON-serializable dictionary."""
+        return asdict(self)

@@ -174,6 +174,46 @@ class CLITests(unittest.TestCase):
             self.assertEqual(decoded["overview"]["run_count"], 1)
             self.assertTrue(Path(decoded["artifacts"]["analysis_file"]).exists())
 
+    def test_generate_figures_outputs_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            evaluate_stream = io.StringIO()
+            with contextlib.redirect_stdout(evaluate_stream):
+                main(
+                    [
+                        "evaluate-policies",
+                        "--count",
+                        "2",
+                        "--seed",
+                        "1",
+                        "--save-run",
+                        "--output-dir",
+                        temp_dir,
+                    ]
+                )
+
+            figure_stream = io.StringIO()
+            with contextlib.redirect_stdout(figure_stream):
+                main(
+                    [
+                        "generate-figures",
+                        "--input-dir",
+                        temp_dir,
+                        "--include-aggregates",
+                        "--include-table",
+                        "--save-figures",
+                        "--output-dir",
+                        temp_dir,
+                        "--pretty",
+                    ]
+                )
+
+            decoded = json.loads(figure_stream.getvalue())
+            self.assertIn("overview", decoded)
+            self.assertIn("aggregates", decoded)
+            self.assertIn("summary_table_markdown", decoded)
+            self.assertIn("artifacts", decoded)
+            self.assertTrue(Path(decoded["artifacts"]["score_chart_file"]).exists())
+
 
 if __name__ == "__main__":
     unittest.main()

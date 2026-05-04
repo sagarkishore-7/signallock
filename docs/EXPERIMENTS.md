@@ -14,6 +14,7 @@ The goal is not large-scale benchmarking yet. The goal is to make iterative rese
 4. Save the run to a timestamped artifact directory.
 5. Inspect the JSON summaries and markdown comparison table.
 6. Aggregate multiple saved runs into cross-run markdown and CSV outputs.
+7. Generate lightweight SVG figures and aggregate policy tables.
 
 ## CLI Example
 
@@ -50,6 +51,18 @@ These bundles currently contain:
 - `analysis.json`
 - `comparison_table.md`
 - `policy_matrix.csv`
+
+Figure bundles can also be written under:
+
+`artifacts/figures/<timestamp>/`
+
+These bundles currently contain:
+
+- `figure_summary.json`
+- `policy_aggregates.csv`
+- `policy_summary_table.md`
+- `policy_score_summary.svg`
+- `policy_action_summary.svg`
 
 ## File Semantics
 
@@ -90,6 +103,18 @@ Cross-run analysis bundle containing:
 
 Flat export intended for plotting, spreadsheet analysis, or later statistical work.
 
+### `figure_summary.json`
+
+Aggregate policy metrics and figure metadata for one saved figure-generation run.
+
+### `policy_score_summary.svg`
+
+Grouped bar chart comparing mean combined, exposure, and password scores by policy.
+
+### `policy_action_summary.svg`
+
+Stacked distribution chart showing how dominant recommendation actions vary by policy across runs.
+
 ## Cross-Run Analysis
 
 Use the saved run directories as input to:
@@ -108,6 +133,26 @@ Optional flags:
 - `--include-rows` to emit flattened per-run rows in JSON
 - `--output-dir` to control where analysis bundles are written
 
+## Figure Generation
+
+Generate a lightweight figure bundle directly from saved evaluation runs:
+
+```bash
+PYTHONPATH=src python3 -m signallock generate-figures \
+  --input-dir artifacts/evaluations \
+  --include-aggregates \
+  --include-table \
+  --save-figures \
+  --pretty
+```
+
+Optional flags:
+
+- `--policy-profiles` to focus on one or more policy profiles
+- `--output-dir` to control where figure bundles are written
+- `--include-aggregates` to include aggregate metrics in JSON
+- `--include-table` to include the markdown summary table in JSON
+
 ## Reproducibility Notes
 
 - Use `--seed` for stable synthetic profile generation.
@@ -119,5 +164,6 @@ Optional flags:
 - The scenarios are still heuristic and synthetic.
 - The markdown table is summary-focused, not publication-grade plotting.
 - The CSV is intentionally flat and minimal rather than analysis-framework-specific.
+- The SVG figures are lightweight and dependency-free, but not a replacement for final publication plotting.
 - No calibration or confidence intervals are produced yet.
 - The artifact format is stable enough for local iteration, but may evolve as the research design matures.

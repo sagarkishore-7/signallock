@@ -30,6 +30,10 @@ and:
 
 `saved evaluation artifacts -> cross-run analysis rows -> markdown/CSV analysis bundle`
 
+and now:
+
+`cross-run analysis rows -> aggregate policy metrics -> SVG/CSV figure bundle`
+
 These are still heuristic baselines, but they establish the core separation the project depends on:
 
 - exposure risk,
@@ -106,6 +110,15 @@ Responsibilities:
 - render cross-run markdown and CSV outputs,
 - save timestamped analysis bundles for later research work.
 
+### `src/signallock/figures.py`
+
+Responsibilities:
+
+- aggregate cross-run policy metrics,
+- render lightweight SVG score and action charts,
+- emit aggregate CSV and markdown summary tables,
+- save timestamped figure bundles for reports and thesis drafts.
+
 ### `src/signallock/cli.py`
 
 Responsibilities:
@@ -157,6 +170,14 @@ Represents top-level metadata for a cross-run analysis operation.
 
 Represents the saved filesystem outputs for one timestamped cross-run analysis bundle.
 
+### `PolicyAggregateRecord`
+
+Represents cross-run aggregate metrics for one policy profile.
+
+### `FigureArtifacts`
+
+Represents the saved filesystem outputs for one timestamped figure bundle.
+
 ## Current Prototype Boundaries
 
 The current prototype intentionally:
@@ -179,7 +200,8 @@ The current prototype does support:
 - comparative CLI evaluation across multiple profiles,
 - optional custom policy files for experiments,
 - timestamped local artifact bundles for reproducible evaluation runs,
-- cross-run markdown and CSV exports derived from saved runs.
+- cross-run markdown and CSV exports derived from saved runs,
+- dependency-light SVG figure bundles derived from cross-run aggregates.
 
 ## Near-Term Architecture Expansion
 
@@ -188,7 +210,7 @@ The next likely modules are:
 - explanation renderer,
 - password feature calibration support,
 - dataset generation for controlled evaluation,
-- richer plotting and statistical evaluation beyond flat CSV output.
+- richer statistical evaluation beyond lightweight SVG and CSV outputs.
 
 ## CLI-Oriented Workflow
 
@@ -201,5 +223,6 @@ Today the repository is CLI-first. A typical prototype loop is:
 5. Compare multiple policy profiles over the same synthetic scenarios.
 6. Save the run and inspect the generated artifact bundle.
 7. Aggregate multiple runs into cross-run analysis outputs.
+8. Generate score and action figures for research communication.
 
 That keeps the implementation transparent and testable before introducing more complex modeling.

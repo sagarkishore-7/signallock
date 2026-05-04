@@ -32,6 +32,7 @@ Current contents:
 - a synthetic evaluation harness under [`src/signallock/evaluation.py`](src/signallock/evaluation.py),
 - a reproducible experiment reporting layer under [`src/signallock/reporting.py`](src/signallock/reporting.py),
 - a cross-run analysis layer under [`src/signallock/analysis.py`](src/signallock/analysis.py),
+- a lightweight SVG figure layer under [`src/signallock/figures.py`](src/signallock/figures.py),
 - an initial Python package scaffold under [`src/signallock/`](src/signallock/).
 
 Repository:
@@ -68,6 +69,7 @@ SignalLock/
 │       ├── cli.py
 │       ├── evaluation.py
 │       ├── exposure.py
+│       ├── figures.py
 │       ├── password_risk.py
 │       ├── policy.py
 │       ├── reporting.py
@@ -78,6 +80,7 @@ SignalLock/
 │   ├── test_analysis.py
 │   ├── test_evaluation.py
 │   ├── test_exposure.py
+│   ├── test_figures.py
 │   ├── test_reporting.py
 │   ├── test_password_risk.py
 │   ├── test_policy.py
@@ -208,6 +211,17 @@ PYTHONPATH=src python3 -m signallock analyze-runs \
   --pretty
 ```
 
+Generate aggregate SVG and CSV figures from saved runs:
+
+```bash
+PYTHONPATH=src python3 -m signallock generate-figures \
+  --input-dir artifacts/evaluations \
+  --include-aggregates \
+  --include-table \
+  --save-figures \
+  --pretty
+```
+
 Run the current test suite:
 
 ```bash
@@ -226,6 +240,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - compare policy profiles across synthetic evaluation scenarios,
 - export timestamped evaluation artifact bundles with markdown comparison tables,
 - aggregate saved runs into markdown and CSV comparison outputs,
+- generate lightweight SVG charts and aggregate policy tables from saved runs,
 - inspect outputs through a CLI-first workflow with test coverage.
 
 ## Current Limitations
@@ -236,7 +251,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - the policy engine is heuristic and not yet calibrated against user or org study data,
 - policy profiles are loaded from JSON but still limited to the current named profile set,
 - no dashboard has been added yet,
-- analysis outputs are still summary-oriented and not yet connected to plotting libraries or statistical tests.
+- built-in figures are intentionally lightweight SVG outputs rather than full plotting-library workflows.
 
 ## Internal Planning Artifacts
 

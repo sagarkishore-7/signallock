@@ -14,6 +14,12 @@ from .analysis import (
 )
 from .evaluation import evaluate_policy_profiles, evaluation_results_to_json
 from .exposure import assessments_to_json, score_profiles_exposure
+from .figures import (
+    aggregate_policy_rows,
+    figure_results_to_json,
+    render_policy_aggregate_table,
+    write_figure_artifacts,
+)
 from .password_risk import score_password_for_profile
 from .policy import get_policy_config, policy_configs_to_json, recommend_hardening
 from .reporting import (
@@ -293,6 +299,48 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pretty-print JSON output.",
     )
 
+    figures_parser = subparsers.add_parser(
+        "generate-figures",
+        help="Generate aggregate SVG and CSV figures from saved evaluation runs.",
+    )
+    figures_parser.add_argument(
+        "--input-dir",
+        default=str(DEFAULT_EVALUATION_OUTPUT_DIR),
+        help="Directory containing saved evaluation run subdirectories.",
+    )
+    figures_parser.add_argument(
+        "--policy-profiles",
+        nargs="*",
+        choices=[profile.value for profile in PolicyProfile],
+        default=None,
+        help="Optional subset of policy profiles to include in the figure bundle.",
+    )
+    figures_parser.add_argument(
+        "--include-aggregates",
+        action="store_true",
+        help="Include aggregated policy metrics in the JSON output.",
+    )
+    figures_parser.add_argument(
+        "--include-table",
+        action="store_true",
+        help="Include a markdown policy summary table in the JSON output.",
+    )
+    figures_parser.add_argument(
+        "--save-figures",
+        action="store_true",
+        help="Write a timestamped SVG/CSV figure bundle to disk.",
+    )
+    figures_parser.add_argument(
+        "--output-dir",
+        default=None,
+        help="Optional directory for saved figure artifacts.",
+    )
+    figures_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+
     return parser
 
 
@@ -451,6 +499,41 @@ def main(argv: list[str] | None = None) -> None:
                 include_rows=args.include_rows,
                 pretty=args.pretty,
                 comparison_table_markdown=comparison_table if args.include_table else None,
+                artifacts=artifacts.to_dict() if artifacts else None,
+            )
+        )
+        return
+
+    if args.command == "generate-figures":
+        selected_profiles = (
+            [PolicyProfile(profile) for profile in args.policy_profiles]
+            if args.policy_profiles
+            else None
+        )
+        overview, rows = analyze_evaluation_runs(
+            input_dir=args.input_dir,
+            selected_profiles=selected_profiles,
+        )
+        aggregates = aggregate_policy_rows(rows)
+        summary_table = (
+            render_policy_aggregate_table(aggregates)
+            if args.include_table or args.save_figures
+            else None
+        )
+        artifacts = None
+        if args.save_figures:
+            artifacts = write_figure_artifacts(
+                overview,
+                aggregates,
+                output_dir=args.output_dir,
+            )
+        print(
+            figure_results_to_json(
+                overview,
+                aggregates,
+                include_aggregates=args.include_aggregates,
+                pretty=args.pretty,
+                summary_table_markdown=summary_table if args.include_table else None,
                 artifacts=artifacts.to_dict() if artifacts else None,
             )
         )
