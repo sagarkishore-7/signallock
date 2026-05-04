@@ -17,6 +17,7 @@ env/
 build/
 dist/
 *.egg-info/
+artifacts/
 
 # IDE / editor
 .DS_Store

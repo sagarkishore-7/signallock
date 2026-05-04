@@ -108,6 +108,20 @@ PYTHONPATH=src python3 -m signallock evaluate-policies \
   --count 5 \
   --seed 1 \
   --policy-profiles balanced strict usability \
+  --include-table \
+  --save-run \
+  --pretty
+```
+
+Write evaluation artifacts to a custom directory:
+
+```bash
+PYTHONPATH=src python3 -m signallock evaluate-policies \
+  --count 5 \
+  --seed 1 \
+  --policy-profiles balanced strict usability \
+  --save-run \
+  --output-dir /tmp/signallock-evals \
   --pretty
 ```
 

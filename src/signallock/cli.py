@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 
 from .evaluation import evaluate_policy_profiles, evaluation_results_to_json
 from .exposure import assessments_to_json, score_profiles_exposure
 from .password_risk import score_password_for_profile
 from .policy import get_policy_config, policy_configs_to_json, recommend_hardening
+from .reporting import render_policy_comparison_table, write_evaluation_artifacts
 from .schemas import PolicyProfile
 from .synthetic_profiles import generate_synthetic_profiles, profiles_to_json
 
@@ -219,6 +221,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="Include per-scenario evaluation records in the JSON output.",
     )
     evaluate_parser.add_argument(
+        "--include-table",
+        action="store_true",
+        help="Include a markdown comparison table in the JSON output.",
+    )
+    evaluate_parser.add_argument(
+        "--save-run",
+        action="store_true",
+        help="Write a timestamped evaluation artifact bundle to disk.",
+    )
+    evaluate_parser.add_argument(
+        "--output-dir",
+        default=None,
+        help="Optional directory for saved evaluation artifacts.",
+    )
+    evaluate_parser.add_argument(
         "--pretty",
         action="store_true",
         help="Pretty-print JSON output.",
@@ -319,12 +336,36 @@ def main(argv: list[str] | None = None) -> None:
             selected_profiles,
             policy_file=args.policy_file,
         )
+        metadata = {
+            "organization": args.organization,
+            "profile_count": args.count,
+            "seed": args.seed,
+            "policy_profiles": [profile.value for profile in selected_profiles],
+            "policy_file": str(Path(args.policy_file).resolve()) if args.policy_file else None,
+        }
+        comparison_table = (
+            render_policy_comparison_table(summaries)
+            if args.include_table or args.save_run
+            else None
+        )
+        artifacts = None
+        if args.save_run:
+            artifacts = write_evaluation_artifacts(
+                summaries,
+                records,
+                output_dir=args.output_dir,
+                include_records=args.include_records,
+                metadata=metadata,
+            )
         print(
             evaluation_results_to_json(
                 summaries,
                 records,
                 include_records=args.include_records,
                 pretty=args.pretty,
+                metadata=metadata,
+                comparison_table_markdown=comparison_table if args.include_table else None,
+                artifacts=artifacts.to_dict() if artifacts else None,
             )
         )
         return

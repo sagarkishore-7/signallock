@@ -5,7 +5,9 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import tempfile
 import unittest
+from pathlib import Path
 
 from signallock.cli import main
 
@@ -105,6 +107,31 @@ class CLITests(unittest.TestCase):
         self.assertEqual(len(decoded["summaries"]), 2)
         self.assertIn("policy_profile", decoded["summaries"][0])
         self.assertIn("average_combined_score", decoded["summaries"][0])
+
+    def test_evaluate_policies_can_save_run(self) -> None:
+        stream = io.StringIO()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with contextlib.redirect_stdout(stream):
+                main(
+                    [
+                        "evaluate-policies",
+                        "--count",
+                        "2",
+                        "--seed",
+                        "1",
+                        "--save-run",
+                        "--include-table",
+                        "--output-dir",
+                        temp_dir,
+                        "--pretty",
+                    ]
+                )
+
+            decoded = json.loads(stream.getvalue())
+            self.assertIn("artifacts", decoded)
+            self.assertIn("comparison_table_markdown", decoded)
+            self.assertTrue(Path(decoded["artifacts"]["report_file"]).exists())
+            self.assertTrue(Path(decoded["artifacts"]["comparison_table_file"]).exists())
 
 
 if __name__ == "__main__":

@@ -23,12 +23,14 @@ Current contents:
 - a detailed implementation roadmap under [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md),
 - a current architecture summary under [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md),
 - a policy-profile reference under [`docs/POLICY_PROFILES.md`](docs/POLICY_PROFILES.md),
+- an experiment workflow reference under [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md),
 - a formal threat model under [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md),
 - a feature taxonomy under [`docs/FEATURE_SCHEMA.md`](docs/FEATURE_SCHEMA.md),
 - a baseline exposure scoring pipeline under [`src/signallock/exposure.py`](src/signallock/exposure.py),
 - a baseline password-risk scoring pipeline under [`src/signallock/password_risk.py`](src/signallock/password_risk.py),
 - a baseline hardening policy engine under [`src/signallock/policy.py`](src/signallock/policy.py),
 - a synthetic evaluation harness under [`src/signallock/evaluation.py`](src/signallock/evaluation.py),
+- a reproducible experiment reporting layer under [`src/signallock/reporting.py`](src/signallock/reporting.py),
 - an initial Python package scaffold under [`src/signallock/`](src/signallock/).
 
 Repository:
@@ -51,6 +53,7 @@ This separation is deliberate. Public exposure is not the same thing as weak pas
 SignalLock/
 ├── docs/
 │   ├── ARCHITECTURE.md
+│   ├── EXPERIMENTS.md
 │   ├── POLICY_PROFILES.md
 │   ├── FEATURE_SCHEMA.md
 │   ├── IMPLEMENTATION_PLAN.md
@@ -65,11 +68,14 @@ SignalLock/
 │       ├── exposure.py
 │       ├── password_risk.py
 │       ├── policy.py
+│       ├── reporting.py
 │       ├── schemas.py
 │       └── synthetic_profiles.py
 ├── tests/
 │   ├── test_cli.py
+│   ├── test_evaluation.py
 │   ├── test_exposure.py
+│   ├── test_reporting.py
 │   ├── test_password_risk.py
 │   ├── test_policy.py
 │   ├── test_schemas.py
@@ -184,6 +190,8 @@ PYTHONPATH=src python3 -m signallock evaluate-policies \
   --count 5 \
   --seed 1 \
   --policy-profiles balanced strict usability \
+  --include-table \
+  --save-run \
   --pretty
 ```
 
@@ -203,6 +211,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - switch between named policy profiles for experiments,
 - load policy thresholds from a repo-backed JSON config file,
 - compare policy profiles across synthetic evaluation scenarios,
+- export timestamped evaluation artifact bundles with markdown comparison tables,
 - inspect outputs through a CLI-first workflow with test coverage.
 
 ## Current Limitations
@@ -212,7 +221,8 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - password scoring currently operates on one synthetic profile context at a time,
 - the policy engine is heuristic and not yet calibrated against user or org study data,
 - policy profiles are loaded from JSON but still limited to the current named profile set,
-- no dashboard has been added yet.
+- no dashboard has been added yet,
+- evaluation artifacts are local and markdown-based; richer analysis and visualization are still ahead.
 
 ## Internal Planning Artifacts
 
@@ -224,6 +234,7 @@ The engineering and research execution plan is documented in:
 
 - [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md)
 - [`docs/POLICY_PROFILES.md`](docs/POLICY_PROFILES.md)
 - [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md)
 - [`docs/FEATURE_SCHEMA.md`](docs/FEATURE_SCHEMA.md)

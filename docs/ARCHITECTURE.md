@@ -22,6 +22,10 @@ and:
 
 `Synthetic profile batch + policy profiles -> PolicyEvaluationSummary`
 
+and now:
+
+`PolicyEvaluationSummary + PolicyEvaluationRecord -> timestamped evaluation artifacts`
+
 These are still heuristic baselines, but they establish the core separation the project depends on:
 
 - exposure risk,
@@ -81,6 +85,14 @@ Responsibilities:
 - compare multiple policy profiles over the same synthetic profile batch,
 - emit summary metrics and optional detailed records.
 
+### `src/signallock/reporting.py`
+
+Responsibilities:
+
+- render aggregate policy comparisons as markdown tables,
+- save evaluation runs to timestamped local artifact bundles,
+- keep experiment outputs reproducible without exposing them in git.
+
 ### `src/signallock/cli.py`
 
 Responsibilities:
@@ -116,6 +128,10 @@ Represents a baseline policy output that combines both risk layers.
 
 Represents aggregate outcomes for one policy profile over a synthetic evaluation run.
 
+### `EvaluationArtifacts`
+
+Represents the saved filesystem outputs for one timestamped experiment run.
+
 ## Current Prototype Boundaries
 
 The current prototype intentionally:
@@ -136,17 +152,17 @@ The current prototype does support:
 
 - file-backed policy profiles under `configs/policy_profiles.json`,
 - comparative CLI evaluation across multiple profiles,
-- optional custom policy files for experiments.
+- optional custom policy files for experiments,
+- timestamped local artifact bundles for reproducible evaluation runs.
 
 ## Near-Term Architecture Expansion
 
 The next likely modules are:
 
-- policy engine,
 - explanation renderer,
 - password feature calibration support,
 - dataset generation for controlled evaluation,
-- experiment harness.
+- richer experiment analysis and plotting.
 
 ## CLI-Oriented Workflow
 
@@ -156,6 +172,7 @@ Today the repository is CLI-first. A typical prototype loop is:
 2. Score exposure for those profiles.
 3. Score a candidate password against one profile context.
 4. Apply a named hardening policy profile.
-5. Inspect component-level results and refine the scoring logic.
+5. Compare multiple policy profiles over the same synthetic scenarios.
+6. Save the run and inspect the generated artifact bundle.
 
 That keeps the implementation transparent and testable before introducing more complex modeling.

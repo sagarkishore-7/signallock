@@ -374,3 +374,20 @@ class PolicyEvaluationSummary:
         data = asdict(self)
         data["policy_profile"] = self.policy_profile.value
         return data
+
+
+@dataclass
+class EvaluationArtifacts:
+    """Filesystem artifact references for a saved evaluation run."""
+
+    run_id: str
+    generated_at: str
+    output_dir: str
+    report_file: str
+    summaries_file: str
+    comparison_table_file: str
+    records_file: str | None = None
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert artifact references to a JSON-serializable dictionary."""
+        return asdict(self)

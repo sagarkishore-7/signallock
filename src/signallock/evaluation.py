@@ -129,11 +129,20 @@ def evaluation_results_to_json(
     records: list[PolicyEvaluationRecord],
     include_records: bool = False,
     pretty: bool = False,
+    metadata: dict[str, object] | None = None,
+    comparison_table_markdown: str | None = None,
+    artifacts: dict[str, object] | None = None,
 ) -> str:
     """Serialize evaluation summaries and optional records as JSON."""
     payload: dict[str, object] = {
         "summaries": [summary.to_dict() for summary in summaries],
     }
+    if metadata:
+        payload["metadata"] = metadata
+    if comparison_table_markdown is not None:
+        payload["comparison_table_markdown"] = comparison_table_markdown
+    if artifacts is not None:
+        payload["artifacts"] = artifacts
     if include_records:
         payload["records"] = [record.to_dict() for record in records]
 

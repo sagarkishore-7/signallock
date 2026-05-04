@@ -150,6 +150,16 @@ Optional fields:
 - `average_exposure_score`
 - `average_password_score`
 
+### `EvaluationArtifacts`
+
+- `run_id`
+- `generated_at`
+- `output_dir`
+- `report_file`
+- `summaries_file`
+- `comparison_table_file`
+- `records_file`
+
 ## Exposure-Oriented Fields
 
 These features should influence exposure scoring, not password scoring by themselves.
@@ -251,7 +261,7 @@ Possible later additions:
 - organization-specific naming conventions
 - language or locale metadata
 - explanation objects
-- policy configuration objects
+- experiment metadata and plotting schemas
 
 Those should be added only after the core profile schema is stable.
 
@@ -263,5 +273,10 @@ The current implementation already supports:
 - `AttributeVector`
 - `ExposureAssessment`
 - `PasswordRiskAssessment`
+- `HardeningRecommendation`
+- `PolicyConfig`
+- `PolicyEvaluationRecord`
+- `PolicyEvaluationSummary`
+- `EvaluationArtifacts`
 
 The scoring outputs remain heuristic baselines and should be treated as transparent placeholders pending later calibration and evaluation.
