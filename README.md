@@ -312,6 +312,8 @@ PYTHONPATH=src python3 -m signallock sweep-thresholds \
   --pretty
 ```
 
+The sweep output includes per-variant calibration metrics and deltas relative to the nearest-to-zero reference threshold profile, which makes it easier to see whether stricter or looser thresholds improve calibration or simply increase hardening pressure.
+
 Run the current test suite:
 
 ```bash

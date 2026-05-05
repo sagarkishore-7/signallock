@@ -80,6 +80,7 @@ def run_threshold_sweep(
         policy_file=str(Path(policy_file).resolve()) if policy_file else None,
     )
     records.sort(key=lambda record: record.threshold_offset)
+    _attach_reference_deltas(records)
     return overview, records
 
 
@@ -87,17 +88,21 @@ def render_threshold_sweep_table(records: list[ThresholdSweepRecord]) -> str:
     """Render threshold-sweep results as a markdown table."""
     headers = (
         "Variant",
+        "Ref",
         "Offset",
         "Warn",
         "Step-Up",
         "Enforce MFA",
         "Top Action",
         "Within Range",
+        "Within Delta",
         "Under",
         "Over",
         "TP Proxy",
         "FP Proxy",
+        "FP Delta",
         "Block+",
+        "Block Delta",
         "Mean Gap",
     )
     lines = [
@@ -110,17 +115,21 @@ def render_threshold_sweep_table(records: list[ThresholdSweepRecord]) -> str:
             + " | ".join(
                 (
                     record.variant_label,
+                    "yes" if record.is_reference_variant else "no",
                     f"{record.threshold_offset:+.2f}",
                     f"{record.warn_threshold:.2f}",
                     f"{record.step_up_threshold:.2f}",
                     f"{record.enforce_mfa_threshold:.2f}",
                     record.top_action,
                     f"{record.within_expected_range_rate:.2f}",
+                    f"{record.within_expected_range_delta:+.2f}",
                     f"{record.under_hardening_rate:.2f}",
                     f"{record.over_hardening_rate:.2f}",
                     f"{record.true_positive_proxy_rate:.2f}",
                     f"{record.false_positive_proxy_rate:.2f}",
+                    f"{record.false_positive_proxy_delta:+.2f}",
                     f"{record.block_or_higher_rate:.2f}",
+                    f"{record.block_or_higher_delta:+.2f}",
                     f"{record.mean_action_severity_gap:+.2f}",
                 )
             )
@@ -232,3 +241,55 @@ def _top_action(primary_action_counts: dict[str, int]) -> str:
     if not primary_action_counts:
         return "NONE"
     return min((-count, action) for action, count in primary_action_counts.items())[1]
+
+
+def _attach_reference_deltas(records: list[ThresholdSweepRecord]) -> None:
+    """Annotate sweep records with deltas against the nearest-to-zero offset variant."""
+    if not records:
+        return
+
+    reference_record = min(
+        records,
+        key=lambda record: (
+            abs(record.threshold_offset),
+            0 if record.threshold_offset == 0.0 else 1,
+            record.threshold_offset,
+        ),
+    )
+
+    for record in records:
+        record.reference_variant_label = reference_record.variant_label
+        record.is_reference_variant = record.variant_label == reference_record.variant_label
+        record.top_action_changed_from_reference = record.top_action != reference_record.top_action
+        record.within_expected_range_delta = round(
+            record.within_expected_range_rate - reference_record.within_expected_range_rate,
+            2,
+        )
+        record.under_hardening_delta = round(
+            record.under_hardening_rate - reference_record.under_hardening_rate,
+            2,
+        )
+        record.over_hardening_delta = round(
+            record.over_hardening_rate - reference_record.over_hardening_rate,
+            2,
+        )
+        record.true_positive_proxy_delta = round(
+            record.true_positive_proxy_rate - reference_record.true_positive_proxy_rate,
+            2,
+        )
+        record.false_positive_proxy_delta = round(
+            record.false_positive_proxy_rate - reference_record.false_positive_proxy_rate,
+            2,
+        )
+        record.step_up_or_higher_delta = round(
+            record.step_up_or_higher_rate - reference_record.step_up_or_higher_rate,
+            2,
+        )
+        record.block_or_higher_delta = round(
+            record.block_or_higher_rate - reference_record.block_or_higher_rate,
+            2,
+        )
+        record.mean_action_severity_gap_delta = round(
+            record.mean_action_severity_gap - reference_record.mean_action_severity_gap,
+            2,
+        )

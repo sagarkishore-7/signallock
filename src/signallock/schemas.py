@@ -1108,6 +1108,17 @@ class ThresholdSweepRecord:
     step_up_or_higher_rate: float
     block_or_higher_rate: float
     mean_action_severity_gap: float
+    reference_variant_label: str = ""
+    is_reference_variant: bool = False
+    top_action_changed_from_reference: bool = False
+    within_expected_range_delta: float = 0.0
+    under_hardening_delta: float = 0.0
+    over_hardening_delta: float = 0.0
+    true_positive_proxy_delta: float = 0.0
+    false_positive_proxy_delta: float = 0.0
+    step_up_or_higher_delta: float = 0.0
+    block_or_higher_delta: float = 0.0
+    mean_action_severity_gap_delta: float = 0.0
 
     def to_dict(self) -> dict[str, object]:
         """Convert the sweep record to a JSON-serializable dictionary."""

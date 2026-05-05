@@ -277,6 +277,7 @@ Threshold-sensitivity experiment output including:
 - one record per threshold variant,
 - score summaries per variant,
 - calibration summaries per variant,
+- per-variant deltas relative to the nearest-to-zero reference threshold profile,
 - and a markdown table for quick inspection.
 
 ## Cross-Run Analysis
@@ -430,6 +431,7 @@ Useful outputs:
 
 - how stricter or looser score thresholds change proxy false positives,
 - how they affect under-hardening and within-range agreement,
+- how far each variant drifts from the reference threshold profile,
 - and where the dominant action shifts from `ALLOW` to `WARN`, `STEP_UP_AUTHENTICATION`, or `REQUIRE_STRONGER_PASSWORD`.
 
 ## Reproducibility Notes

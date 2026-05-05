@@ -234,7 +234,7 @@ Represents aggregate outcomes for one policy profile over a synthetic evaluation
 
 ### `ThresholdSweepRecord`
 
-Represents one threshold-shifted policy variant together with score and calibration metrics.
+Represents one threshold-shifted policy variant together with score, calibration, and reference-delta metrics.
 
 ### `ThresholdSweepOverview`
 

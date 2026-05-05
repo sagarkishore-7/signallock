@@ -32,6 +32,10 @@ class ThresholdSweepTests(unittest.TestCase):
         self.assertEqual(overview.variant_count, 3)
         self.assertEqual(records[0].threshold_offset, -8.0)
         self.assertEqual(records[-1].threshold_offset, 8.0)
+        self.assertEqual(records[1].threshold_offset, 0.0)
+        self.assertTrue(records[1].is_reference_variant)
+        self.assertEqual(records[1].within_expected_range_delta, 0.0)
+        self.assertEqual(records[1].false_positive_proxy_delta, 0.0)
         self.assertGreaterEqual(records[0].within_expected_range_rate, 0.0)
         self.assertLessEqual(records[0].within_expected_range_rate, 1.0)
 
@@ -60,6 +64,7 @@ class ThresholdSweepTests(unittest.TestCase):
             payload = json.loads(Path(artifacts.summary_file).read_text())
             self.assertEqual(payload["overview"]["variant_count"], 3)
             self.assertEqual(len(payload["records"]), 3)
+            self.assertIn("reference_variant_label", payload["records"][0])
 
 
 if __name__ == "__main__":

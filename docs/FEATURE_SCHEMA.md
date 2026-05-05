@@ -378,6 +378,17 @@ Optional fields:
 - `step_up_or_higher_rate`
 - `block_or_higher_rate`
 - `mean_action_severity_gap`
+- `reference_variant_label`
+- `is_reference_variant`
+- `top_action_changed_from_reference`
+- `within_expected_range_delta`
+- `under_hardening_delta`
+- `over_hardening_delta`
+- `true_positive_proxy_delta`
+- `false_positive_proxy_delta`
+- `step_up_or_higher_delta`
+- `block_or_higher_delta`
+- `mean_action_severity_gap_delta`
 
 ### `ThresholdSweepOverview`
 
