@@ -1276,3 +1276,22 @@ class ThresholdSweepAnalysisArtifacts:
     def to_dict(self) -> dict[str, object]:
         """Convert artifact references to a JSON-serializable dictionary."""
         return asdict(self)
+
+
+@dataclass
+class ThresholdSweepFigureArtifacts:
+    """Filesystem artifact references for a saved threshold-sweep figure bundle."""
+
+    run_id: str
+    generated_at: str
+    output_dir: str
+    summary_file: str
+    aggregate_csv_file: str
+    summary_table_file: str
+    within_range_chart_file: str
+    false_positive_chart_file: str
+    action_change_chart_file: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert artifact references to a JSON-serializable dictionary."""
+        return asdict(self)

@@ -29,6 +29,7 @@ The current evaluation layer also attaches proxy calibration targets to each syn
 12. Aggregate preset summaries into paper-style cross-preset result tables.
 13. Run threshold-sensitivity sweeps to study calibration changes without editing policy files.
 14. Aggregate saved threshold sweeps into cross-run sensitivity summaries.
+15. Generate threshold-sweep SVG figures for thesis-ready review.
 
 ## CLI Example
 
@@ -162,6 +163,19 @@ These bundles currently contain:
 - `threshold_sweep_run_table.md`
 - `threshold_sweep_aggregates.csv`
 - `threshold_sweep_aggregate_table.md`
+
+Threshold-sweep figure bundles can also be written under:
+
+`artifacts/threshold_sweep_figures/<timestamp>/`
+
+These bundles currently contain:
+
+- `threshold_sweep_figure_summary.json`
+- `threshold_sweep_aggregates.csv`
+- `threshold_sweep_summary_table.md`
+- `threshold_sweep_within_range.svg`
+- `threshold_sweep_false_positive.svg`
+- `threshold_sweep_action_change.svg`
 
 ## File Semantics
 
@@ -302,6 +316,15 @@ Cross-run threshold-sweep analysis output including:
 - aggregate rows grouped by base profile and applied threshold offset,
 - a markdown run table,
 - and a markdown aggregate table for sensitivity review.
+
+### `threshold_sweep_figure_summary.json`
+
+Threshold-sweep figure bundle metadata including:
+
+- analysis metadata for the selected sweep runs,
+- the aggregate rows used to generate the figures,
+- a markdown summary table,
+- and saved references to the generated SVG charts.
 
 ## Cross-Run Analysis
 
@@ -474,6 +497,23 @@ This command is useful for:
 - comparing the same offset across multiple seeds or organizations,
 - seeing whether reference-relative deltas are stable across runs,
 - and deciding which threshold ranges are worth promoting into reusable policy profiles.
+
+Generate threshold-sweep figures directly from saved sweep bundles:
+
+```bash
+PYTHONPATH=src python3 -m signallock generate-threshold-sweep-figures \
+  --input-dir artifacts/threshold_sweeps \
+  --include-aggregates \
+  --include-table \
+  --save-figures \
+  --pretty
+```
+
+This command is useful for:
+
+- turning sweep aggregates into review-friendly SVGs,
+- comparing within-range, false-positive, and action-change behavior by offset,
+- and dropping threshold-tuning visuals into notes or draft papers.
 
 ## Reproducibility Notes
 

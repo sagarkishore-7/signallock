@@ -73,6 +73,11 @@ from .threshold_sweep_analysis import (
     threshold_sweep_analysis_to_json,
     write_threshold_sweep_analysis_artifacts,
 )
+from .threshold_sweep_figures import (
+    DEFAULT_THRESHOLD_SWEEP_FIGURE_OUTPUT_DIR,
+    threshold_sweep_figure_results_to_json,
+    write_threshold_sweep_figure_artifacts,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -667,6 +672,48 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pretty-print JSON output.",
     )
 
+    threshold_sweep_figures_parser = subparsers.add_parser(
+        "generate-threshold-sweep-figures",
+        help="Generate SVG and CSV figures from saved threshold-sweep bundles.",
+    )
+    threshold_sweep_figures_parser.add_argument(
+        "--input-dir",
+        default=str(DEFAULT_THRESHOLD_SWEEP_OUTPUT_DIR),
+        help="Directory containing saved threshold-sweep subdirectories.",
+    )
+    threshold_sweep_figures_parser.add_argument(
+        "--base-profiles",
+        nargs="*",
+        choices=[profile.value for profile in PolicyProfile],
+        default=None,
+        help="Optional subset of base policy profiles to include in the figure bundle.",
+    )
+    threshold_sweep_figures_parser.add_argument(
+        "--include-aggregates",
+        action="store_true",
+        help="Include aggregated threshold-sweep rows in the JSON output.",
+    )
+    threshold_sweep_figures_parser.add_argument(
+        "--include-table",
+        action="store_true",
+        help="Include a markdown threshold-sweep summary table in the JSON output.",
+    )
+    threshold_sweep_figures_parser.add_argument(
+        "--save-figures",
+        action="store_true",
+        help="Write a timestamped threshold-sweep figure bundle to disk.",
+    )
+    threshold_sweep_figures_parser.add_argument(
+        "--output-dir",
+        default=str(DEFAULT_THRESHOLD_SWEEP_FIGURE_OUTPUT_DIR),
+        help="Optional directory for saved threshold-sweep figure artifacts.",
+    )
+    threshold_sweep_figures_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+
     return parser
 
 
@@ -1142,6 +1189,41 @@ def main(argv: list[str] | None = None) -> None:
                 pretty=args.pretty,
                 run_table_markdown=run_table if args.include_tables else None,
                 aggregate_table_markdown=aggregate_table if args.include_tables else None,
+                artifacts=artifacts.to_dict() if artifacts else None,
+            )
+        )
+        return
+
+    if args.command == "generate-threshold-sweep-figures":
+        selected_profiles = (
+            [PolicyProfile(profile) for profile in args.base_profiles]
+            if args.base_profiles
+            else None
+        )
+        overview, _, aggregates = analyze_threshold_sweeps(
+            input_dir=args.input_dir,
+            selected_base_profiles=selected_profiles,
+        )
+        summary_table = (
+            render_threshold_sweep_aggregate_table(aggregates)
+            if args.include_table or args.save_figures
+            else None
+        )
+        artifacts = None
+        if args.save_figures:
+            artifacts = write_threshold_sweep_figure_artifacts(
+                overview,
+                aggregates,
+                output_dir=args.output_dir,
+                summary_table_markdown=summary_table,
+            )
+        print(
+            threshold_sweep_figure_results_to_json(
+                overview,
+                aggregates,
+                include_aggregates=args.include_aggregates,
+                pretty=args.pretty,
+                summary_table_markdown=summary_table if args.include_table else None,
                 artifacts=artifacts.to_dict() if artifacts else None,
             )
         )

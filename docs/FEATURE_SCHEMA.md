@@ -493,6 +493,18 @@ Optional fields:
 - `aggregate_file`
 - `aggregate_table_file`
 
+### `ThresholdSweepFigureArtifacts`
+
+- `run_id`
+- `generated_at`
+- `output_dir`
+- `summary_file`
+- `aggregate_csv_file`
+- `summary_table_file`
+- `within_range_chart_file`
+- `false_positive_chart_file`
+- `action_change_chart_file`
+
 ### `PresetRunRecord`
 
 - `preset_run_id`
@@ -852,6 +864,7 @@ The current implementation already supports:
 - `ThresholdSweepAggregateRecord`
 - `ThresholdSweepAnalysisOverview`
 - `ThresholdSweepAnalysisArtifacts`
+- `ThresholdSweepFigureArtifacts`
 
 The scoring outputs remain heuristic baselines and should be treated as transparent placeholders pending later calibration and evaluation.
 

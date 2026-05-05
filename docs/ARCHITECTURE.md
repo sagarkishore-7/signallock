@@ -66,6 +66,10 @@ and now:
 
 `saved threshold-sweep bundles -> cross-run sweep rows and offset aggregates -> threshold-sweep analysis bundle`
 
+and now:
+
+`threshold-sweep offset aggregates -> SVG and CSV figure bundle for threshold-tuning review`
+
 These are still heuristic baselines, but they establish the core separation the project depends on:
 
 - exposure risk,
@@ -220,6 +224,15 @@ Responsibilities:
 - render markdown and CSV outputs for sweep review,
 - save timestamped threshold-sweep analysis bundles for later calibration work.
 
+### `src/signallock/threshold_sweep_figures.py`
+
+Responsibilities:
+
+- transform threshold-sweep aggregates into research-friendly charts,
+- render lightweight SVG figures across threshold offsets and base profiles,
+- emit aggregate CSV and markdown summary tables,
+- save timestamped threshold-sweep figure bundles for reporting and thesis drafts.
+
 ## Current Output Types
 
 ### `PublicProfile`
@@ -273,6 +286,10 @@ Represents top-level metadata for one threshold-sweep analysis operation.
 ### `ThresholdSweepAnalysisArtifacts`
 
 Represents the saved filesystem outputs for one timestamped threshold-sweep analysis bundle.
+
+### `ThresholdSweepFigureArtifacts`
+
+Represents the saved filesystem outputs for one timestamped threshold-sweep figure bundle.
 
 ### `PolicyCalibrationSummary`
 
@@ -413,6 +430,7 @@ The current prototype does support:
 - optional custom policy files for experiments,
 - threshold-sensitivity experiments without hand-editing policy configs,
 - cross-run threshold-sweep aggregation for threshold-tuning review,
+- threshold-sweep SVG figure generation for paper-ready artifacts,
 - timestamped local artifact bundles for reproducible evaluation runs,
 - cross-run markdown and CSV exports derived from saved runs,
 - baseline-versus-candidate comparison bundles derived from matched runs,
@@ -446,5 +464,6 @@ Today the repository is CLI-first. A typical prototype loop is:
 10. Execute named presets for reproducible end-to-end experiment suites.
 11. Sweep policy thresholds to inspect calibration sensitivity before changing defaults.
 12. Aggregate saved threshold sweeps to see which offsets behave consistently across runs.
+13. Generate threshold-sweep figures so threshold effects are visible at a glance.
 
 That keeps the implementation transparent and testable before introducing more complex modeling.

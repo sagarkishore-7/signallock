@@ -558,6 +558,53 @@ class CLITests(unittest.TestCase):
             self.assertEqual(decoded["overview"]["run_count"], 1)
             self.assertTrue(Path(decoded["artifacts"]["summary_file"]).exists())
 
+    def test_generate_threshold_sweep_figures_outputs_artifacts(self) -> None:
+        sweep_stream = io.StringIO()
+        figure_stream = io.StringIO()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with contextlib.redirect_stdout(sweep_stream):
+                main(
+                    [
+                        "sweep-thresholds",
+                        "--base-profile",
+                        "balanced",
+                        "--count",
+                        "3",
+                        "--seed",
+                        "1",
+                        "--threshold-offsets",
+                        "-8",
+                        "0",
+                        "8",
+                        "--save-sweep",
+                        "--output-dir",
+                        temp_dir,
+                    ]
+                )
+
+            with contextlib.redirect_stdout(figure_stream):
+                main(
+                    [
+                        "generate-threshold-sweep-figures",
+                        "--input-dir",
+                        temp_dir,
+                        "--include-aggregates",
+                        "--include-table",
+                        "--save-figures",
+                        "--output-dir",
+                        temp_dir,
+                        "--pretty",
+                    ]
+                )
+
+            decoded = json.loads(figure_stream.getvalue())
+            self.assertIn("overview", decoded)
+            self.assertIn("aggregates", decoded)
+            self.assertIn("summary_table_markdown", decoded)
+            self.assertIn("artifacts", decoded)
+            self.assertEqual(decoded["overview"]["run_count"], 1)
+            self.assertTrue(Path(decoded["artifacts"]["summary_file"]).exists())
+
 
 if __name__ == "__main__":
     unittest.main()
