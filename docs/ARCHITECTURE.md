@@ -62,6 +62,10 @@ and now:
 
 `synthetic profile batch + one base policy profile -> threshold-shifted policy variants -> threshold-sweep calibration summary bundle`
 
+and now:
+
+`saved threshold-sweep bundles -> cross-run sweep rows and offset aggregates -> threshold-sweep analysis bundle`
+
 These are still heuristic baselines, but they establish the core separation the project depends on:
 
 - exposure risk,
@@ -206,6 +210,16 @@ Responsibilities:
 - render markdown and CSV sweep summaries,
 - save timestamped threshold-sweep bundles for threshold-tuning and calibration review.
 
+### `src/signallock/threshold_sweep_analysis.py`
+
+Responsibilities:
+
+- scan saved threshold-sweep bundles from disk,
+- flatten per-run threshold-sweep variants into analysis rows,
+- aggregate sensitivity metrics by base profile and applied threshold offset,
+- render markdown and CSV outputs for sweep review,
+- save timestamped threshold-sweep analysis bundles for later calibration work.
+
 ## Current Output Types
 
 ### `PublicProfile`
@@ -243,6 +257,22 @@ Represents the metadata for one threshold-sweep experiment, including base profi
 ### `ThresholdSweepArtifacts`
 
 Represents the saved filesystem outputs for one timestamped threshold-sweep bundle.
+
+### `ThresholdSweepRunRecord`
+
+Represents one flattened row extracted from a saved threshold-sweep bundle.
+
+### `ThresholdSweepAggregateRecord`
+
+Represents one cross-run aggregate grouped by base profile and applied threshold offset.
+
+### `ThresholdSweepAnalysisOverview`
+
+Represents top-level metadata for one threshold-sweep analysis operation.
+
+### `ThresholdSweepAnalysisArtifacts`
+
+Represents the saved filesystem outputs for one timestamped threshold-sweep analysis bundle.
 
 ### `PolicyCalibrationSummary`
 
@@ -382,6 +412,7 @@ The current prototype does support:
 - comparative CLI evaluation across multiple profiles,
 - optional custom policy files for experiments,
 - threshold-sensitivity experiments without hand-editing policy configs,
+- cross-run threshold-sweep aggregation for threshold-tuning review,
 - timestamped local artifact bundles for reproducible evaluation runs,
 - cross-run markdown and CSV exports derived from saved runs,
 - baseline-versus-candidate comparison bundles derived from matched runs,
@@ -414,5 +445,6 @@ Today the repository is CLI-first. A typical prototype loop is:
 9. Generate score and action figures for research communication.
 10. Execute named presets for reproducible end-to-end experiment suites.
 11. Sweep policy thresholds to inspect calibration sensitivity before changing defaults.
+12. Aggregate saved threshold sweeps to see which offsets behave consistently across runs.
 
 That keeps the implementation transparent and testable before introducing more complex modeling.

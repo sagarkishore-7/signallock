@@ -65,6 +65,14 @@ from .threshold_sweeps import (
     threshold_sweep_results_to_json,
     write_threshold_sweep_artifacts,
 )
+from .threshold_sweep_analysis import (
+    DEFAULT_THRESHOLD_SWEEP_ANALYSIS_OUTPUT_DIR,
+    analyze_threshold_sweeps,
+    render_threshold_sweep_aggregate_table,
+    render_threshold_sweep_run_table,
+    threshold_sweep_analysis_to_json,
+    write_threshold_sweep_analysis_artifacts,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -612,6 +620,53 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pretty-print JSON output.",
     )
 
+    threshold_sweep_analysis_parser = subparsers.add_parser(
+        "analyze-threshold-sweeps",
+        help="Aggregate saved threshold-sweep bundles into cross-run sensitivity outputs.",
+    )
+    threshold_sweep_analysis_parser.add_argument(
+        "--input-dir",
+        default=str(DEFAULT_THRESHOLD_SWEEP_OUTPUT_DIR),
+        help="Directory containing saved threshold-sweep subdirectories.",
+    )
+    threshold_sweep_analysis_parser.add_argument(
+        "--base-profiles",
+        nargs="*",
+        choices=[profile.value for profile in PolicyProfile],
+        default=None,
+        help="Optional subset of base policy profiles to include in the analysis.",
+    )
+    threshold_sweep_analysis_parser.add_argument(
+        "--include-rows",
+        action="store_true",
+        help="Include flattened threshold-sweep rows in the JSON output.",
+    )
+    threshold_sweep_analysis_parser.add_argument(
+        "--include-aggregates",
+        action="store_true",
+        help="Include aggregated threshold-sweep rows in the JSON output.",
+    )
+    threshold_sweep_analysis_parser.add_argument(
+        "--include-tables",
+        action="store_true",
+        help="Include markdown run and aggregate tables in the JSON output.",
+    )
+    threshold_sweep_analysis_parser.add_argument(
+        "--save-analysis",
+        action="store_true",
+        help="Write a timestamped threshold-sweep analysis bundle to disk.",
+    )
+    threshold_sweep_analysis_parser.add_argument(
+        "--output-dir",
+        default=str(DEFAULT_THRESHOLD_SWEEP_ANALYSIS_OUTPUT_DIR),
+        help="Optional directory for saved threshold-sweep analysis artifacts.",
+    )
+    threshold_sweep_analysis_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+
     return parser
 
 
@@ -1044,6 +1099,49 @@ def main(argv: list[str] | None = None) -> None:
                 records,
                 include_table=args.include_table,
                 pretty=args.pretty,
+                artifacts=artifacts.to_dict() if artifacts else None,
+            )
+        )
+        return
+
+    if args.command == "analyze-threshold-sweeps":
+        selected_profiles = (
+            [PolicyProfile(profile) for profile in args.base_profiles]
+            if args.base_profiles
+            else None
+        )
+        overview, rows, aggregates = analyze_threshold_sweeps(
+            input_dir=args.input_dir,
+            selected_base_profiles=selected_profiles,
+        )
+        run_table = (
+            render_threshold_sweep_run_table(rows)
+            if args.include_tables or args.save_analysis
+            else None
+        )
+        aggregate_table = (
+            render_threshold_sweep_aggregate_table(aggregates)
+            if args.include_tables or args.save_analysis
+            else None
+        )
+        artifacts = None
+        if args.save_analysis:
+            artifacts = write_threshold_sweep_analysis_artifacts(
+                overview,
+                rows,
+                aggregates,
+                output_dir=args.output_dir,
+            )
+        print(
+            threshold_sweep_analysis_to_json(
+                overview,
+                rows,
+                aggregates,
+                include_rows=args.include_rows,
+                include_aggregates=args.include_aggregates,
+                pretty=args.pretty,
+                run_table_markdown=run_table if args.include_tables else None,
+                aggregate_table_markdown=aggregate_table if args.include_tables else None,
                 artifacts=artifacts.to_dict() if artifacts else None,
             )
         )

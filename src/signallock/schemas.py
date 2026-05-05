@@ -1160,3 +1160,119 @@ class ThresholdSweepArtifacts:
     def to_dict(self) -> dict[str, object]:
         """Convert artifact references to a JSON-serializable dictionary."""
         return asdict(self)
+
+
+@dataclass
+class ThresholdSweepRunRecord:
+    """One flattened record from a saved threshold-sweep bundle."""
+
+    run_id: str
+    generated_at: str
+    organization: str
+    profile_count: int
+    seed: int | None
+    base_profile: PolicyProfile
+    variant_label: str
+    threshold_offset: float
+    warn_threshold: float
+    step_up_threshold: float
+    enforce_mfa_threshold: float
+    sample_count: int
+    scenario_count: int
+    average_combined_score: float
+    average_exposure_score: float
+    average_password_score: float
+    top_action: str
+    within_expected_range_rate: float
+    under_hardening_rate: float
+    over_hardening_rate: float
+    true_positive_proxy_rate: float
+    false_positive_proxy_rate: float
+    step_up_or_higher_rate: float
+    block_or_higher_rate: float
+    mean_action_severity_gap: float
+    reference_variant_label: str
+    is_reference_variant: bool
+    top_action_changed_from_reference: bool
+    within_expected_range_delta: float
+    under_hardening_delta: float
+    over_hardening_delta: float
+    true_positive_proxy_delta: float
+    false_positive_proxy_delta: float
+    step_up_or_higher_delta: float
+    block_or_higher_delta: float
+    mean_action_severity_gap_delta: float
+    source_summary_file: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the run record to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["base_profile"] = self.base_profile.value
+        return data
+
+
+@dataclass
+class ThresholdSweepAggregateRecord:
+    """Aggregate one threshold offset across multiple saved sweep runs."""
+
+    base_profile: PolicyProfile
+    threshold_offset: float
+    run_count: int
+    mean_warn_threshold: float
+    mean_step_up_threshold: float
+    mean_enforce_mfa_threshold: float
+    mean_average_combined_score: float
+    mean_within_expected_range_rate: float
+    mean_under_hardening_rate: float
+    mean_over_hardening_rate: float
+    mean_true_positive_proxy_rate: float
+    mean_false_positive_proxy_rate: float
+    mean_step_up_or_higher_rate: float
+    mean_block_or_higher_rate: float
+    mean_action_severity_gap: float
+    mean_within_expected_range_delta: float
+    mean_false_positive_proxy_delta: float
+    mean_block_or_higher_delta: float
+    dominant_top_action: str
+    reference_variant_ratio: float
+    top_action_change_rate: float
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the aggregate record to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["base_profile"] = self.base_profile.value
+        return data
+
+
+@dataclass
+class ThresholdSweepAnalysisOverview:
+    """High-level metadata for one threshold-sweep analysis operation."""
+
+    input_dir: str
+    run_count: int
+    row_count: int
+    aggregate_count: int
+    base_profiles: list[str]
+    organizations: list[str]
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the overview to a JSON-serializable dictionary."""
+        return asdict(self)
+
+
+@dataclass
+class ThresholdSweepAnalysisArtifacts:
+    """Filesystem artifact references for a saved threshold-sweep analysis bundle."""
+
+    run_id: str
+    generated_at: str
+    output_dir: str
+    summary_file: str
+    rows_file: str
+    run_table_file: str
+    aggregate_file: str
+    aggregate_table_file: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert artifact references to a JSON-serializable dictionary."""
+        return asdict(self)

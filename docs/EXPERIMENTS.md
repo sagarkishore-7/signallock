@@ -28,6 +28,7 @@ The current evaluation layer also attaches proxy calibration targets to each syn
 11. Summarize executed preset bundles into thesis-friendly markdown and CSV outputs.
 12. Aggregate preset summaries into paper-style cross-preset result tables.
 13. Run threshold-sensitivity sweeps to study calibration changes without editing policy files.
+14. Aggregate saved threshold sweeps into cross-run sensitivity summaries.
 
 ## CLI Example
 
@@ -149,6 +150,18 @@ These bundles currently contain:
 - `threshold_sweep_summary.json`
 - `threshold_sweep_records.csv`
 - `threshold_sweep_table.md`
+
+Threshold-sweep analysis bundles can also be written under:
+
+`artifacts/threshold_sweep_analysis/<timestamp>/`
+
+These bundles currently contain:
+
+- `threshold_sweep_analysis.json`
+- `threshold_sweep_rows.csv`
+- `threshold_sweep_run_table.md`
+- `threshold_sweep_aggregates.csv`
+- `threshold_sweep_aggregate_table.md`
 
 ## File Semantics
 
@@ -279,6 +292,16 @@ Threshold-sensitivity experiment output including:
 - calibration summaries per variant,
 - per-variant deltas relative to the nearest-to-zero reference threshold profile,
 - and a markdown table for quick inspection.
+
+### `threshold_sweep_analysis.json`
+
+Cross-run threshold-sweep analysis output including:
+
+- analysis metadata across saved sweep bundles,
+- flattened per-run threshold-sweep rows,
+- aggregate rows grouped by base profile and applied threshold offset,
+- a markdown run table,
+- and a markdown aggregate table for sensitivity review.
 
 ## Cross-Run Analysis
 
@@ -433,6 +456,24 @@ Useful outputs:
 - how they affect under-hardening and within-range agreement,
 - how far each variant drifts from the reference threshold profile,
 - and where the dominant action shifts from `ALLOW` to `WARN`, `STEP_UP_AUTHENTICATION`, or `REQUIRE_STRONGER_PASSWORD`.
+
+Aggregate saved threshold sweeps across repeated runs:
+
+```bash
+PYTHONPATH=src python3 -m signallock analyze-threshold-sweeps \
+  --input-dir artifacts/threshold_sweeps \
+  --include-rows \
+  --include-aggregates \
+  --include-tables \
+  --save-analysis \
+  --pretty
+```
+
+This command is useful for:
+
+- comparing the same offset across multiple seeds or organizations,
+- seeing whether reference-relative deltas are stable across runs,
+- and deciding which threshold ranges are worth promoting into reusable policy profiles.
 
 ## Reproducibility Notes
 

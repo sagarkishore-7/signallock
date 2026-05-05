@@ -409,6 +409,90 @@ Optional fields:
 - `records_file`
 - `table_file`
 
+### `ThresholdSweepRunRecord`
+
+- `run_id`
+- `generated_at`
+- `organization`
+- `profile_count`
+- `seed`
+- `base_profile`
+- `variant_label`
+- `threshold_offset`
+- `warn_threshold`
+- `step_up_threshold`
+- `enforce_mfa_threshold`
+- `sample_count`
+- `scenario_count`
+- `average_combined_score`
+- `average_exposure_score`
+- `average_password_score`
+- `top_action`
+- `within_expected_range_rate`
+- `under_hardening_rate`
+- `over_hardening_rate`
+- `true_positive_proxy_rate`
+- `false_positive_proxy_rate`
+- `step_up_or_higher_rate`
+- `block_or_higher_rate`
+- `mean_action_severity_gap`
+- `reference_variant_label`
+- `is_reference_variant`
+- `top_action_changed_from_reference`
+- `within_expected_range_delta`
+- `under_hardening_delta`
+- `over_hardening_delta`
+- `true_positive_proxy_delta`
+- `false_positive_proxy_delta`
+- `step_up_or_higher_delta`
+- `block_or_higher_delta`
+- `mean_action_severity_gap_delta`
+- `source_summary_file`
+
+### `ThresholdSweepAggregateRecord`
+
+- `base_profile`
+- `threshold_offset`
+- `run_count`
+- `mean_warn_threshold`
+- `mean_step_up_threshold`
+- `mean_enforce_mfa_threshold`
+- `mean_average_combined_score`
+- `mean_within_expected_range_rate`
+- `mean_under_hardening_rate`
+- `mean_over_hardening_rate`
+- `mean_true_positive_proxy_rate`
+- `mean_false_positive_proxy_rate`
+- `mean_step_up_or_higher_rate`
+- `mean_block_or_higher_rate`
+- `mean_action_severity_gap`
+- `mean_within_expected_range_delta`
+- `mean_false_positive_proxy_delta`
+- `mean_block_or_higher_delta`
+- `dominant_top_action`
+- `reference_variant_ratio`
+- `top_action_change_rate`
+
+### `ThresholdSweepAnalysisOverview`
+
+- `input_dir`
+- `run_count`
+- `row_count`
+- `aggregate_count`
+- `base_profiles`
+- `organizations`
+
+### `ThresholdSweepAnalysisArtifacts`
+
+- `run_id`
+- `generated_at`
+- `output_dir`
+- `summary_file`
+- `rows_file`
+- `run_table_file`
+- `aggregate_file`
+- `aggregate_table_file`
+
 ### `PresetRunRecord`
 
 - `preset_run_id`
@@ -764,6 +848,10 @@ The current implementation already supports:
 - `ThresholdSweepRecord`
 - `ThresholdSweepOverview`
 - `ThresholdSweepArtifacts`
+- `ThresholdSweepRunRecord`
+- `ThresholdSweepAggregateRecord`
+- `ThresholdSweepAnalysisOverview`
+- `ThresholdSweepAnalysisArtifacts`
 
 The scoring outputs remain heuristic baselines and should be treated as transparent placeholders pending later calibration and evaluation.
 

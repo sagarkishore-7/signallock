@@ -40,6 +40,7 @@ Current contents:
 - a preset-results summary layer under [`src/signallock/results.py`](src/signallock/results.py),
 - a paper-style preset aggregate layer under [`src/signallock/preset_aggregates.py`](src/signallock/preset_aggregates.py),
 - a threshold-sweep experiment layer under [`src/signallock/threshold_sweeps.py`](src/signallock/threshold_sweeps.py),
+- a cross-run threshold-sweep analysis layer under [`src/signallock/threshold_sweep_analysis.py`](src/signallock/threshold_sweep_analysis.py),
 - an initial Python package scaffold under [`src/signallock/`](src/signallock/).
 
 Repository:
@@ -88,6 +89,7 @@ SignalLock/
 │       ├── results.py
 │       ├── schemas.py
 │       ├── synthetic_profiles.py
+│       ├── threshold_sweep_analysis.py
 │       └── threshold_sweeps.py
 ├── tests/
 │   ├── test_cli.py
@@ -104,6 +106,7 @@ SignalLock/
 │   ├── test_policy.py
 │   ├── test_schemas.py
 │   ├── test_synthetic_profiles.py
+│   ├── test_threshold_sweep_analysis.py
 │   └── test_threshold_sweeps.py
 ├── .gitignore
 ├── CONTRIBUTING.md
@@ -313,6 +316,18 @@ PYTHONPATH=src python3 -m signallock sweep-thresholds \
 ```
 
 The sweep output includes per-variant calibration metrics and deltas relative to the nearest-to-zero reference threshold profile, which makes it easier to see whether stricter or looser thresholds improve calibration or simply increase hardening pressure.
+
+Aggregate saved threshold sweeps across runs:
+
+```bash
+PYTHONPATH=src python3 -m signallock analyze-threshold-sweeps \
+  --input-dir artifacts/threshold_sweeps \
+  --include-rows \
+  --include-aggregates \
+  --include-tables \
+  --save-analysis \
+  --pretty
+```
 
 Run the current test suite:
 

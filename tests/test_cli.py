@@ -508,6 +508,56 @@ class CLITests(unittest.TestCase):
             self.assertEqual(decoded["overview"]["variant_count"], 3)
             self.assertTrue(Path(decoded["artifacts"]["summary_file"]).exists())
 
+    def test_analyze_threshold_sweeps_outputs_artifacts(self) -> None:
+        sweep_stream = io.StringIO()
+        analysis_stream = io.StringIO()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with contextlib.redirect_stdout(sweep_stream):
+                main(
+                    [
+                        "sweep-thresholds",
+                        "--base-profile",
+                        "balanced",
+                        "--count",
+                        "3",
+                        "--seed",
+                        "1",
+                        "--threshold-offsets",
+                        "-8",
+                        "0",
+                        "8",
+                        "--save-sweep",
+                        "--output-dir",
+                        temp_dir,
+                    ]
+                )
+
+            with contextlib.redirect_stdout(analysis_stream):
+                main(
+                    [
+                        "analyze-threshold-sweeps",
+                        "--input-dir",
+                        temp_dir,
+                        "--include-rows",
+                        "--include-aggregates",
+                        "--include-tables",
+                        "--save-analysis",
+                        "--output-dir",
+                        temp_dir,
+                        "--pretty",
+                    ]
+                )
+
+            decoded = json.loads(analysis_stream.getvalue())
+            self.assertIn("overview", decoded)
+            self.assertIn("rows", decoded)
+            self.assertIn("aggregates", decoded)
+            self.assertIn("run_table_markdown", decoded)
+            self.assertIn("aggregate_table_markdown", decoded)
+            self.assertIn("artifacts", decoded)
+            self.assertEqual(decoded["overview"]["run_count"], 1)
+            self.assertTrue(Path(decoded["artifacts"]["summary_file"]).exists())
+
 
 if __name__ == "__main__":
     unittest.main()
