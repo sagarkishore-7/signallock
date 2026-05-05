@@ -13,6 +13,7 @@ from .policy import get_policy_config, recommend_hardening
 from .schemas import (
     HardeningAction,
     PolicyCalibrationSummary,
+    PolicyConfig,
     PolicyEvaluationRecord,
     PolicyEvaluationSummary,
     PolicyProfile,
@@ -109,11 +110,30 @@ def evaluate_policy_profiles(
     policy_file: str | Path | None = None,
 ) -> tuple[list[PolicyEvaluationSummary], list[PolicyEvaluationRecord]]:
     """Evaluate one or more policy profiles over synthetic scenarios."""
-    records: list[PolicyEvaluationRecord] = []
     configs = {
         policy_profile: get_policy_config(policy_profile, policy_file=policy_file)
         for policy_profile in selected_profiles
     }
+    summaries: list[PolicyEvaluationSummary] = []
+    records: list[PolicyEvaluationRecord] = []
+
+    for policy_profile in selected_profiles:
+        summary, policy_records, _ = evaluate_policy_config(
+            profiles,
+            configs[policy_profile],
+        )
+        summaries.append(summary)
+        records.extend(policy_records)
+
+    return summaries, records
+
+
+def evaluate_policy_config(
+    profiles: list[PublicProfile],
+    config: PolicyConfig,
+) -> tuple[PolicyEvaluationSummary, list[PolicyEvaluationRecord], PolicyCalibrationSummary]:
+    """Evaluate one policy configuration over synthetic scenarios."""
+    records: list[PolicyEvaluationRecord] = []
     contexts = []
     total_exposure_score = 0.0
     total_password_score = 0.0
@@ -135,69 +155,63 @@ def evaluate_policy_profiles(
         )
         total_password_count += len(scenario_assessments)
 
-        for policy_profile in selected_profiles:
-            config = configs[policy_profile]
-            for scenario_name, password in scenarios.items():
-                password_assessment = scenario_assessments[scenario_name]
-                recommendation = recommend_hardening(exposure, password_assessment, config=config)
-                scenario_spec = scenario_spec_map[scenario_name]
-                severity = ACTION_SEVERITY[recommendation.primary_action]
-                floor = ACTION_SEVERITY[scenario_spec.expected_action_floor]
-                ceiling = ACTION_SEVERITY[scenario_spec.expected_action_ceiling]
-                records.append(
-                    PolicyEvaluationRecord(
-                        employee_id=profile.employee_id,
-                        scenario=scenario_name,
-                        password=password,
-                        policy_profile=policy_profile,
-                        exposure_band=exposure.band,
-                        password_band=password_assessment.band,
-                        expected_risk_band=scenario_spec.expected_risk_band,
-                        expected_action_floor=scenario_spec.expected_action_floor,
-                        expected_action_ceiling=scenario_spec.expected_action_ceiling,
-                        within_expected_range=floor <= severity <= ceiling,
-                        under_hardening=severity < floor,
-                        over_hardening=severity > ceiling,
-                        action_severity_gap=severity - floor,
-                        primary_action=recommendation.primary_action,
-                        combined_score=recommendation.combined_score,
-                    )
+        for scenario_name, password in scenarios.items():
+            password_assessment = scenario_assessments[scenario_name]
+            recommendation = recommend_hardening(exposure, password_assessment, config=config)
+            scenario_spec = scenario_spec_map[scenario_name]
+            severity = ACTION_SEVERITY[recommendation.primary_action]
+            floor = ACTION_SEVERITY[scenario_spec.expected_action_floor]
+            ceiling = ACTION_SEVERITY[scenario_spec.expected_action_ceiling]
+            records.append(
+                PolicyEvaluationRecord(
+                    employee_id=profile.employee_id,
+                    scenario=scenario_name,
+                    password=password,
+                    policy_profile=config.profile,
+                    exposure_band=exposure.band,
+                    password_band=password_assessment.band,
+                    expected_risk_band=scenario_spec.expected_risk_band,
+                    expected_action_floor=scenario_spec.expected_action_floor,
+                    expected_action_ceiling=scenario_spec.expected_action_ceiling,
+                    within_expected_range=floor <= severity <= ceiling,
+                    under_hardening=severity < floor,
+                    over_hardening=severity > ceiling,
+                    action_severity_gap=severity - floor,
+                    primary_action=recommendation.primary_action,
+                    combined_score=recommendation.combined_score,
                 )
+            )
 
-    summaries: list[PolicyEvaluationSummary] = []
+    action_counts = Counter(record.primary_action.value for record in records)
+    supporting_counts = Counter()
+    combined_total = 0.0
+
+    for profile, exposure, scenarios, scenario_assessments in contexts:
+        for scenario_name in scenarios:
+            password_assessment = scenario_assessments[scenario_name]
+            recommendation = recommend_hardening(exposure, password_assessment, config=config)
+            supporting_counts.update(action.value for action in recommendation.supporting_actions)
+            combined_total += recommendation.combined_score
+
     average_exposure = round(total_exposure_score / len(profiles), 2)
     average_password = round(total_password_score / total_password_count, 2)
+    avg_combined = round(combined_total / len(records), 2)
 
-    for policy_profile in selected_profiles:
-        policy_records = [record for record in records if record.policy_profile == policy_profile]
-        action_counts = Counter(record.primary_action.value for record in policy_records)
-        supporting_counts = Counter()
-        combined_total = 0.0
-
-        for profile, exposure, scenarios, scenario_assessments in contexts:
-            config = configs[policy_profile]
-            for scenario_name in scenarios:
-                password_assessment = scenario_assessments[scenario_name]
-                recommendation = recommend_hardening(exposure, password_assessment, config=config)
-                supporting_counts.update(action.value for action in recommendation.supporting_actions)
-                combined_total += recommendation.combined_score
-
-        avg_combined = round(combined_total / len(policy_records), 2)
-
-        summaries.append(
-            PolicyEvaluationSummary(
-                policy_profile=policy_profile,
-                sample_count=len(profiles),
-                scenario_count=len(policy_records),
-                primary_action_counts=dict(sorted(action_counts.items())),
-                supporting_action_counts=dict(sorted(supporting_counts.items())),
-                average_combined_score=avg_combined,
-                average_exposure_score=average_exposure,
-                average_password_score=average_password,
-            )
-        )
-
-    return summaries, records
+    summary = PolicyEvaluationSummary(
+        policy_profile=config.profile,
+        sample_count=len(profiles),
+        scenario_count=len(records),
+        primary_action_counts=dict(sorted(action_counts.items())),
+        supporting_action_counts=dict(sorted(supporting_counts.items())),
+        average_combined_score=avg_combined,
+        average_exposure_score=average_exposure,
+        average_password_score=average_password,
+    )
+    calibration_summary = summarize_policy_calibration(
+        records,
+        selected_profiles=[config.profile],
+    )[0]
+    return summary, records, calibration_summary
 
 
 def summarize_policy_calibration(

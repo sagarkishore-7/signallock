@@ -475,6 +475,39 @@ class CLITests(unittest.TestCase):
             self.assertIn("artifacts", decoded)
             self.assertTrue(Path(decoded["artifacts"]["summary_file"]).exists())
 
+    def test_sweep_thresholds_outputs_artifacts(self) -> None:
+        stream = io.StringIO()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with contextlib.redirect_stdout(stream):
+                main(
+                    [
+                        "sweep-thresholds",
+                        "--base-profile",
+                        "balanced",
+                        "--count",
+                        "3",
+                        "--seed",
+                        "1",
+                        "--threshold-offsets",
+                        "-8",
+                        "0",
+                        "8",
+                        "--include-table",
+                        "--save-sweep",
+                        "--output-dir",
+                        temp_dir,
+                        "--pretty",
+                    ]
+                )
+
+            decoded = json.loads(stream.getvalue())
+            self.assertIn("overview", decoded)
+            self.assertIn("records", decoded)
+            self.assertIn("table_markdown", decoded)
+            self.assertIn("artifacts", decoded)
+            self.assertEqual(decoded["overview"]["variant_count"], 3)
+            self.assertTrue(Path(decoded["artifacts"]["summary_file"]).exists())
+
 
 if __name__ == "__main__":
     unittest.main()

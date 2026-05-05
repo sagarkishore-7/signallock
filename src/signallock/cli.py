@@ -59,6 +59,12 @@ from .results import (
 )
 from .schemas import PolicyProfile
 from .synthetic_profiles import generate_synthetic_profiles, profiles_to_json
+from .threshold_sweeps import (
+    DEFAULT_THRESHOLD_SWEEP_OUTPUT_DIR,
+    run_threshold_sweep,
+    threshold_sweep_results_to_json,
+    write_threshold_sweep_artifacts,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -546,6 +552,66 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pretty-print JSON output.",
     )
 
+    threshold_sweep_parser = subparsers.add_parser(
+        "sweep-thresholds",
+        help="Run a calibration sensitivity study by shifting policy score thresholds.",
+    )
+    threshold_sweep_parser.add_argument(
+        "--base-profile",
+        choices=[profile.value for profile in PolicyProfile],
+        default=PolicyProfile.BALANCED.value,
+        help="Base policy profile to perturb.",
+    )
+    threshold_sweep_parser.add_argument(
+        "--count",
+        type=int,
+        default=5,
+        help="Number of synthetic profiles to generate.",
+    )
+    threshold_sweep_parser.add_argument(
+        "--organization",
+        default="ExampleCorp",
+        help="Organization name to embed in generated profiles.",
+    )
+    threshold_sweep_parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Optional random seed for reproducible output.",
+    )
+    threshold_sweep_parser.add_argument(
+        "--threshold-offsets",
+        nargs="*",
+        type=float,
+        default=[-12.0, -8.0, -4.0, 0.0, 4.0, 8.0, 12.0],
+        help="Additive offsets applied to warn/step-up/enforce thresholds.",
+    )
+    threshold_sweep_parser.add_argument(
+        "--policy-file",
+        default=None,
+        help="Optional path to a policy profile JSON file.",
+    )
+    threshold_sweep_parser.add_argument(
+        "--include-table",
+        action="store_true",
+        help="Include a markdown sweep table in the JSON output.",
+    )
+    threshold_sweep_parser.add_argument(
+        "--save-sweep",
+        action="store_true",
+        help="Write a timestamped threshold-sweep bundle to disk.",
+    )
+    threshold_sweep_parser.add_argument(
+        "--output-dir",
+        default=str(DEFAULT_THRESHOLD_SWEEP_OUTPUT_DIR),
+        help="Optional directory for saved threshold-sweep artifacts.",
+    )
+    threshold_sweep_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+
     return parser
 
 
@@ -946,6 +1012,38 @@ def main(argv: list[str] | None = None) -> None:
                 cross_comparison_records,
                 pretty=args.pretty,
                 include_tables=args.include_tables,
+                artifacts=artifacts.to_dict() if artifacts else None,
+            )
+        )
+        return
+
+    if args.command == "sweep-thresholds":
+        profiles = generate_synthetic_profiles(
+            count=args.count,
+            organization=args.organization,
+            seed=args.seed,
+        )
+        overview, records = run_threshold_sweep(
+            profiles,
+            base_profile=PolicyProfile(args.base_profile),
+            threshold_offsets=list(args.threshold_offsets),
+            organization=args.organization,
+            seed=args.seed,
+            policy_file=args.policy_file,
+        )
+        artifacts = None
+        if args.save_sweep:
+            artifacts = write_threshold_sweep_artifacts(
+                overview,
+                records,
+                output_dir=args.output_dir,
+            )
+        print(
+            threshold_sweep_results_to_json(
+                overview,
+                records,
+                include_table=args.include_table,
+                pretty=args.pretty,
                 artifacts=artifacts.to_dict() if artifacts else None,
             )
         )

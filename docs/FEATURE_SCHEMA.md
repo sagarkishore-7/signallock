@@ -356,6 +356,48 @@ Optional fields:
 - `score_chart_file`
 - `action_chart_file`
 
+### `ThresholdSweepRecord`
+
+- `variant_label`
+- `base_profile`
+- `threshold_offset`
+- `warn_threshold`
+- `step_up_threshold`
+- `enforce_mfa_threshold`
+- `sample_count`
+- `scenario_count`
+- `average_combined_score`
+- `average_exposure_score`
+- `average_password_score`
+- `top_action`
+- `within_expected_range_rate`
+- `under_hardening_rate`
+- `over_hardening_rate`
+- `true_positive_proxy_rate`
+- `false_positive_proxy_rate`
+- `step_up_or_higher_rate`
+- `block_or_higher_rate`
+- `mean_action_severity_gap`
+
+### `ThresholdSweepOverview`
+
+- `base_profile`
+- `organization`
+- `profile_count`
+- `seed`
+- `threshold_offsets`
+- `variant_count`
+- `policy_file`
+
+### `ThresholdSweepArtifacts`
+
+- `run_id`
+- `generated_at`
+- `output_dir`
+- `summary_file`
+- `records_file`
+- `table_file`
+
 ### `PresetRunRecord`
 
 - `preset_run_id`
@@ -708,6 +750,9 @@ The current implementation already supports:
 - `CrossPresetComparisonAggregateRecord`
 - `PresetAggregateOverview`
 - `PresetAggregateArtifacts`
+- `ThresholdSweepRecord`
+- `ThresholdSweepOverview`
+- `ThresholdSweepArtifacts`
 
 The scoring outputs remain heuristic baselines and should be treated as transparent placeholders pending later calibration and evaluation.
 

@@ -1082,3 +1082,70 @@ class PresetAggregateArtifacts:
     def to_dict(self) -> dict[str, object]:
         """Convert artifact references to a JSON-serializable dictionary."""
         return asdict(self)
+
+
+@dataclass
+class ThresholdSweepRecord:
+    """One threshold-sweep variant result combining score and calibration metrics."""
+
+    variant_label: str
+    base_profile: PolicyProfile
+    threshold_offset: float
+    warn_threshold: float
+    step_up_threshold: float
+    enforce_mfa_threshold: float
+    sample_count: int
+    scenario_count: int
+    average_combined_score: float
+    average_exposure_score: float
+    average_password_score: float
+    top_action: str
+    within_expected_range_rate: float
+    under_hardening_rate: float
+    over_hardening_rate: float
+    true_positive_proxy_rate: float
+    false_positive_proxy_rate: float
+    step_up_or_higher_rate: float
+    block_or_higher_rate: float
+    mean_action_severity_gap: float
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the sweep record to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["base_profile"] = self.base_profile.value
+        return data
+
+
+@dataclass
+class ThresholdSweepOverview:
+    """High-level metadata for one threshold-sweep experiment."""
+
+    base_profile: PolicyProfile
+    organization: str
+    profile_count: int
+    seed: int | None
+    threshold_offsets: list[float]
+    variant_count: int
+    policy_file: str | None = None
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the overview to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["base_profile"] = self.base_profile.value
+        return data
+
+
+@dataclass
+class ThresholdSweepArtifacts:
+    """Filesystem artifact references for a saved threshold-sweep bundle."""
+
+    run_id: str
+    generated_at: str
+    output_dir: str
+    summary_file: str
+    records_file: str
+    table_file: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert artifact references to a JSON-serializable dictionary."""
+        return asdict(self)

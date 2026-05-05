@@ -39,6 +39,7 @@ Current contents:
 - a preset-based orchestration layer under [`src/signallock/presets.py`](src/signallock/presets.py),
 - a preset-results summary layer under [`src/signallock/results.py`](src/signallock/results.py),
 - a paper-style preset aggregate layer under [`src/signallock/preset_aggregates.py`](src/signallock/preset_aggregates.py),
+- a threshold-sweep experiment layer under [`src/signallock/threshold_sweeps.py`](src/signallock/threshold_sweeps.py),
 - an initial Python package scaffold under [`src/signallock/`](src/signallock/).
 
 Repository:
@@ -86,7 +87,8 @@ SignalLock/
 │       ├── reporting.py
 │       ├── results.py
 │       ├── schemas.py
-│       └── synthetic_profiles.py
+│       ├── synthetic_profiles.py
+│       └── threshold_sweeps.py
 ├── tests/
 │   ├── test_cli.py
 │   ├── test_analysis.py
@@ -101,7 +103,8 @@ SignalLock/
 │   ├── test_preset_aggregates.py
 │   ├── test_policy.py
 │   ├── test_schemas.py
-│   └── test_synthetic_profiles.py
+│   ├── test_synthetic_profiles.py
+│   └── test_threshold_sweeps.py
 ├── .gitignore
 ├── CONTRIBUTING.md
 ├── LICENSE
@@ -295,6 +298,19 @@ PYTHONPATH=src python3 -m signallock aggregate-presets \
 ```
 
 That aggregate flow now includes cross-preset calibration tables alongside the existing score- and action-oriented summaries.
+
+Run a threshold-sensitivity study without editing policy files:
+
+```bash
+PYTHONPATH=src python3 -m signallock sweep-thresholds \
+  --base-profile balanced \
+  --count 5 \
+  --seed 1 \
+  --threshold-offsets -12 -8 -4 0 4 8 12 \
+  --include-table \
+  --save-sweep \
+  --pretty
+```
 
 Run the current test suite:
 

@@ -58,6 +58,10 @@ and now:
 
 `preset summary bundles -> within-preset and cross-preset aggregates -> paper-style result tables`
 
+and now:
+
+`synthetic profile batch + one base policy profile -> threshold-shifted policy variants -> threshold-sweep calibration summary bundle`
+
 These are still heuristic baselines, but they establish the core separation the project depends on:
 
 - exposure risk,
@@ -192,6 +196,16 @@ Responsibilities:
 - render paper-style markdown tables and CSV outputs,
 - save timestamped aggregate bundles for thesis and report preparation.
 
+### `src/signallock/threshold_sweeps.py`
+
+Responsibilities:
+
+- load one base policy profile for sensitivity analysis,
+- generate threshold-shifted variants without mutating the underlying config file,
+- evaluate each variant against the same synthetic profile batch,
+- render markdown and CSV sweep summaries,
+- save timestamped threshold-sweep bundles for threshold-tuning and calibration review.
+
 ## Current Output Types
 
 ### `PublicProfile`
@@ -217,6 +231,18 @@ Represents a baseline policy output that combines both risk layers.
 ### `PolicyEvaluationSummary`
 
 Represents aggregate outcomes for one policy profile over a synthetic evaluation run.
+
+### `ThresholdSweepRecord`
+
+Represents one threshold-shifted policy variant together with score and calibration metrics.
+
+### `ThresholdSweepOverview`
+
+Represents the metadata for one threshold-sweep experiment, including base profile and offsets.
+
+### `ThresholdSweepArtifacts`
+
+Represents the saved filesystem outputs for one timestamped threshold-sweep bundle.
 
 ### `PolicyCalibrationSummary`
 
@@ -355,6 +381,7 @@ The current prototype does support:
 - file-backed policy profiles under `configs/policy_profiles.json`,
 - comparative CLI evaluation across multiple profiles,
 - optional custom policy files for experiments,
+- threshold-sensitivity experiments without hand-editing policy configs,
 - timestamped local artifact bundles for reproducible evaluation runs,
 - cross-run markdown and CSV exports derived from saved runs,
 - baseline-versus-candidate comparison bundles derived from matched runs,
@@ -386,5 +413,6 @@ Today the repository is CLI-first. A typical prototype loop is:
 8. Compare baseline and candidate policy profiles.
 9. Generate score and action figures for research communication.
 10. Execute named presets for reproducible end-to-end experiment suites.
+11. Sweep policy thresholds to inspect calibration sensitivity before changing defaults.
 
 That keeps the implementation transparent and testable before introducing more complex modeling.

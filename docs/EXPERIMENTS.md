@@ -27,6 +27,7 @@ The current evaluation layer also attaches proxy calibration targets to each syn
 10. Execute named presets that orchestrate the entire workflow automatically.
 11. Summarize executed preset bundles into thesis-friendly markdown and CSV outputs.
 12. Aggregate preset summaries into paper-style cross-preset result tables.
+13. Run threshold-sensitivity sweeps to study calibration changes without editing policy files.
 
 ## CLI Example
 
@@ -138,6 +139,16 @@ These bundles currently contain:
 - `cross_preset_policy_aggregate_table.md`
 - `cross_preset_calibration_aggregate_table.md`
 - `cross_preset_comparison_aggregate_table.md` when comparisons exist
+
+Threshold-sweep bundles can also be written under:
+
+`artifacts/threshold_sweeps/<timestamp>/`
+
+These bundles currently contain:
+
+- `threshold_sweep_summary.json`
+- `threshold_sweep_records.csv`
+- `threshold_sweep_table.md`
 
 ## File Semantics
 
@@ -256,6 +267,17 @@ Higher-level aggregate view across executed preset summaries, including:
 - cross-preset calibration aggregates
 - cross-preset comparison aggregates
 - embedded markdown tables that are easier to lift into a thesis draft
+
+### `threshold_sweep_summary.json`
+
+Threshold-sensitivity experiment output including:
+
+- the base policy profile,
+- the applied threshold offsets,
+- one record per threshold variant,
+- score summaries per variant,
+- calibration summaries per variant,
+- and a markdown table for quick inspection.
 
 ## Cross-Run Analysis
 
@@ -387,6 +409,29 @@ Optional flags:
 - `--output-dir` to control where aggregate bundles are written
 - `--include-tables` to embed the markdown tables directly in JSON
 
+## Threshold Sweeps
+
+Run a threshold-sensitivity study directly from the CLI:
+
+```bash
+PYTHONPATH=src python3 -m signallock sweep-thresholds \
+  --base-profile balanced \
+  --count 5 \
+  --seed 1 \
+  --threshold-offsets -12 -8 -4 0 4 8 12 \
+  --include-table \
+  --save-sweep \
+  --pretty
+```
+
+This command applies additive shifts to the selected profile's `warn`, `step_up`, and `enforce_mfa` score thresholds while preserving the rest of the profile configuration.
+
+Useful outputs:
+
+- how stricter or looser score thresholds change proxy false positives,
+- how they affect under-hardening and within-range agreement,
+- and where the dominant action shifts from `ALLOW` to `WARN`, `STEP_UP_AUTHENTICATION`, or `REQUIRE_STRONGER_PASSWORD`.
+
 ## Reproducibility Notes
 
 - Use `--seed` for stable synthetic profile generation.
@@ -404,5 +449,6 @@ Optional flags:
 - Preset orchestration improves reproducibility, but it still operates on heuristic synthetic pipelines rather than calibrated study data.
 - Preset summaries are designed for traceability and draft reporting, not final statistical claims.
 - Preset aggregates are useful for paper-style comparison and framing, but they still summarize heuristic synthetic experiments.
+- Threshold sweeps are useful for sensitivity analysis, but they currently vary only numeric score thresholds, not band-based guardrails or feature weights.
 - No calibration or confidence intervals are produced yet.
 - The artifact format is stable enough for local iteration, but may evolve as the research design matures.
