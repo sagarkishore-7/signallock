@@ -557,14 +557,14 @@ The result includes `heuristic_vs_expert_match_rate`, `ml_vs_expert_match_rate` 
 
 ### Deployment
 
-The repository is **Railway + Vercel ready**. See [`docs/DEPLOYMENT.md`](DEPLOYMENT.md) for the full step-by-step guide.
+The repository is **Railway + Vercel ready**. The backend deployment path is now Dockerfile-based for deterministic packaging. See [`docs/DEPLOYMENT.md`](DEPLOYMENT.md) for the full step-by-step guide.
 
 | Layer | Platform | Files |
 |---|---|---|
-| Backend (FastAPI) | Railway | `Procfile`, `railway.json`, `.python-version` |
+| Backend (FastAPI) | Railway | `Dockerfile`, `.dockerignore`, `railway.json` |
 | Frontend (Next.js) | Vercel | `dashboard/vercel.json` |
 
-The `serve` CLI now reads `PORT`, `HOST`, `MODEL_FILE`, and `CORS_ORIGINS` from environment variables, so the Procfile is just `python -m signallock serve --host 0.0.0.0`.
+The `serve` CLI reads `PORT`, `HOST`, `MODEL_FILE`, and `CORS_ORIGINS` from environment variables, and the Docker deployment path starts the API with `python -m signallock serve --host 0.0.0.0`.
 
 ### 5. ✅ Analyst dashboard — DONE
 

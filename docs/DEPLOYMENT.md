@@ -2,6 +2,8 @@
 
 This document walks you through hosting the **backend on Railway** and the **dashboard on Vercel**, then wiring them together with CORS so the live dashboard can talk to the live API.
 
+The backend deployment path is now **Dockerfile-first**. Railway will use the root `Dockerfile` automatically, which avoids builder drift and ensures the `signallock` package and repo-root `configs/` directory are present in the runtime image.
+
 ---
 
 ## Architecture
@@ -37,17 +39,37 @@ The repository already includes the necessary deployment files at the project ro
 
 | File | Purpose |
 |---|---|
+| `Dockerfile` | Deterministic backend image build for Railway |
+| `.dockerignore` | Keeps the Railway build context lean while still allowing optional committed model artifacts |
 | `pyproject.toml` | Declares dependencies and the optional `ml` and `api` extras |
-| `Procfile` | Tells Railway the start command |
-| `railway.json` | Build + deploy + health-check configuration |
-| `.python-version` | Pins Railway to Python 3.13 |
+| `railway.json` | Health-check and restart-policy configuration |
+| `.python-version` | Local Python pin; not used by the Docker deployment path |
+| `Procfile` | Optional fallback start command for non-Docker platforms |
 
 ### 1.2. Create the Railway service
 
 1. Sign in to [railway.com](https://railway.com).
 2. **New Project → Deploy from GitHub repo** → select your `signallock` repository.
-3. Railway will detect Python via `pyproject.toml` and pick up `railway.json`. The build command (`pip install -e ".[ml,api]"`) installs SignalLock plus the ML and API extras.
+3. Railway will detect the root `Dockerfile` and build the backend image from it. No custom build command is required.
 4. Once the build finishes, Railway exposes a public URL like `https://signallock-production.up.railway.app`.
+
+### 1.2.a. What the Docker image does
+
+The image:
+
+- starts from `python:3.13-slim`,
+- copies `src/`, `configs/`, and optional committed model artifacts under `artifacts/models/`,
+- installs `signallock[ml,api]`,
+- sets `SIGNALLOCK_PROJECT_ROOT=/app` so the installed package can still resolve repo-root configs and artifacts,
+- starts the API with `python -m signallock serve --host 0.0.0.0`.
+
+This matters because SignalLock resolves several runtime config files from the repo root, including:
+
+- `configs/policy_profiles.json`
+- `configs/experiment_presets.json`
+- `configs/threshold_sweep_presets.json`
+
+The Dockerfile preserves that layout explicitly.
 
 ### 1.3. Configure environment variables in Railway
 
@@ -56,7 +78,7 @@ Open your Railway service → **Variables** tab and add:
 | Variable | Required | Value |
 |---|---|---|
 | `PORT` | auto-set by Railway | leave blank |
-| `HOST` | optional | `0.0.0.0` (already in Procfile) |
+| `HOST` | optional | `0.0.0.0` (the Docker image already starts the API on `0.0.0.0`) |
 | `CORS_ORIGINS` | **required for the dashboard to work** | `https://your-dashboard.vercel.app` (you'll set this after Vercel deploy — fill it back in then) |
 | `MODEL_FILE` | optional | path to a `.pkl` file inside the deployed image (see § 1.5) |
 
@@ -106,7 +128,7 @@ The `compare-scoring` endpoint and the `?ml=true` query mode require a trained m
    # → {"status":"ok","version":"0.1.0","model_loaded":true}
    ```
 
-> **Note:** The default `.gitignore` excludes `artifacts/`. The `git add -f` flag forces it past the ignore rule for this one model bundle.
+> **Note:** The default `.gitignore` excludes `artifacts/`. The `git add -f` flag forces it past the ignore rule for this one model bundle. The `.dockerignore` is intentionally configured to still include `artifacts/models/**` so committed model bundles can be baked into the Railway image when desired.
 
 ---
 
@@ -179,7 +201,7 @@ Just make sure `http://localhost:3000` is in `CORS_ORIGINS` on Railway.
 
 | Change | Action |
 |---|---|
-| Edit Python code | `git push` — Railway redeploys automatically |
+| Edit Python code | `git push` — Railway rebuilds the Docker image and redeploys automatically |
 | Edit dashboard code | `git push` — Vercel redeploys automatically |
 | Add CORS origin | Update `CORS_ORIGINS` env var on Railway |
 | Swap the trained model | Replace the `.pkl` file in the repo, update `MODEL_FILE`, redeploy |
@@ -201,9 +223,16 @@ Just make sure `http://localhost:3000` is in `CORS_ORIGINS` on Railway.
 - The browser cannot reach the Railway URL. Open `https://...railway.app/healthz` directly and check the response.
 - If healthz responds but the dashboard still fails: it's CORS. Look for `Access-Control-Allow-Origin` mismatch in the browser network tab.
 
+**Railway starts the container but crashes with `No module named signallock`**
+- This usually means Railway is still deploying through an older non-Docker builder path or a stale service configuration.
+- Confirm the repository root contains a file named exactly `Dockerfile` with a capital `D`.
+- In Railway build logs, verify it says the Dockerfile is being used.
+- Remove any old custom build/start overrides in the Railway service settings if they conflict with the repo config, then redeploy.
+
 **Railway build fails on `pip install`**
-- Confirm `.python-version` shows `3.13`.
-- Check the build log — usually a missing system dependency for scikit-learn (Railway's Nixpacks builder typically handles this fine).
+- Confirm the service is building from the root `Dockerfile`, not an older Nixpacks/Nix-based configuration.
+- Check the build log around `pip install ".[ml,api]"` for the failing dependency.
+- If you changed the model extras or Python version recently, redeploy from a clean commit so Railway rebuilds the image from scratch.
 
 **`/compare-scoring` returns 503**
 - The server was started without `MODEL_FILE`. Set it in Railway and redeploy.
