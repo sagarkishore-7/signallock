@@ -58,8 +58,9 @@ The repository already includes the necessary deployment files at the project ro
 The image:
 
 - starts from `python:3.13-slim`,
-- copies `src/`, `configs/`, and optional committed model artifacts under `artifacts/models/`,
+- copies `src/` and `configs/`,
 - installs `signallock[ml,api]`,
+- creates an empty `artifacts/` directory for runtime outputs,
 - sets `SIGNALLOCK_PROJECT_ROOT=/app` so the installed package can still resolve repo-root configs and artifacts,
 - starts the API with `python -m signallock serve --host 0.0.0.0`.
 
@@ -80,7 +81,7 @@ Open your Railway service → **Variables** tab and add:
 | `PORT` | auto-set by Railway | leave blank |
 | `HOST` | optional | `0.0.0.0` (the Docker image already starts the API on `0.0.0.0`) |
 | `CORS_ORIGINS` | **required for the dashboard to work** | `https://your-dashboard.vercel.app` (you'll set this after Vercel deploy — fill it back in then) |
-| `MODEL_FILE` | optional | path to a `.pkl` file inside the deployed image (see § 1.5) |
+| `MODEL_FILE` | optional | path to a `.pkl` file inside the deployed image if you ship one yourself (see § 1.5) |
 
 **Save** — Railway will redeploy automatically.
 
@@ -99,36 +100,38 @@ curl https://your-app.up.railway.app/demo/profiles?count=3
 
 If `/healthz` returns 200, the backend is live.
 
-### 1.5. (Optional) Bake an ML model into the image
+### 1.5. (Optional) Ship an ML model in the image
 
-The `compare-scoring` endpoint and the `?ml=true` query mode require a trained model file on disk. To deploy with one:
+The default Railway image runs in heuristic mode and does **not** copy your local `artifacts/` directory into the container. That is intentional: `artifacts/` is treated as local output, is gitignored by default, and often does not exist in the repository at all.
 
-1. Train a model locally and commit the artifact:
+If you want to enable `?ml=true` or `/compare-scoring` in production, you need to intentionally ship a tracked model artifact inside the image and point `MODEL_FILE` at it.
+
+A simple pattern is:
+
+1. Train a model locally:
 
    ```bash
    .venv/bin/python -m signallock train-model \
      --count 100 --seed 1 --model-type gradient_boosting \
      --save-model --output-dir artifacts/models
-   git add -f artifacts/models/<timestamp>/model_gradient_boosting.pkl \
-              artifacts/models/<timestamp>/model_metadata.json
-   git commit -m "feat: ship trained model with deployment"
-   git push
    ```
 
-2. Set the Railway env var:
+2. Move or copy the selected `.pkl` into a tracked location in the repo, update the Dockerfile to copy that location into the image, and commit the change.
+
+3. Set the Railway env var to the in-image path:
 
    ```
-   MODEL_FILE = artifacts/models/<timestamp>/model_gradient_boosting.pkl
+   MODEL_FILE = /app/<your-tracked-model-path>/model_gradient_boosting.pkl
    ```
 
-3. Redeploy. Verify with:
+4. Redeploy. Verify with:
 
    ```bash
    curl https://your-app.up.railway.app/healthz
    # → {"status":"ok","version":"0.1.0","model_loaded":true}
    ```
 
-> **Note:** The default `.gitignore` excludes `artifacts/`. The `git add -f` flag forces it past the ignore rule for this one model bundle. The `.dockerignore` is intentionally configured to still include `artifacts/models/**` so committed model bundles can be baked into the Railway image when desired.
+If you do not need ML-backed scoring in the deployed demo, leave `MODEL_FILE` unset. The backend, dashboard, and heuristic scoring flows still work normally.
 
 ---
 

@@ -18,6 +18,4 @@ build
 dist
 *.egg-info
 
-artifacts/*
-!artifacts/models/
-!artifacts/models/**
+artifacts

@@ -10,10 +10,10 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src/ ./src/
 COPY configs/ ./configs/
-COPY artifacts/ ./artifacts/
 
 RUN python -m pip install --upgrade pip && \
-    python -m pip install ".[ml,api]"
+    python -m pip install ".[ml,api]" && \
+    mkdir -p artifacts artifacts/models
 
 EXPOSE 8000
 
