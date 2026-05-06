@@ -24,6 +24,8 @@ This repository is a working research prototype with three main surfaces:
 
 The current implementation is still synthetic-data-first and defensive by design. ML results, calibration summaries, and policy comparisons should be interpreted as research artifacts, not as validated real-world deployment claims.
 
+The backend deployment path is Dockerfile-based for deterministic packaging on Railway. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the current Railway + Vercel flow.
+
 ## Supported Environment
 
 SignalLock requires Python `>=3.11`. The repository-local `.venv` is the reference environment and is currently based on Python `3.13`.
@@ -157,7 +159,9 @@ SignalLock/
 │   ├── test_threshold_sweep_figures.py
 │   └── test_threshold_sweeps.py
 ├── .gitignore
+├── .dockerignore
 ├── CONTRIBUTING.md
+├── Dockerfile
 ├── LICENSE
 ├── pyproject.toml
 └── README.md
