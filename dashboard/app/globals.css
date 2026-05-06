@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #fafafa;
+  color-scheme: light;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: #0a0a0a;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  border-color: theme("colors.border.DEFAULT");
+}
+
+@layer components {
+  .surface {
+    @apply bg-surface border border-border rounded-lg shadow-card;
+  }
+
+  .surface-hover {
+    @apply transition-all duration-200 ease-smooth hover:shadow-card-hover hover:border-border-strong;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-ink px-4 py-2 text-sm font-medium text-white
+           transition-all duration-150 ease-smooth
+           hover:bg-ink/90 hover:shadow-sm
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-border-strong bg-surface px-4 py-2 text-sm font-medium text-ink
+           transition-all duration-150 ease-smooth
+           hover:bg-muted hover:border-ink/40
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-ink-subdued
+           transition-all duration-150 ease-smooth
+           hover:text-ink hover:bg-muted
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20;
+  }
+
+  .input {
+    @apply w-full rounded-md border border-border-strong bg-surface px-3 py-2 text-sm text-ink
+           placeholder:text-ink-faint
+           transition-all duration-150 ease-smooth
+           focus:outline-none focus:border-ink focus:shadow-focus
+           disabled:opacity-50 disabled:bg-muted;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide;
+  }
+
+  .kbd {
+    @apply rounded border border-border-strong bg-muted px-1.5 py-0.5 font-mono text-[10px] text-ink-subdued shadow-[inset_0_-1px_0_rgba(0,0,0,0.06)];
+  }
+}
+
+/* Subtle scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+  border-radius: 5px;
+  border: 2px solid var(--bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa;
+}
+
+/* Selection */
+::selection {
+  background-color: rgba(30, 82, 95, 0.15);
+  color: #0a0a0a;
+}

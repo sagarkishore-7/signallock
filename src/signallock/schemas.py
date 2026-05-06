@@ -258,6 +258,7 @@ class HardeningRecommendation:
     primary_action: HardeningAction
     supporting_actions: list[HardeningAction]
     rationale: list[str]
+    ml_assisted: bool = False
 
     def __post_init__(self) -> None:
         """Validate core recommendation shape."""
@@ -280,6 +281,45 @@ class HardeningRecommendation:
         data["primary_action"] = self.primary_action.value
         data["supporting_actions"] = [action.value for action in self.supporting_actions]
         return data
+
+
+@dataclass
+class ModelScoringComparison:
+    """Side-by-side comparison of heuristic and ML-assisted scoring for one (profile, password) pair."""
+
+    employee_id: str
+    password_length: int
+    exposure_score: float
+    exposure_band: RiskBand
+    heuristic_password_band: RiskBand
+    ml_predicted_band: RiskBand
+    bands_agree: bool
+    heuristic_action: HardeningAction
+    ml_action: HardeningAction
+    actions_agree: bool
+    heuristic_combined_score: float
+    ml_combined_score: float
+    heuristic_recommendation: "HardeningRecommendation"
+    ml_recommendation: "HardeningRecommendation"
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the comparison to a JSON-serializable dictionary."""
+        return {
+            "employee_id": self.employee_id,
+            "password_length": self.password_length,
+            "exposure_score": self.exposure_score,
+            "exposure_band": self.exposure_band.value,
+            "heuristic_password_band": self.heuristic_password_band.value,
+            "ml_predicted_band": self.ml_predicted_band.value,
+            "bands_agree": self.bands_agree,
+            "heuristic_action": self.heuristic_action.value,
+            "ml_action": self.ml_action.value,
+            "actions_agree": self.actions_agree,
+            "heuristic_combined_score": self.heuristic_combined_score,
+            "ml_combined_score": self.ml_combined_score,
+            "heuristic_recommendation": self.heuristic_recommendation.to_dict(),
+            "ml_recommendation": self.ml_recommendation.to_dict(),
+        }
 
 
 @dataclass
@@ -1294,4 +1334,445 @@ class ThresholdSweepFigureArtifacts:
 
     def to_dict(self) -> dict[str, object]:
         """Convert artifact references to a JSON-serializable dictionary."""
+        return asdict(self)
+
+
+@dataclass
+class ThresholdSweepPreset:
+    """Named preset for a multi-seed, multi-profile threshold-sweep experiment."""
+
+    name: str
+    description: str
+    organization: str
+    profile_count: int
+    seeds: list[int]
+    base_profiles: list[PolicyProfile]
+    threshold_offsets: list[float]
+
+    def __post_init__(self) -> None:
+        """Validate preset structure."""
+        self.name = self.name.strip()
+        self.description = self.description.strip()
+        self.organization = self.organization.strip()
+        if not self.name:
+            raise ValueError("preset name must be non-empty")
+        if not self.description:
+            raise ValueError("preset description must be non-empty")
+        if not self.organization:
+            raise ValueError("organization must be non-empty")
+        if self.profile_count <= 0:
+            raise ValueError("profile_count must be positive")
+        if not self.seeds:
+            raise ValueError("seeds must be non-empty")
+        if not self.base_profiles:
+            raise ValueError("base_profiles must be non-empty")
+        if not self.threshold_offsets:
+            raise ValueError("threshold_offsets must be non-empty")
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the preset to a JSON-serializable dictionary."""
+        return {
+            "name": self.name,
+            "description": self.description,
+            "organization": self.organization,
+            "profile_count": self.profile_count,
+            "seeds": self.seeds,
+            "base_profiles": [profile.value for profile in self.base_profiles],
+            "threshold_offsets": self.threshold_offsets,
+        }
+
+
+@dataclass
+class SweepPresetArtifacts:
+    """Filesystem artifact references for one executed threshold-sweep preset."""
+
+    run_id: str
+    generated_at: str
+    output_dir: str
+    sweeps_dir: str
+    analysis_dir: str
+    figures_dir: str
+    manifest_file: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert preset artifact references to a JSON-serializable dictionary."""
+        return asdict(self)
+
+
+@dataclass
+class SweepPresetExecutionSummary:
+    """Summary of one executed threshold-sweep preset run."""
+
+    preset_name: str
+    description: str
+    organization: str
+    profile_count: int
+    seeds: list[int]
+    base_profiles: list[PolicyProfile]
+    threshold_offsets: list[float]
+    generated_at: str
+    sweep_run_count: int
+    sweep_artifacts: list[dict[str, object]]
+    analysis_artifacts: dict[str, object]
+    figure_artifacts: dict[str, object]
+    preset_artifacts: dict[str, object]
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert sweep preset execution summary to a JSON-serializable dictionary."""
+        return {
+            "preset_name": self.preset_name,
+            "description": self.description,
+            "organization": self.organization,
+            "profile_count": self.profile_count,
+            "seeds": self.seeds,
+            "base_profiles": [profile.value for profile in self.base_profiles],
+            "threshold_offsets": self.threshold_offsets,
+            "generated_at": self.generated_at,
+            "sweep_run_count": self.sweep_run_count,
+            "sweep_artifacts": self.sweep_artifacts,
+            "analysis_artifacts": self.analysis_artifacts,
+            "figure_artifacts": self.figure_artifacts,
+            "preset_artifacts": self.preset_artifacts,
+        }
+
+
+@dataclass
+class ExposureExplanation:
+    """Human-readable explanation of an exposure assessment."""
+
+    employee_id: str
+    exposure_score: float
+    exposure_band: RiskBand
+    summary: str
+    factor_sentences: list[str]
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the explanation to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["exposure_band"] = self.exposure_band.value
+        return data
+
+
+@dataclass
+class PasswordRiskExplanation:
+    """Human-readable explanation of a password risk assessment."""
+
+    employee_id: str
+    password_score: float
+    password_band: RiskBand
+    summary: str
+    factor_sentences: list[str]
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the explanation to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["password_band"] = self.password_band.value
+        return data
+
+
+@dataclass
+class HardeningExplanation:
+    """Human-readable explanation of a hardening recommendation."""
+
+    employee_id: str
+    primary_action: HardeningAction
+    action_sentence: str
+    exposure_explanation: ExposureExplanation
+    password_explanation: PasswordRiskExplanation
+    full_explanation: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the explanation to a JSON-serializable dictionary."""
+        return {
+            "employee_id": self.employee_id,
+            "primary_action": self.primary_action.value,
+            "action_sentence": self.action_sentence,
+            "exposure_explanation": self.exposure_explanation.to_dict(),
+            "password_explanation": self.password_explanation.to_dict(),
+            "full_explanation": self.full_explanation,
+        }
+
+
+@dataclass
+class DatasetRecord:
+    """One labeled feature row for ML training and calibration analysis."""
+
+    # identifiers
+    employee_id: str
+    scenario_name: str
+    policy_profile: PolicyProfile
+    # profile features
+    seniority_rank: int
+    platform_count: int
+    name_token_count: int
+    organization_token_count: int
+    temporal_token_count: int
+    identity_token_count: int
+    context_token_count: int
+    # password features
+    password_length: int
+    generic_short_length: float
+    generic_low_diversity: float
+    generic_simple_sequence: float
+    generic_repetition_pattern: float
+    contextual_name_overlap: float
+    contextual_org_overlap: float
+    contextual_temporal_overlap: float
+    contextual_identity_overlap: float
+    contextual_context_overlap: float
+    contextual_structure: float
+    # scores
+    exposure_score: float
+    password_score: float
+    combined_score: float
+    # bands and actions
+    exposure_band: RiskBand
+    password_band: RiskBand
+    primary_action: HardeningAction
+    # labels
+    expected_risk_band: RiskBand
+    expected_action_floor: HardeningAction
+    expected_action_ceiling: HardeningAction
+    within_expected_range: bool
+    action_severity: int
+    expected_floor_severity: int
+    expected_ceiling_severity: int
+    action_severity_gap: int
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert to a JSON-serializable and CSV-compatible dictionary."""
+        return {
+            "employee_id": self.employee_id,
+            "scenario_name": self.scenario_name,
+            "policy_profile": self.policy_profile.value,
+            "seniority_rank": self.seniority_rank,
+            "platform_count": self.platform_count,
+            "name_token_count": self.name_token_count,
+            "organization_token_count": self.organization_token_count,
+            "temporal_token_count": self.temporal_token_count,
+            "identity_token_count": self.identity_token_count,
+            "context_token_count": self.context_token_count,
+            "password_length": self.password_length,
+            "generic_short_length": self.generic_short_length,
+            "generic_low_diversity": self.generic_low_diversity,
+            "generic_simple_sequence": self.generic_simple_sequence,
+            "generic_repetition_pattern": self.generic_repetition_pattern,
+            "contextual_name_overlap": self.contextual_name_overlap,
+            "contextual_org_overlap": self.contextual_org_overlap,
+            "contextual_temporal_overlap": self.contextual_temporal_overlap,
+            "contextual_identity_overlap": self.contextual_identity_overlap,
+            "contextual_context_overlap": self.contextual_context_overlap,
+            "contextual_structure": self.contextual_structure,
+            "exposure_score": self.exposure_score,
+            "password_score": self.password_score,
+            "combined_score": self.combined_score,
+            "exposure_band": self.exposure_band.value,
+            "password_band": self.password_band.value,
+            "primary_action": self.primary_action.value,
+            "expected_risk_band": self.expected_risk_band.value,
+            "expected_action_floor": self.expected_action_floor.value,
+            "expected_action_ceiling": self.expected_action_ceiling.value,
+            "within_expected_range": self.within_expected_range,
+            "action_severity": self.action_severity,
+            "expected_floor_severity": self.expected_floor_severity,
+            "expected_ceiling_severity": self.expected_ceiling_severity,
+            "action_severity_gap": self.action_severity_gap,
+        }
+
+
+@dataclass
+class DatasetOverview:
+    """High-level metadata for one generated labeled dataset."""
+
+    organization: str
+    seed: int | None
+    policy_profile: PolicyProfile
+    profile_count: int
+    scenario_count: int
+    record_count: int
+    within_expected_range_rate: float
+    risk_band_distribution: dict[str, int]
+    action_distribution: dict[str, int]
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["policy_profile"] = self.policy_profile.value
+        return data
+
+
+@dataclass
+class DatasetArtifacts:
+    """Filesystem artifact references for one saved labeled dataset."""
+
+    run_id: str
+    generated_at: str
+    output_dir: str
+    records_file: str
+    overview_file: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert artifact references to a JSON-serializable dictionary."""
+        return asdict(self)
+
+
+@dataclass
+class ModelTrainingResult:
+    """Metrics and metadata from one model training run."""
+
+    model_type: str
+    feature_names: list[str]
+    class_labels: list[str]
+    train_size: int
+    test_size: int
+    test_accuracy: float
+    heuristic_test_accuracy: float
+    accuracy_delta: float
+    class_report: dict[str, object]
+    feature_importances: dict[str, float] | None
+    coefficients: dict[str, list[float]] | None
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert training results to a JSON-serializable dictionary."""
+        return {
+            "model_type": self.model_type,
+            "feature_names": self.feature_names,
+            "class_labels": self.class_labels,
+            "train_size": self.train_size,
+            "test_size": self.test_size,
+            "test_accuracy": self.test_accuracy,
+            "heuristic_test_accuracy": self.heuristic_test_accuracy,
+            "accuracy_delta": self.accuracy_delta,
+            "class_report": self.class_report,
+            "feature_importances": self.feature_importances,
+            "coefficients": self.coefficients,
+        }
+
+
+@dataclass
+class ModelArtifacts:
+    """Filesystem artifact references for one saved trained model."""
+
+    run_id: str
+    generated_at: str
+    output_dir: str
+    model_file: str
+    metadata_file: str
+    model_type: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert artifact references to a JSON-serializable dictionary."""
+        return asdict(self)
+
+
+@dataclass
+class ModelCVResult:
+    """Cross-validation accuracy metrics for one model type over a labeled dataset."""
+
+    model_type: str
+    n_folds: int
+    feature_names: list[str]
+    class_labels: list[str]
+    record_count: int
+    model_accuracy_mean: float
+    model_accuracy_std: float
+    heuristic_accuracy_mean: float
+    heuristic_accuracy_std: float
+    accuracy_delta_mean: float
+    fold_results: list[dict[str, object]]
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert CV results to a JSON-serializable dictionary."""
+        return {
+            "model_type": self.model_type,
+            "n_folds": self.n_folds,
+            "feature_names": self.feature_names,
+            "class_labels": self.class_labels,
+            "record_count": self.record_count,
+            "model_accuracy_mean": self.model_accuracy_mean,
+            "model_accuracy_std": self.model_accuracy_std,
+            "heuristic_accuracy_mean": self.heuristic_accuracy_mean,
+            "heuristic_accuracy_std": self.heuristic_accuracy_std,
+            "accuracy_delta_mean": self.accuracy_delta_mean,
+            "fold_results": self.fold_results,
+        }
+
+
+@dataclass
+class ExpertReviewTask:
+    """One review task to be sent to a security expert for empirical calibration.
+
+    The reviewer reads ``profile_summary``, sees the candidate ``password``, and
+    enters their judgement of the targeted risk band. The heuristic and ML
+    bands are included for reference but should not bias the rating.
+    """
+
+    task_id: str
+    profile_id: str
+    scenario_name: str
+    profile_summary: str
+    password: str
+    heuristic_band: RiskBand
+    heuristic_action: HardeningAction
+    ml_predicted_band: RiskBand | None = None
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the review task to a JSON/CSV-friendly dictionary."""
+        return {
+            "task_id": self.task_id,
+            "profile_id": self.profile_id,
+            "scenario_name": self.scenario_name,
+            "profile_summary": self.profile_summary,
+            "password": self.password,
+            "heuristic_band": self.heuristic_band.value,
+            "heuristic_action": self.heuristic_action.value,
+            "ml_predicted_band": (
+                self.ml_predicted_band.value if self.ml_predicted_band is not None else ""
+            ),
+            "expert_band": "",
+            "expert_action": "",
+            "notes": "",
+        }
+
+
+@dataclass
+class ExpertRating:
+    """One completed expert rating for a review task."""
+
+    task_id: str
+    profile_id: str
+    scenario_name: str
+    expert_band: RiskBand
+    expert_action: HardeningAction | None = None
+    notes: str = ""
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the rating to a JSON-serializable dictionary."""
+        return {
+            "task_id": self.task_id,
+            "profile_id": self.profile_id,
+            "scenario_name": self.scenario_name,
+            "expert_band": self.expert_band.value,
+            "expert_action": self.expert_action.value if self.expert_action else "",
+            "notes": self.notes,
+        }
+
+
+@dataclass
+class ExternalCalibrationResult:
+    """Three-way comparison of heuristic, ML, and expert calibration."""
+
+    rating_count: int
+    heuristic_vs_expert_match_rate: float
+    ml_vs_expert_match_rate: float | None
+    heuristic_vs_ml_match_rate: float | None
+    severe_disagreement_count: int  # heuristic and expert differ by >= 2 bands
+    expert_band_distribution: dict[str, int]
+    heuristic_band_distribution: dict[str, int]
+    ml_band_distribution: dict[str, int] | None
+    band_transition_counts: dict[str, int]  # "HEURISTIC→EXPERT" -> count, e.g. "HIGH→CRITICAL"
+    disagreement_details: list[dict[str, object]]
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the calibration result to a JSON-serializable dictionary."""
         return asdict(self)

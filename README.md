@@ -28,9 +28,11 @@ Current contents:
 - a formal threat model under [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md),
 - a feature taxonomy under [`docs/FEATURE_SCHEMA.md`](docs/FEATURE_SCHEMA.md),
 - a named experiment preset config under [`configs/experiment_presets.json`](configs/experiment_presets.json),
+- a named threshold-sweep preset config under [`configs/threshold_sweep_presets.json`](configs/threshold_sweep_presets.json),
 - a baseline exposure scoring pipeline under [`src/signallock/exposure.py`](src/signallock/exposure.py),
 - a baseline password-risk scoring pipeline under [`src/signallock/password_risk.py`](src/signallock/password_risk.py),
 - a baseline hardening policy engine under [`src/signallock/policy.py`](src/signallock/policy.py),
+- a template-based explanation renderer under [`src/signallock/explanation.py`](src/signallock/explanation.py),
 - a synthetic evaluation harness under [`src/signallock/evaluation.py`](src/signallock/evaluation.py),
 - a reproducible experiment reporting layer under [`src/signallock/reporting.py`](src/signallock/reporting.py),
 - a cross-run analysis layer under [`src/signallock/analysis.py`](src/signallock/analysis.py),
@@ -42,6 +44,8 @@ Current contents:
 - a threshold-sweep experiment layer under [`src/signallock/threshold_sweeps.py`](src/signallock/threshold_sweeps.py),
 - a cross-run threshold-sweep analysis layer under [`src/signallock/threshold_sweep_analysis.py`](src/signallock/threshold_sweep_analysis.py),
 - a threshold-sweep figure layer under [`src/signallock/threshold_sweep_figures.py`](src/signallock/threshold_sweep_figures.py),
+- a preset-driven multi-seed threshold-sweep orchestration layer under [`src/signallock/sweep_presets.py`](src/signallock/sweep_presets.py),
+- a scikit-learn risk-band classifier under [`src/signallock/model.py`](src/signallock/model.py),
 - an initial Python package scaffold under [`src/signallock/`](src/signallock/).
 
 Repository:
@@ -72,16 +76,20 @@ SignalLock/
 │   └── THREAT_MODEL.md
 ├── configs/
 │   ├── experiment_presets.json
-│   └── policy_profiles.json
+│   ├── policy_profiles.json
+│   └── threshold_sweep_presets.json
 ├── src/
 │   └── signallock/
 │       ├── __init__.py
 │       ├── analysis.py
 │       ├── cli.py
 │       ├── comparison.py
+│       ├── dataset.py
 │       ├── evaluation.py
+│       ├── explanation.py
 │       ├── exposure.py
 │       ├── figures.py
+│       ├── model.py
 │       ├── password_risk.py
 │       ├── preset_aggregates.py
 │       ├── policy.py
@@ -89,6 +97,7 @@ SignalLock/
 │       ├── reporting.py
 │       ├── results.py
 │       ├── schemas.py
+│       ├── sweep_presets.py
 │       ├── synthetic_profiles.py
 │       ├── threshold_sweep_analysis.py
 │       ├── threshold_sweep_figures.py
@@ -97,9 +106,12 @@ SignalLock/
 │   ├── test_cli.py
 │   ├── test_analysis.py
 │   ├── test_comparison.py
+│   ├── test_dataset.py
 │   ├── test_evaluation.py
+│   ├── test_explanation.py
 │   ├── test_exposure.py
 │   ├── test_figures.py
+│   ├── test_model.py
 │   ├── test_presets.py
 │   ├── test_reporting.py
 │   ├── test_results.py
@@ -107,6 +119,7 @@ SignalLock/
 │   ├── test_preset_aggregates.py
 │   ├── test_policy.py
 │   ├── test_schemas.py
+│   ├── test_sweep_presets.py
 │   ├── test_synthetic_profiles.py
 │   ├── test_threshold_sweep_analysis.py
 │   ├── test_threshold_sweep_figures.py
@@ -138,9 +151,9 @@ SignalLock currently targets four core research questions:
 
 ### Phase 2
 
-- implement the exposure engine,
-- implement the candidate-password risk engine,
-- add explainability and policy mapping,
+- implement the exposure engine, ✓
+- implement the candidate-password risk engine, ✓
+- add explainability and policy mapping, ✓
 - build an analyst-facing dashboard and a local interactive mode.
 
 ### Phase 3
@@ -264,6 +277,19 @@ PYTHONPATH=src python3 -m signallock compare-policies \
   --pretty
 ```
 
+Produce a human-readable explanation of an exposure and password risk assessment:
+
+```bash
+PYTHONPATH=src python3 -m signallock explain-recommendation \
+  --password "Priya2014!" \
+  --seed 1 \
+  --profile-index 0 \
+  --policy-profile balanced \
+  --pretty
+```
+
+The explanation output includes a per-sentence breakdown of each exposure and password risk factor, plus a full paragraph combining both layers into a coherent account of why the recommended action was chosen.
+
 List available experiment presets:
 
 ```bash
@@ -343,6 +369,44 @@ PYTHONPATH=src python3 -m signallock generate-threshold-sweep-figures \
   --pretty
 ```
 
+List available threshold-sweep presets:
+
+```bash
+PYTHONPATH=src python3 -m signallock list-sweep-presets --pretty
+```
+
+Execute a named threshold-sweep preset across multiple seeds and base profiles:
+
+```bash
+PYTHONPATH=src python3 -m signallock run-sweep-preset \
+  --preset all_profiles_sweep \
+  --pretty
+```
+
+Each sweep preset runs one threshold-sensitivity study per seed per base profile, then automatically aggregates and generates figures across the full set — producing a richer calibration picture than a single one-off sweep.
+
+Train a scikit-learn risk-band classifier on a labeled dataset (requires `pip install signallock[ml]`):
+
+```bash
+# Generate training data first
+PYTHONPATH=src python3 -m signallock generate-dataset \
+  --count 50 --seed 1 --save-dataset
+
+# Train from the saved CSV
+PYTHONPATH=src python3 -m signallock train-model \
+  --input-file artifacts/datasets/<timestamp>/dataset_records.csv \
+  --model-type gradient_boosting \
+  --save-model --pretty
+
+# Or generate training data and train in one step
+PYTHONPATH=src python3 -m signallock train-model \
+  --count 50 --seed 1 \
+  --model-type gradient_boosting \
+  --save-model --pretty
+```
+
+The training output includes model accuracy, the heuristic baseline accuracy on the same test set, and the accuracy delta — the primary metric for the paper's model-versus-heuristic comparison.
+
 Run the current test suite:
 
 ```bash
@@ -356,20 +420,27 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - compute a transparent baseline exposure score,
 - compute a transparent baseline password-risk score conditioned on profile context,
 - compute a baseline hardening recommendation from both scores,
+- produce human-readable per-factor explanations of exposure, password risk, and the recommended action,
+- generate a labeled feature-matrix dataset for ML training and calibration analysis,
+- train a scikit-learn gradient-boosted or logistic regression classifier on that dataset and compare it against the heuristic baseline,
 - switch between named policy profiles for experiments,
 - load policy thresholds from a repo-backed JSON config file,
 - compare policy profiles across synthetic evaluation scenarios,
+- measure proxy calibration behavior (within-range agreement, under- and over-hardening rates, TP/FP proxies),
+- run threshold-sensitivity sweeps to study calibration without editing policy files,
+- execute multi-seed, multi-profile threshold-sweep suites from named preset definitions,
 - export timestamped evaluation artifact bundles with markdown comparison tables,
 - aggregate saved runs into markdown and CSV comparison outputs,
 - compare baseline and candidate policies with run-level deltas and action transitions,
 - generate lightweight SVG charts and aggregate policy tables from saved runs,
-- execute repeatable experiment suites from named preset definitions,
+- execute repeatable evaluation experiment suites from named preset definitions,
+- summarize and aggregate preset bundles into thesis-friendly and paper-style tables,
 - inspect outputs through a CLI-first workflow with test coverage.
 
 ## Current Limitations
 
-- scoring is heuristic and not yet calibrated against empirical study data,
-- no ML models are in the loop yet,
+- heuristic scoring is not yet replaced end-to-end by the trained classifier in the recommendation pipeline,
+- calibration metrics are proxy measures over synthetic expectations, not real-world ground truth,
 - password scoring currently operates on one synthetic profile context at a time,
 - the policy engine is heuristic and not yet calibrated against user or org study data,
 - policy profiles are loaded from JSON but still limited to the current named profile set,

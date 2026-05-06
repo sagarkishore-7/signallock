@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 from .analysis import (
@@ -25,6 +26,29 @@ from .evaluation import (
     evaluation_results_to_json,
     summarize_policy_calibration,
 )
+from .dataset import (
+    DEFAULT_DATASET_OUTPUT_DIR,
+    dataset_results_to_json,
+    generate_dataset,
+    write_dataset_artifacts,
+)
+from .model import (
+    DEFAULT_MODEL_OUTPUT_DIR,
+    save_model,
+    train_model,
+    train_model_cv,
+    training_results_to_json,
+)
+from .model_integration import compare_scoring, comparison_to_json
+from .expert_review import (
+    calibration_result_to_json,
+    compute_external_calibration,
+    generate_review_tasks,
+    import_expert_ratings_csv,
+    write_review_tasks_csv,
+    write_review_tasks_json,
+)
+from .explanation import explain_recommendation, explanation_to_json
 from .exposure import assessments_to_json, score_profiles_exposure
 from .figures import (
     aggregate_policy_rows,
@@ -41,6 +65,12 @@ from .preset_aggregates import (
     write_preset_aggregate_artifacts,
 )
 from .presets import execute_preset, get_preset, presets_to_json
+from .sweep_presets import (
+    execute_sweep_preset,
+    get_sweep_preset,
+    sweep_preset_execution_to_json,
+    sweep_presets_to_json,
+)
 from .reporting import (
     DEFAULT_EVALUATION_OUTPUT_DIR,
     render_policy_calibration_table,
@@ -230,6 +260,108 @@ def build_parser() -> argparse.ArgumentParser:
         "--policy-file",
         default=None,
         help="Optional path to a policy profile JSON file.",
+    )
+    policy_parser.add_argument(
+        "--model-file",
+        default=None,
+        help="Optional path to a trained model .pkl file. When supplied, the ML-predicted risk band replaces the heuristic band in policy decisions.",
+    )
+
+    compare_parser = subparsers.add_parser(
+        "compare-scoring",
+        help="Show heuristic vs ML-assisted scoring side by side for one (profile, password) pair.",
+    )
+    compare_parser.add_argument("--password", required=True, help="Candidate password to assess.")
+    compare_parser.add_argument("--count", type=int, default=5, help="Number of synthetic profiles to generate.")
+    compare_parser.add_argument("--organization", default="ExampleCorp", help="Organization name.")
+    compare_parser.add_argument("--seed", type=int, default=None, help="Optional random seed.")
+    compare_parser.add_argument("--profile-index", type=int, default=0, help="Zero-based synthetic profile index.")
+    compare_parser.add_argument(
+        "--model-file",
+        required=True,
+        help="Path to a trained model .pkl file produced by train-model.",
+    )
+    compare_parser.add_argument(
+        "--policy-profile",
+        choices=[profile.value for profile in PolicyProfile],
+        default=PolicyProfile.BALANCED.value,
+        help="Named hardening policy profile to apply.",
+    )
+    compare_parser.add_argument("--policy-file", default=None, help="Optional path to a policy profile JSON file.")
+    compare_parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output.")
+
+    review_parser = subparsers.add_parser(
+        "generate-review-tasks",
+        help="Export review tasks (one per profile-scenario pair) for security expert calibration.",
+    )
+    review_parser.add_argument(
+        "--count",
+        type=int,
+        default=10,
+        help="Number of synthetic profiles to generate.",
+    )
+    review_parser.add_argument(
+        "--organization",
+        default="ExampleCorp",
+        help="Organization name to embed in generated profiles.",
+    )
+    review_parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Optional random seed for reproducible output.",
+    )
+    review_parser.add_argument(
+        "--policy-profile",
+        choices=[profile.value for profile in PolicyProfile],
+        default=PolicyProfile.BALANCED.value,
+        help="Policy profile used to derive the heuristic-action reference column.",
+    )
+    review_parser.add_argument(
+        "--policy-file",
+        default=None,
+        help="Optional path to a policy profile JSON file.",
+    )
+    review_parser.add_argument(
+        "--format",
+        choices=["csv", "json"],
+        default="csv",
+        help="Output format. CSV is Excel-friendly; JSON preserves structure.",
+    )
+    review_parser.add_argument(
+        "--output-file",
+        default=None,
+        help="Path to write the export to. If omitted, prints to stdout.",
+    )
+    review_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output (only applies to --format json).",
+    )
+
+    calibration_parser = subparsers.add_parser(
+        "compute-external-calibration",
+        help="Cross-reference expert ratings with heuristic and (optional) ML predictions.",
+    )
+    calibration_parser.add_argument(
+        "--records-file",
+        required=True,
+        help="Path to a dataset_records.csv produced by generate-dataset.",
+    )
+    calibration_parser.add_argument(
+        "--ratings-file",
+        required=True,
+        help="Path to a completed review CSV with expert_band filled in.",
+    )
+    calibration_parser.add_argument(
+        "--model-file",
+        default=None,
+        help="Optional path to a trained model .pkl. When supplied, the comparison is three-way (heuristic vs ML vs expert).",
+    )
+    calibration_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
     )
 
     profiles_parser = subparsers.add_parser(
@@ -714,6 +846,264 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pretty-print JSON output.",
     )
 
+    train_parser = subparsers.add_parser(
+        "train-model",
+        help=(
+            "Train a scikit-learn risk-band classifier on a labeled dataset. "
+            "Requires: pip install signallock[ml]"
+        ),
+    )
+    _train_source = train_parser.add_mutually_exclusive_group(required=True)
+    _train_source.add_argument(
+        "--input-file",
+        default=None,
+        help="Path to a dataset_records.csv file produced by generate-dataset.",
+    )
+    _train_source.add_argument(
+        "--count",
+        type=int,
+        default=None,
+        help="Generate a dataset inline from this many synthetic profiles.",
+    )
+    train_parser.add_argument(
+        "--organization",
+        default="ExampleCorp",
+        help="Organization name (used only with --count).",
+    )
+    train_parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Random seed for reproducible dataset generation (used only with --count).",
+    )
+    train_parser.add_argument(
+        "--policy-profile",
+        choices=[profile.value for profile in PolicyProfile],
+        default=PolicyProfile.BALANCED.value,
+        help="Policy profile for action labels (used only with --count).",
+    )
+    train_parser.add_argument(
+        "--model-type",
+        choices=["logistic", "gradient_boosting"],
+        default="gradient_boosting",
+        help="Estimator type to train.",
+    )
+    train_parser.add_argument(
+        "--test-size",
+        type=float,
+        default=0.2,
+        help="Fraction of records held out for evaluation (default 0.2).",
+    )
+    train_parser.add_argument(
+        "--random-state",
+        type=int,
+        default=42,
+        help="Random state for train/test split and model.",
+    )
+    train_parser.add_argument(
+        "--folds",
+        type=int,
+        default=None,
+        help="Run stratified k-fold cross-validation with this many folds instead of a single train-test split. Disables --save-model.",
+    )
+    train_parser.add_argument(
+        "--save-model",
+        action="store_true",
+        help="Persist the trained model and metadata to disk (ignored when --folds is set).",
+    )
+    train_parser.add_argument(
+        "--output-dir",
+        default=str(DEFAULT_MODEL_OUTPUT_DIR),
+        help="Directory for saved model artifacts.",
+    )
+    train_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+
+    dataset_parser = subparsers.add_parser(
+        "generate-dataset",
+        help="Generate a labeled feature-matrix dataset for ML training and calibration analysis.",
+    )
+    dataset_parser.add_argument(
+        "--count",
+        type=int,
+        default=10,
+        help="Number of synthetic profiles to generate.",
+    )
+    dataset_parser.add_argument(
+        "--organization",
+        default="ExampleCorp",
+        help="Organization name to embed in generated profiles.",
+    )
+    dataset_parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Optional random seed for reproducible output.",
+    )
+    dataset_parser.add_argument(
+        "--policy-profile",
+        choices=[profile.value for profile in PolicyProfile],
+        default=PolicyProfile.BALANCED.value,
+        help="Policy profile used to derive primary-action labels.",
+    )
+    dataset_parser.add_argument(
+        "--policy-file",
+        default=None,
+        help="Optional path to a policy profile JSON file.",
+    )
+    dataset_parser.add_argument(
+        "--include-records",
+        action="store_true",
+        help="Include the full record list in the JSON output.",
+    )
+    dataset_parser.add_argument(
+        "--save-dataset",
+        action="store_true",
+        help="Write the dataset CSV and overview JSON to disk.",
+    )
+    dataset_parser.add_argument(
+        "--output-dir",
+        default=str(DEFAULT_DATASET_OUTPUT_DIR),
+        help="Directory for saved dataset artifacts.",
+    )
+    dataset_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+
+    explain_parser = subparsers.add_parser(
+        "explain-recommendation",
+        help="Produce a human-readable explanation of an exposure and password risk assessment.",
+    )
+    explain_parser.add_argument(
+        "--password",
+        required=True,
+        help="Candidate password to assess.",
+    )
+    explain_parser.add_argument(
+        "--count",
+        type=int,
+        default=5,
+        help="Number of synthetic profiles to generate.",
+    )
+    explain_parser.add_argument(
+        "--organization",
+        default="ExampleCorp",
+        help="Organization name to embed in generated profiles.",
+    )
+    explain_parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Optional random seed for reproducible output.",
+    )
+    explain_parser.add_argument(
+        "--profile-index",
+        type=int,
+        default=0,
+        help="Zero-based synthetic profile index to use as context.",
+    )
+    explain_parser.add_argument(
+        "--policy-profile",
+        choices=[profile.value for profile in PolicyProfile],
+        default=PolicyProfile.BALANCED.value,
+        help="Named hardening policy profile to apply.",
+    )
+    explain_parser.add_argument(
+        "--policy-file",
+        default=None,
+        help="Optional path to a policy profile JSON file.",
+    )
+    explain_parser.add_argument(
+        "--model-file",
+        default=None,
+        help="Optional path to a trained model .pkl file. When supplied, the ML-predicted risk band replaces the heuristic band before the explanation is rendered.",
+    )
+    explain_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+
+    list_sweep_presets_parser = subparsers.add_parser(
+        "list-sweep-presets",
+        help="List built-in threshold-sweep presets for repeatable sensitivity studies.",
+    )
+    list_sweep_presets_parser.add_argument(
+        "--sweep-preset-file",
+        default=None,
+        help="Optional path to a threshold-sweep preset JSON file.",
+    )
+    list_sweep_presets_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+
+    run_sweep_preset_parser = subparsers.add_parser(
+        "run-sweep-preset",
+        help="Execute a named threshold-sweep preset across multiple seeds and base profiles.",
+    )
+    run_sweep_preset_parser.add_argument(
+        "--preset",
+        required=True,
+        help="Name of the sweep preset to execute.",
+    )
+    run_sweep_preset_parser.add_argument(
+        "--sweep-preset-file",
+        default=None,
+        help="Optional path to a threshold-sweep preset JSON file.",
+    )
+    run_sweep_preset_parser.add_argument(
+        "--output-dir",
+        default=None,
+        help="Optional directory for the saved sweep preset bundle.",
+    )
+    run_sweep_preset_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+
+    serve_parser = subparsers.add_parser(
+        "serve",
+        help=(
+            "Start the SignalLock FastAPI service for Audit and Interactive modes. "
+            "Requires: pip install signallock[api]"
+        ),
+    )
+    serve_parser.add_argument(
+        "--host",
+        default=os.environ.get("HOST", "127.0.0.1"),
+        help="Bind address. Defaults to $HOST or 127.0.0.1 (loopback only). Use 0.0.0.0 for production hosting.",
+    )
+    serve_parser.add_argument(
+        "--port",
+        type=int,
+        default=int(os.environ.get("PORT", "8000")),
+        help="TCP port to listen on. Defaults to $PORT or 8000.",
+    )
+    serve_parser.add_argument(
+        "--model-file",
+        default=os.environ.get("MODEL_FILE"),
+        help="Optional path to a trained model .pkl file. Defaults to $MODEL_FILE. Enables /compare-scoring and ?ml=true.",
+    )
+    serve_parser.add_argument(
+        "--reload",
+        action="store_true",
+        help="Enable uvicorn auto-reload (development only).",
+    )
+    serve_parser.add_argument(
+        "--cors-origins",
+        nargs="*",
+        default=(os.environ.get("CORS_ORIGINS", "").split() or None),
+        help="Allowed CORS origins (e.g. http://localhost:3000). Defaults to $CORS_ORIGINS (space-separated).",
+    )
+
     return parser
 
 
@@ -775,7 +1165,22 @@ def main(argv: list[str] | None = None) -> None:
         exposure = score_profiles_exposure([profile])[0]
         password_assessment = score_password_for_profile(args.password, profile)
         config = get_policy_config(args.policy_profile, policy_file=args.policy_file)
-        recommendation = recommend_hardening(exposure, password_assessment, config=config)
+
+        predicted_band = None
+        if args.model_file:
+            from .exposure import profile_to_attribute_vector
+            from .model import load_model_artifacts, predict_risk_band as _predict
+
+            vector = profile_to_attribute_vector(profile)
+            fitted_model, _ = load_model_artifacts(args.model_file)
+            predicted_band = _predict(fitted_model, vector, password_assessment)
+
+        recommendation = recommend_hardening(
+            exposure,
+            password_assessment,
+            config=config,
+            predicted_password_band=predicted_band,
+        )
         payload = {
             "profile": profile.to_dict(),
             "exposure": exposure.to_dict(),
@@ -787,6 +1192,97 @@ def main(argv: list[str] | None = None) -> None:
             print(json.dumps(payload, indent=2))
         else:
             print(json.dumps(payload))
+        return
+
+    if args.command == "compare-scoring":
+        profiles = generate_synthetic_profiles(
+            count=args.count,
+            organization=args.organization,
+            seed=args.seed,
+        )
+        if args.profile_index < 0 or args.profile_index >= len(profiles):
+            parser.error("--profile-index must refer to a generated synthetic profile")
+
+        profile = profiles[args.profile_index]
+        config = get_policy_config(args.policy_profile, policy_file=args.policy_file)
+        comparison = compare_scoring(args.password, profile, args.model_file, config=config)
+        print(comparison_to_json(comparison, pretty=args.pretty))
+        return
+
+    if args.command == "generate-review-tasks":
+        profiles = generate_synthetic_profiles(
+            count=args.count,
+            organization=args.organization,
+            seed=args.seed,
+        )
+        tasks = generate_review_tasks(
+            profiles,
+            policy_profile=PolicyProfile(args.policy_profile),
+            policy_file=args.policy_file,
+        )
+        if args.format == "csv":
+            output = write_review_tasks_csv(tasks)
+        else:
+            output = write_review_tasks_json(tasks, pretty=args.pretty)
+        if args.output_file:
+            Path(args.output_file).write_text(output, encoding="utf-8")
+            print(json.dumps({"tasks_written": len(tasks), "output_file": args.output_file}))
+        else:
+            print(output)
+        return
+
+    if args.command == "compute-external-calibration":
+        from .dataset import _csv_rows_to_records as _rows_to_records
+        import csv as _csv
+
+        with open(args.records_file, newline="", encoding="utf-8") as fh:
+            records = _rows_to_records(list(_csv.DictReader(fh)))
+        ratings = import_expert_ratings_csv(args.ratings_file)
+
+        ml_bands = None
+        if args.model_file:
+            from .exposure import profile_to_attribute_vector as _vec
+            from .model import load_model_artifacts, predict_risk_band as _predict
+            from .password_risk import score_password_for_profile as _score_pw
+            from .schemas import RoleSeniority as _Role, Platform as _Plat, PublicProfile as _Profile
+
+            fitted_model, _ = load_model_artifacts(args.model_file)
+            # We need the original profiles to extract feature vectors. The
+            # records already store the necessary fields; rebuild a minimal
+            # synthetic vector by re-reading from the synthetic generator
+            # using the profile_id index (records carry employee_id only).
+            # In practice the caller pairs records with the same generated
+            # profile batch; we regenerate here for inference.
+            profiles_by_id: dict[str, _Profile] = {}
+            seed_profiles = generate_synthetic_profiles(count=args.count if hasattr(args, "count") else 50, seed=1)
+            for p in seed_profiles:
+                profiles_by_id[p.employee_id] = p
+
+            ml_bands = {}
+            for rating in ratings:
+                profile = profiles_by_id.get(rating.profile_id)
+                if profile is None:
+                    continue
+                # Find the matching record to get the password
+                matching = next(
+                    (r for r in records if r.employee_id == rating.profile_id and r.scenario_name == rating.scenario_name),
+                    None,
+                )
+                if matching is None:
+                    continue
+                # Recreate the password assessment using the scenario name's password
+                from .evaluation import generate_synthetic_scenario_specs as _specs
+                spec = next((s for s in _specs(profile) if s.name == rating.scenario_name), None)
+                if spec is None:
+                    continue
+                pa = _score_pw(spec.password, profile)
+                vector = _vec(profile)
+                ml_bands[(rating.profile_id, rating.scenario_name)] = _predict(
+                    fitted_model, vector, pa
+                )
+
+        result = compute_external_calibration(records, ratings, ml_predicted_bands=ml_bands)
+        print(calibration_result_to_json(result, pretty=args.pretty))
         return
 
     if args.command == "list-policy-profiles":
@@ -1227,6 +1723,156 @@ def main(argv: list[str] | None = None) -> None:
                 artifacts=artifacts.to_dict() if artifacts else None,
             )
         )
+        return
+
+    if args.command == "train-model":
+        if args.input_file:
+            import csv as _csv
+
+            with open(args.input_file, newline="", encoding="utf-8") as fh:
+                rows = list(_csv.DictReader(fh))
+            from .dataset import _csv_rows_to_records
+
+            records = _csv_rows_to_records(rows)
+        else:
+            profiles = generate_synthetic_profiles(
+                count=args.count,
+                organization=args.organization,
+                seed=args.seed,
+            )
+            _, records = generate_dataset(
+                profiles,
+                policy_profile=PolicyProfile(args.policy_profile),
+                organization=args.organization,
+                seed=args.seed,
+            )
+        if args.folds:
+            cv_result = train_model_cv(
+                records,
+                n_folds=args.folds,
+                model_type=args.model_type,
+                random_state=args.random_state,
+            )
+            payload = cv_result.to_dict()
+            if args.pretty:
+                print(json.dumps(payload, indent=2))
+            else:
+                print(json.dumps(payload))
+            return
+
+        result, fitted_model = train_model(
+            records,
+            model_type=args.model_type,
+            test_size=args.test_size,
+            random_state=args.random_state,
+        )
+        artifacts = None
+        if args.save_model:
+            artifacts = save_model(fitted_model, result, output_dir=args.output_dir)
+        print(
+            training_results_to_json(
+                result,
+                pretty=args.pretty,
+                artifacts=artifacts.to_dict() if artifacts else None,
+            )
+        )
+        return
+
+    if args.command == "generate-dataset":
+        profiles = generate_synthetic_profiles(
+            count=args.count,
+            organization=args.organization,
+            seed=args.seed,
+        )
+        overview, records = generate_dataset(
+            profiles,
+            policy_profile=PolicyProfile(args.policy_profile),
+            organization=args.organization,
+            seed=args.seed,
+            policy_file=args.policy_file,
+        )
+        artifacts = None
+        if args.save_dataset:
+            artifacts = write_dataset_artifacts(
+                overview,
+                records,
+                output_dir=args.output_dir,
+            )
+        print(
+            dataset_results_to_json(
+                overview,
+                records,
+                include_records=args.include_records,
+                pretty=args.pretty,
+                artifacts=artifacts.to_dict() if artifacts else None,
+            )
+        )
+        return
+
+    if args.command == "explain-recommendation":
+        profiles = generate_synthetic_profiles(
+            count=args.count,
+            organization=args.organization,
+            seed=args.seed,
+        )
+        if args.profile_index < 0 or args.profile_index >= len(profiles):
+            parser.error("--profile-index must refer to a generated synthetic profile")
+
+        profile = profiles[args.profile_index]
+        exposure = score_profiles_exposure([profile])[0]
+        password_assessment = score_password_for_profile(args.password, profile)
+        config = get_policy_config(args.policy_profile, policy_file=args.policy_file)
+
+        predicted_band = None
+        if args.model_file:
+            from .exposure import profile_to_attribute_vector
+            from .model import load_model_artifacts, predict_risk_band as _predict
+
+            vector = profile_to_attribute_vector(profile)
+            fitted_model, _ = load_model_artifacts(args.model_file)
+            predicted_band = _predict(fitted_model, vector, password_assessment)
+
+        recommendation = recommend_hardening(
+            exposure,
+            password_assessment,
+            config=config,
+            predicted_password_band=predicted_band,
+        )
+        explanation = explain_recommendation(recommendation, profile, exposure, password_assessment)
+        print(explanation_to_json(explanation, pretty=args.pretty))
+        return
+
+    if args.command == "list-sweep-presets":
+        print(sweep_presets_to_json(pretty=args.pretty, preset_file=args.sweep_preset_file))
+        return
+
+    if args.command == "run-sweep-preset":
+        preset = get_sweep_preset(args.preset, preset_file=args.sweep_preset_file)
+        summary = execute_sweep_preset(
+            preset,
+            output_dir=args.output_dir,
+        )
+        print(sweep_preset_execution_to_json(summary, pretty=args.pretty))
+        return
+
+    if args.command == "serve":
+        try:
+            import uvicorn  # type: ignore[import-not-found]
+        except ImportError as exc:
+            parser.error(
+                "uvicorn is required for the serve command. "
+                "Install it with: pip install signallock[api]"
+            )
+            raise SystemExit(2) from exc
+
+        from .api import create_app
+
+        app = create_app(model_file=args.model_file, cors_origins=args.cors_origins)
+        print(
+            f"SignalLock API listening on http://{args.host}:{args.port}  "
+            f"(model_loaded={args.model_file is not None})"
+        )
+        uvicorn.run(app, host=args.host, port=args.port, reload=args.reload)
         return
 
     print("SignalLock is in early implementation.")

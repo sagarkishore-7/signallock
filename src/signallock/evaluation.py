@@ -64,8 +64,10 @@ def generate_synthetic_scenario_specs(profile: PublicProfile) -> list[SyntheticS
     org_seed = _safe_token(profile.organization.split()[0])
     interest_seed = _safe_token(profile.interests[0].split()[0]) if profile.interests else "Research"
     username_seed = _safe_token(profile.public_usernames[0]) if profile.public_usernames else "User"
+    raw_username = profile.public_usernames[0] if profile.public_usernames else "user"
 
     return [
+        # --- original five scenarios ---
         SyntheticScenarioSpec(
             name="contextual_name_year",
             password=f"{name_seed}{year_seed}!",
@@ -100,6 +102,48 @@ def generate_synthetic_scenario_specs(profile: PublicProfile) -> list[SyntheticS
             expected_risk_band=RiskBand.LOW,
             expected_action_floor=HardeningAction.ALLOW,
             expected_action_ceiling=HardeningAction.WARN,
+        ),
+        # --- five extended scenarios for richer ML training distributions ---
+        SyntheticScenarioSpec(
+            name="name_only",
+            # name overlap without year — no contextual_structure bonus
+            password=f"{name_seed}!Xq8z",
+            expected_risk_band=RiskBand.MEDIUM,
+            expected_action_floor=HardeningAction.WARN,
+            expected_action_ceiling=HardeningAction.REQUIRE_STRONGER_PASSWORD,
+        ),
+        SyntheticScenarioSpec(
+            name="year_only",
+            # year overlap without name — temporal signal only
+            password=f"Xq8z{year_seed}!",
+            expected_risk_band=RiskBand.MEDIUM,
+            expected_action_floor=HardeningAction.WARN,
+            expected_action_ceiling=HardeningAction.REQUIRE_STRONGER_PASSWORD,
+        ),
+        SyntheticScenarioSpec(
+            name="generic_weak",
+            # common dictionary word — generic weakness, zero contextual overlap
+            password="password1!",
+            expected_risk_band=RiskBand.MEDIUM,
+            expected_action_floor=HardeningAction.WARN,
+            expected_action_ceiling=HardeningAction.REQUIRE_STRONGER_PASSWORD,
+        ),
+        SyntheticScenarioSpec(
+            name="interest_only",
+            # interest/location word, no year — low contextual signal
+            password=f"{interest_seed}Xq8z!",
+            expected_risk_band=RiskBand.LOW,
+            expected_action_floor=HardeningAction.ALLOW,
+            expected_action_ceiling=HardeningAction.WARN,
+        ),
+        SyntheticScenarioSpec(
+            name="username_year",
+            # raw username (with punctuation) + year — identity + temporal overlap
+            # threat model: HIGH because both components are public and the combination is targeted
+            password=f"{raw_username}{year_seed}!",
+            expected_risk_band=RiskBand.HIGH,
+            expected_action_floor=HardeningAction.REQUIRE_STRONGER_PASSWORD,
+            expected_action_ceiling=HardeningAction.ENFORCE_MFA,
         ),
     ]
 

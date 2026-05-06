@@ -24,12 +24,14 @@ The current evaluation layer also attaches proxy calibration targets to each syn
 7. Aggregate multiple saved runs into cross-run markdown and CSV outputs.
 8. Compare baseline and candidate policies across saved runs.
 9. Generate lightweight SVG figures and aggregate policy tables.
-10. Execute named presets that orchestrate the entire workflow automatically.
+10. Execute named presets that orchestrate the entire evaluation workflow automatically.
 11. Summarize executed preset bundles into thesis-friendly markdown and CSV outputs.
 12. Aggregate preset summaries into paper-style cross-preset result tables.
 13. Run threshold-sensitivity sweeps to study calibration changes without editing policy files.
-14. Aggregate saved threshold sweeps into cross-run sensitivity summaries.
-15. Generate threshold-sweep SVG figures for thesis-ready review.
+14. Execute named sweep presets to run multi-seed, multi-profile sweeps automatically.
+15. Aggregate saved threshold sweeps into cross-run sensitivity summaries.
+16. Generate threshold-sweep SVG figures for thesis-ready review.
+17. Produce human-readable explanations of any recommendation for review or user feedback.
 
 ## CLI Example
 
@@ -176,6 +178,17 @@ These bundles currently contain:
 - `threshold_sweep_within_range.svg`
 - `threshold_sweep_false_positive.svg`
 - `threshold_sweep_action_change.svg`
+
+Sweep preset bundles are written under:
+
+`artifacts/sweep_presets/<timestamp>-<preset>/`
+
+Each bundle contains:
+
+- `sweep_preset_manifest.json`
+- `sweeps/<timestamp>/` — one sweep bundle per seed × base-profile run
+- `analysis/<timestamp>/` — cross-run analysis aggregated across all sweeps
+- `figures/<timestamp>/` — SVG and CSV figures derived from the aggregates
 
 ## File Semantics
 
@@ -456,6 +469,26 @@ Optional flags:
 - `--output-dir` to control where aggregate bundles are written
 - `--include-tables` to embed the markdown tables directly in JSON
 
+## Explanations
+
+Produce a human-readable explanation of a recommendation:
+
+```bash
+PYTHONPATH=src python3 -m signallock explain-recommendation \
+  --password "Priya2014!" \
+  --seed 1 \
+  --profile-index 0 \
+  --policy-profile balanced \
+  --pretty
+```
+
+The output includes:
+
+- an `exposure_explanation` with a one-sentence summary and one sentence per top exposure factor, referencing specific profile data such as seniority, platforms, usernames, and year markers,
+- a `password_explanation` with a one-sentence summary and one sentence per top password risk factor, using matched token data to describe exactly which profile attributes appeared in the password without echoing the password itself,
+- an `action_sentence` describing what the recommended action means in plain language,
+- and a `full_explanation` paragraph composing all three layers into a coherent account.
+
 ## Threshold Sweeps
 
 Run a threshold-sensitivity study directly from the CLI:
@@ -515,6 +548,51 @@ This command is useful for:
 - comparing within-range, false-positive, and action-change behavior by offset,
 - and dropping threshold-tuning visuals into notes or draft papers.
 
+## Sweep Presets
+
+List available sweep presets:
+
+```bash
+PYTHONPATH=src python3 -m signallock list-sweep-presets --pretty
+```
+
+Three presets ship by default:
+
+- `balanced_sweep`: 3 seeds, balanced profile, offsets −12 to +12.
+- `all_profiles_sweep`: 3 seeds, all three profiles, offsets −12 to +12.
+- `fine_sweep`: 5 seeds, all three profiles, finer offsets −10 to +10.
+
+Execute a named sweep preset end to end:
+
+```bash
+PYTHONPATH=src python3 -m signallock run-sweep-preset \
+  --preset all_profiles_sweep \
+  --pretty
+```
+
+Each sweep preset runs one threshold-sensitivity study per seed per base profile, then automatically aggregates across all those runs and generates figures — producing a richer calibration picture than a single one-off sweep.
+
+The resulting bundle is saved under:
+
+`artifacts/sweep_presets/<timestamp>-<preset>/`
+
+and contains:
+
+- `sweep_preset_manifest.json`
+- `sweeps/` — one timestamped sweep bundle per seed × base-profile combination
+- `analysis/` — cross-run sweep analysis aggregated across all sweeps in this preset
+- `figures/` — SVG and CSV figure bundle derived from those aggregates
+
+Use a custom preset file:
+
+```bash
+PYTHONPATH=src python3 -m signallock run-sweep-preset \
+  --preset my_sweep \
+  --sweep-preset-file /path/to/sweep_presets.json \
+  --output-dir /tmp/signallock-sweeps \
+  --pretty
+```
+
 ## Reproducibility Notes
 
 - Use `--seed` for stable synthetic profile generation.
@@ -533,5 +611,6 @@ This command is useful for:
 - Preset summaries are designed for traceability and draft reporting, not final statistical claims.
 - Preset aggregates are useful for paper-style comparison and framing, but they still summarize heuristic synthetic experiments.
 - Threshold sweeps are useful for sensitivity analysis, but they currently vary only numeric score thresholds, not band-based guardrails or feature weights.
+- Explanation sentences are template-based and deterministic; they are not generated by a language model and do not adapt to free-text profile inputs.
 - No calibration or confidence intervals are produced yet.
 - The artifact format is stable enough for local iteration, but may evolve as the research design matures.

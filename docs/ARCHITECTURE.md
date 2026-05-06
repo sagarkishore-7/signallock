@@ -70,6 +70,22 @@ and now:
 
 `threshold-sweep offset aggregates -> SVG and CSV figure bundle for threshold-tuning review`
 
+and now:
+
+`named threshold-sweep preset -> per-seed per-profile sweep bundles -> sweep analysis + sweep figures`
+
+and now:
+
+`HardeningRecommendation + PublicProfile + ExposureAssessment + PasswordRiskAssessment -> HardeningExplanation`
+
+which decomposes into:
+
+`ExposureAssessment + PublicProfile -> ExposureExplanation (summary + per-factor sentences)`
+
+`PasswordRiskAssessment + PublicProfile -> PasswordRiskExplanation (summary + per-factor sentences, using matched_tokens for specificity)`
+
+`ExposureExplanation + PasswordRiskExplanation + HardeningRecommendation -> HardeningExplanation (action sentence + full paragraph)`
+
 These are still heuristic baselines, but they establish the core separation the project depends on:
 
 - exposure risk,
@@ -232,6 +248,25 @@ Responsibilities:
 - render lightweight SVG figures across threshold offsets and base profiles,
 - emit aggregate CSV and markdown summary tables,
 - save timestamped threshold-sweep figure bundles for reporting and thesis drafts.
+
+### `src/signallock/sweep_presets.py`
+
+Responsibilities:
+
+- load named threshold-sweep presets from configuration,
+- execute multi-seed, multi-profile threshold-sweep suites end to end,
+- orchestrate downstream sweep analysis and figure generation,
+- save one manifest-driven bundle per preset execution for reproducible reruns.
+
+### `src/signallock/explanation.py`
+
+Responsibilities:
+
+- render human-readable per-factor explanations of exposure assessments,
+- render human-readable per-factor explanations of password risk assessments,
+- use matched token data from `PasswordRiskAssessment` to produce specific, non-reversible factor sentences,
+- compose all three layers (exposure, password risk, action) into a full paragraph explanation,
+- expose a `explain_recommendation` convenience function and a `explanation_to_json` serializer.
 
 ## Current Output Types
 
@@ -407,6 +442,30 @@ Represents high-level metadata for one preset aggregate analysis operation.
 
 Represents the saved filesystem outputs for one timestamped preset aggregate bundle.
 
+### `ThresholdSweepPreset`
+
+Represents a named, multi-seed, multi-profile threshold-sweep experiment configuration.
+
+### `SweepPresetArtifacts`
+
+Represents the top-level directories and manifest for one sweep preset execution.
+
+### `SweepPresetExecutionSummary`
+
+Represents the combined outcome of one sweep preset run across all individual sweep bundles, the analysis, and the figures.
+
+### `ExposureExplanation`
+
+Represents a human-readable explanation of one exposure assessment, including a one-sentence summary and one sentence per top contributing factor.
+
+### `PasswordRiskExplanation`
+
+Represents a human-readable explanation of one password risk assessment, including a one-sentence summary and one sentence per top contributing factor, using matched token data for specificity.
+
+### `HardeningExplanation`
+
+Represents the full explanation of one hardening recommendation, including the action sentence, nested exposure and password explanations, and a composed paragraph.
+
 ## Current Prototype Boundaries
 
 The current prototype intentionally:
@@ -429,23 +488,25 @@ The current prototype does support:
 - comparative CLI evaluation across multiple profiles,
 - optional custom policy files for experiments,
 - threshold-sensitivity experiments without hand-editing policy configs,
+- multi-seed, multi-profile threshold-sweep suites from named preset definitions,
 - cross-run threshold-sweep aggregation for threshold-tuning review,
 - threshold-sweep SVG figure generation for paper-ready artifacts,
 - timestamped local artifact bundles for reproducible evaluation runs,
 - cross-run markdown and CSV exports derived from saved runs,
 - baseline-versus-candidate comparison bundles derived from matched runs,
 - dependency-light SVG figure bundles derived from cross-run aggregates,
-- preset-driven orchestration across the full experiment workflow.
-- preset-level summary bundles for higher-level experiment reporting.
-- paper-style aggregate bundles for higher-level cross-preset interpretation.
+- preset-driven orchestration across the full experiment workflow,
+- preset-level summary bundles for higher-level experiment reporting,
+- paper-style aggregate bundles for higher-level cross-preset interpretation,
+- template-based human-readable explanations for every scoring output.
 
 ## Near-Term Architecture Expansion
 
 The next likely modules are:
 
-- explanation renderer,
+- labeled synthetic dataset generator for ML training,
+- ML model integration (scikit-learn gradient-boosted tree replacing heuristic weights),
 - password feature calibration support,
-- dataset generation for controlled evaluation,
 - richer statistical evaluation beyond lightweight SVG and CSV outputs.
 
 ## CLI-Oriented Workflow
@@ -461,9 +522,11 @@ Today the repository is CLI-first. A typical prototype loop is:
 7. Aggregate multiple runs into cross-run analysis outputs.
 8. Compare baseline and candidate policy profiles.
 9. Generate score and action figures for research communication.
-10. Execute named presets for reproducible end-to-end experiment suites.
+10. Execute named presets for reproducible end-to-end evaluation experiment suites.
 11. Sweep policy thresholds to inspect calibration sensitivity before changing defaults.
-12. Aggregate saved threshold sweeps to see which offsets behave consistently across runs.
-13. Generate threshold-sweep figures so threshold effects are visible at a glance.
+12. Execute multi-seed sweep presets for richer, more informative calibration families.
+13. Aggregate saved threshold sweeps to see which offsets behave consistently across runs.
+14. Generate threshold-sweep figures so threshold effects are visible at a glance.
+15. Produce human-readable explanations of any recommendation for analyst review or user feedback.
 
 That keeps the implementation transparent and testable before introducing more complex modeling.
