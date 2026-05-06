@@ -74,7 +74,7 @@ Each profile currently defines:
 List available profiles:
 
 ```bash
-PYTHONPATH=src python3 -m signallock list-policy-profiles --pretty
+.venv/bin/python -m signallock list-policy-profiles --pretty
 ```
 
 The default profile definitions live in:
@@ -84,7 +84,7 @@ The default profile definitions live in:
 Use a different file for experiments:
 
 ```bash
-PYTHONPATH=src python3 -m signallock list-policy-profiles \
+.venv/bin/python -m signallock list-policy-profiles \
   --policy-file /path/to/policies.json \
   --pretty
 ```
@@ -92,7 +92,7 @@ PYTHONPATH=src python3 -m signallock list-policy-profiles \
 Apply a profile:
 
 ```bash
-PYTHONPATH=src python3 -m signallock recommend-hardening \
+.venv/bin/python -m signallock recommend-hardening \
   --password "Priya2014!" \
   --seed 1 \
   --profile-index 0 \
@@ -104,7 +104,7 @@ PYTHONPATH=src python3 -m signallock recommend-hardening \
 Evaluate multiple profiles at once:
 
 ```bash
-PYTHONPATH=src python3 -m signallock evaluate-policies \
+.venv/bin/python -m signallock evaluate-policies \
   --count 5 \
   --seed 1 \
   --policy-profiles balanced strict usability \
@@ -116,7 +116,7 @@ PYTHONPATH=src python3 -m signallock evaluate-policies \
 Write evaluation artifacts to a custom directory:
 
 ```bash
-PYTHONPATH=src python3 -m signallock evaluate-policies \
+.venv/bin/python -m signallock evaluate-policies \
   --count 5 \
   --seed 1 \
   --policy-profiles balanced strict usability \

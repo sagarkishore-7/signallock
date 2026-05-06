@@ -25,6 +25,16 @@ class CLITests(unittest.TestCase):
         self.assertIn("score", decoded[0])
         self.assertIn("band", decoded[0])
 
+    def test_main_without_command_prints_current_guidance(self) -> None:
+        stream = io.StringIO()
+        with contextlib.redirect_stdout(stream):
+            main([])
+
+        output = stream.getvalue()
+        self.assertIn("defensive research prototype", output)
+        self.assertIn("evaluate-policies --count 5 --seed 1 --pretty", output)
+        self.assertIn(".venv/bin/python", output)
+
     def test_score_password_outputs_profile_and_assessment(self) -> None:
         stream = io.StringIO()
         with contextlib.redirect_stdout(stream):

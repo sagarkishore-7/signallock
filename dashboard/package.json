@@ -7,8 +7,8 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
-    "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "lint": "npm run type-check",
+    "type-check": "next build"
   },
   "dependencies": {
     "next": "15.1.0",
