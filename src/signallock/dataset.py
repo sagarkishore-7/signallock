@@ -12,6 +12,7 @@ from pathlib import Path
 from .analysis import _create_unique_run_directory
 from .evaluation import ACTION_SEVERITY, generate_synthetic_scenario_specs
 from .exposure import profile_to_attribute_vector, score_exposure
+from .paths import artifacts_path
 from .password_risk import score_password_for_profile
 from .policy import get_policy_config, recommend_hardening
 from .reporting import normalize_artifact_path
@@ -25,9 +26,7 @@ from .schemas import (
 )
 
 
-DEFAULT_DATASET_OUTPUT_DIR = (
-    Path(__file__).resolve().parents[2] / "artifacts" / "datasets"
-)
+DEFAULT_DATASET_OUTPUT_DIR = artifacts_path("datasets")
 
 _SENIORITY_RANK = {
     RoleSeniority.INDIVIDUAL_CONTRIBUTOR: 0,

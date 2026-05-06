@@ -10,6 +10,7 @@ from io import StringIO
 from pathlib import Path
 
 from .analysis import _create_unique_run_directory
+from .paths import artifacts_path
 from .reporting import normalize_artifact_path
 from .schemas import (
     EvaluationRunAnalysisOverview,
@@ -19,7 +20,7 @@ from .schemas import (
 )
 
 
-DEFAULT_FIGURE_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "artifacts" / "figures"
+DEFAULT_FIGURE_OUTPUT_DIR = artifacts_path("figures")
 
 _SCORE_COLORS = {
     "combined": "#28536b",

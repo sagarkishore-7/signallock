@@ -11,6 +11,7 @@ from math import sqrt
 from pathlib import Path
 
 from .analysis import _create_unique_run_directory
+from .paths import artifacts_path
 from .reporting import normalize_artifact_path
 from .schemas import (
     CrossPresetCalibrationAggregateRecord,
@@ -30,9 +31,7 @@ from .schemas import (
 )
 
 
-DEFAULT_PRESET_AGGREGATE_OUTPUT_DIR = (
-    Path(__file__).resolve().parents[2] / "artifacts" / "preset_aggregates"
-)
+DEFAULT_PRESET_AGGREGATE_OUTPUT_DIR = artifacts_path("preset_aggregates")
 
 
 def aggregate_preset_results(

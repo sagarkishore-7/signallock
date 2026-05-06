@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from .paths import artifacts_path, config_path
 from .analysis import (
     analyze_evaluation_calibration_runs,
     analyze_evaluation_runs,
@@ -24,8 +25,8 @@ from .schemas import (
 from .synthetic_profiles import generate_synthetic_profiles
 
 
-DEFAULT_PRESET_FILE = Path(__file__).resolve().parents[2] / "configs" / "experiment_presets.json"
-DEFAULT_PRESET_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "artifacts" / "presets"
+DEFAULT_PRESET_FILE = config_path("experiment_presets.json")
+DEFAULT_PRESET_OUTPUT_DIR = artifacts_path("presets")
 
 
 def load_presets(preset_file: str | Path | None = None) -> list[ExperimentPreset]:

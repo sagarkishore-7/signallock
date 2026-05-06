@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from .paths import artifacts_path, config_path
 from .reporting import normalize_artifact_path
 from .schemas import (
     PolicyProfile,
@@ -23,12 +24,8 @@ from .threshold_sweep_figures import write_threshold_sweep_figure_artifacts
 from .threshold_sweeps import run_threshold_sweep, write_threshold_sweep_artifacts
 
 
-DEFAULT_SWEEP_PRESET_FILE = (
-    Path(__file__).resolve().parents[2] / "configs" / "threshold_sweep_presets.json"
-)
-DEFAULT_SWEEP_PRESET_OUTPUT_DIR = (
-    Path(__file__).resolve().parents[2] / "artifacts" / "sweep_presets"
-)
+DEFAULT_SWEEP_PRESET_FILE = config_path("threshold_sweep_presets.json")
+DEFAULT_SWEEP_PRESET_OUTPUT_DIR = artifacts_path("sweep_presets")
 
 
 def load_sweep_presets(preset_file: str | Path | None = None) -> list[ThresholdSweepPreset]:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from .paths import config_path
 from .schemas import (
     ExposureAssessment,
     HardeningAction,
@@ -33,7 +34,7 @@ BAND_RANK = {
     RiskBand.CRITICAL: 3,
 }
 
-DEFAULT_POLICY_FILE = Path(__file__).resolve().parents[2] / "configs" / "policy_profiles.json"
+DEFAULT_POLICY_FILE = config_path("policy_profiles.json")
 
 
 def _append_unique(actions: list[HardeningAction], action: HardeningAction) -> None:

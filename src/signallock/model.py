@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .analysis import _create_unique_run_directory
+from .paths import artifacts_path
 from .reporting import normalize_artifact_path
 from .schemas import (
     AttributeVector,
@@ -34,7 +35,7 @@ except ImportError:
     _SKLEARN_AVAILABLE = False
 
 
-DEFAULT_MODEL_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "artifacts" / "models"
+DEFAULT_MODEL_OUTPUT_DIR = artifacts_path("models")
 
 FEATURE_COLUMNS = [
     "seniority_rank",
