@@ -89,13 +89,25 @@ def explain_exposure(
 def explain_password_risk(
     assessment: PasswordRiskAssessment,
     profile: PublicProfile,
+    effective_band: RiskBand | None = None,
+    ml_assisted: bool = False,
 ) -> PasswordRiskExplanation:
     """Produce a human-readable explanation of one password risk assessment."""
-    band_label = _BAND_ADJECTIVES[assessment.band]
-    summary = (
-        f"The evaluated password scored {band_label} ({assessment.score:.1f}/100) "
-        f"for targeted password risk against {profile.full_name}'s public profile context."
-    )
+    rendered_band = effective_band or assessment.band
+    rendered_band_label = _BAND_ADJECTIVES[rendered_band]
+    heuristic_band_label = _BAND_ADJECTIVES[assessment.band]
+    if ml_assisted and rendered_band != assessment.band:
+        summary = (
+            f"The evaluated password scored {heuristic_band_label} "
+            f"({assessment.score:.1f}/100) in the heuristic baseline and was treated as "
+            f"{rendered_band_label} in the ML-assisted policy path for targeted password risk "
+            f"against {profile.full_name}'s public profile context."
+        )
+    else:
+        summary = (
+            f"The evaluated password scored {rendered_band_label} ({assessment.score:.1f}/100) "
+            f"for targeted password risk against {profile.full_name}'s public profile context."
+        )
 
     factor_sentences = [
         _password_factor_sentence(factor, assessment, profile)
@@ -105,7 +117,7 @@ def explain_password_risk(
     return PasswordRiskExplanation(
         employee_id=assessment.employee_id,
         password_score=assessment.score,
-        password_band=assessment.band,
+        password_band=rendered_band,
         summary=summary,
         factor_sentences=[s for s in factor_sentences if s],
     )
@@ -152,7 +164,12 @@ def explain_recommendation(
 ) -> HardeningExplanation:
     """Convenience wrapper: produce a full explanation from all four inputs."""
     exposure_explanation = explain_exposure(exposure, profile)
-    password_explanation = explain_password_risk(password_risk, profile)
+    password_explanation = explain_password_risk(
+        password_risk,
+        profile,
+        effective_band=recommendation.password_band,
+        ml_assisted=recommendation.ml_assisted,
+    )
     return explain_hardening(recommendation, exposure_explanation, password_explanation)
 
 

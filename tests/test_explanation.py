@@ -93,6 +93,18 @@ class PasswordRiskExplanationTests(unittest.TestCase):
         explanation = explain_password_risk(assessment, self.profile)
         self.assertEqual(explanation.password_band, assessment.band)
 
+    def test_ml_assisted_override_is_reflected_in_explanation(self) -> None:
+        assessment = score_password_for_profile(self.high_risk_password, self.profile)
+        explanation = explain_password_risk(
+            assessment,
+            self.profile,
+            effective_band=RiskBand.CRITICAL,
+            ml_assisted=True,
+        )
+        self.assertEqual(explanation.password_band, RiskBand.CRITICAL)
+        self.assertIn("heuristic baseline", explanation.summary)
+        self.assertIn("ML-assisted policy path", explanation.summary)
+
     def test_serialization_round_trips(self) -> None:
         assessment = score_password_for_profile(self.high_risk_password, self.profile)
         explanation = explain_password_risk(assessment, self.profile)
@@ -185,6 +197,26 @@ class HardeningExplanationTests(unittest.TestCase):
         explanation = explain_recommendation(recommendation, self.profile, self.exposure, password_risk)
         self.assertGreater(len(explanation.full_explanation), 0)
         self.assertIn(self.profile.full_name, explanation.full_explanation)
+
+    def test_ml_assisted_recommendation_uses_effective_password_band(self) -> None:
+        recommendation = recommend_hardening(
+            self.exposure,
+            self.password_risk,
+            config=get_policy_config("balanced"),
+            predicted_password_band=RiskBand.CRITICAL,
+        )
+        explanation = explain_recommendation(
+            recommendation,
+            self.profile,
+            self.exposure,
+            self.password_risk,
+        )
+        self.assertTrue(recommendation.ml_assisted)
+        self.assertEqual(
+            explanation.password_explanation.password_band,
+            recommendation.password_band,
+        )
+        self.assertIn("ML-assisted policy path", explanation.password_explanation.summary)
 
 
 if __name__ == "__main__":
