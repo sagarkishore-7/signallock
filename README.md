@@ -45,6 +45,7 @@ Current contents:
 - a data-governance note under [`docs/DATA_POLICY.md`](docs/DATA_POLICY.md),
 - a policy-profile reference under [`docs/POLICY_PROFILES.md`](docs/POLICY_PROFILES.md),
 - an experiment workflow reference under [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md),
+- an expert-review study workflow under [`docs/EXPERT_REVIEW_PROTOCOL.md`](docs/EXPERT_REVIEW_PROTOCOL.md),
 - a formal threat model under [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md),
 - a feature taxonomy under [`docs/FEATURE_SCHEMA.md`](docs/FEATURE_SCHEMA.md),
 - a named experiment preset config under [`configs/experiment_presets.json`](configs/experiment_presets.json),
@@ -92,6 +93,7 @@ SignalLock/
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── DATA_POLICY.md
+│   ├── EXPERT_REVIEW_PROTOCOL.md
 │   ├── EXPERIMENTS.md
 │   ├── POLICY_PROFILES.md
 │   ├── FEATURE_SCHEMA.md
@@ -449,6 +451,19 @@ Run the current test suite:
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
+For the empirical review workflow, generate reviewer packets with the same saved
+model you want to evaluate so the CSV carries `ml_predicted_band` values:
+
+```bash
+.venv/bin/python -m signallock generate-review-tasks \
+  --count 10 --seed 1 \
+  --model-file artifacts/models/<timestamp>/model_gradient_boosting.pkl \
+  --format csv --output-file tasks.csv
+```
+
+Then follow [`docs/EXPERT_REVIEW_PROTOCOL.md`](docs/EXPERT_REVIEW_PROTOCOL.md)
+to collect expert ratings and compute external calibration.
+
 ## Current Prototype Capabilities
 
 - generate reproducible synthetic public profiles for experiments,
@@ -459,6 +474,7 @@ Run the current test suite:
 - produce human-readable per-factor explanations of exposure, password risk, and the recommended action,
 - generate a labeled feature-matrix dataset for ML training and calibration analysis,
 - train a scikit-learn gradient-boosted or logistic regression classifier on that dataset and compare it against the heuristic baseline,
+- export expert-review packets with embedded ML reference bands for external calibration studies,
 - switch between named policy profiles for experiments,
 - load policy thresholds from a repo-backed JSON config file,
 - compare policy profiles across synthetic evaluation scenarios,
@@ -471,7 +487,8 @@ Run the current test suite:
 - generate lightweight SVG charts and aggregate policy tables from saved runs,
 - execute repeatable evaluation experiment suites from named preset definitions,
 - summarize and aggregate preset bundles into thesis-friendly and paper-style tables,
-- inspect outputs through a CLI-first workflow with test coverage.
+- inspect outputs through a CLI-first workflow with test coverage,
+- expose the research pipeline through an optional FastAPI service and a Next.js demo dashboard.
 
 ## Current Limitations
 
@@ -480,7 +497,7 @@ Run the current test suite:
 - password scoring currently operates on one synthetic profile context at a time,
 - the policy engine is heuristic and not yet calibrated against user or org study data,
 - policy profiles are loaded from JSON but still limited to the current named profile set,
-- no dashboard has been added yet,
+- the dashboard is a research/demo surface and not yet validated as a production analyst interface,
 - comparisons operate on aggregate synthetic-run summaries rather than real deployment telemetry,
 - preset execution orchestrates synthetic experiments only and does not yet capture notebook-style statistical post-processing,
 - built-in figures are intentionally lightweight SVG outputs rather than full plotting-library workflows.
@@ -497,6 +514,7 @@ The engineering and research execution plan is documented in:
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - [`docs/DATA_POLICY.md`](docs/DATA_POLICY.md)
 - [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md)
+- [`docs/EXPERT_REVIEW_PROTOCOL.md`](docs/EXPERT_REVIEW_PROTOCOL.md)
 - [`docs/POLICY_PROFILES.md`](docs/POLICY_PROFILES.md)
 - [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md)
 - [`docs/FEATURE_SCHEMA.md`](docs/FEATURE_SCHEMA.md)

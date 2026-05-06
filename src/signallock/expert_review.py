@@ -32,7 +32,9 @@ from io import StringIO
 from pathlib import Path
 
 from .evaluation import generate_synthetic_scenario_specs
+from .exposure import profile_to_attribute_vector
 from .exposure import score_exposure
+from .model import load_model_artifacts, predict_risk_band
 from .password_risk import score_password_for_profile
 from .policy import get_policy_config, recommend_hardening
 from .schemas import (
@@ -87,26 +89,38 @@ def generate_review_tasks(
     profiles: list[PublicProfile],
     policy_profile: PolicyProfile = PolicyProfile.BALANCED,
     policy_file: str | Path | None = None,
+    model_file: str | Path | None = None,
 ) -> list[ExpertReviewTask]:
     """Build one review task per (profile, scenario) pair.
 
     Each task carries a profile summary, the candidate password, and the
-    heuristic band/action. The ``ml_predicted_band`` field is left blank
-    here — the caller may fill it in if they want experts to see the ML
-    output as well (typically you want experts to rate without seeing it).
+    heuristic band/action. When ``model_file`` is supplied, the task also
+    carries an ``ml_predicted_band`` generated from the saved model so the
+    review packet can support three-way comparison (heuristic vs ML vs expert).
     """
     config = get_policy_config(policy_profile, policy_file=policy_file)
+    fitted_model = None
+    if model_file is not None:
+        fitted_model, _ = load_model_artifacts(model_file)
     tasks: list[ExpertReviewTask] = []
     counter = 0
 
     for profile in profiles:
         exposure = score_exposure(profile)
         summary = _profile_summary(profile)
+        vector = profile_to_attribute_vector(profile)
         for spec in generate_synthetic_scenario_specs(profile):
             password_assessment = score_password_for_profile(spec.password, profile)
             recommendation = recommend_hardening(
                 exposure, password_assessment, config=config
             )
+            ml_predicted_band = None
+            if fitted_model is not None:
+                ml_predicted_band = predict_risk_band(
+                    fitted_model,
+                    vector,
+                    password_assessment,
+                )
             counter += 1
             tasks.append(
                 ExpertReviewTask(
@@ -117,13 +131,14 @@ def generate_review_tasks(
                     password=spec.password,
                     heuristic_band=password_assessment.band,
                     heuristic_action=recommendation.primary_action,
+                    ml_predicted_band=ml_predicted_band,
                 )
             )
     return tasks
 
 
 def write_review_tasks_csv(tasks: list[ExpertReviewTask]) -> str:
-    """Render review tasks as a Excel-friendly CSV with empty rating columns."""
+    """Render review tasks as an Excel-friendly CSV with empty rating columns."""
     buffer = StringIO()
     writer = csv.DictWriter(buffer, fieldnames=_REVIEW_TASK_FIELDNAMES)
     writer.writeheader()
@@ -186,10 +201,41 @@ def import_expert_ratings_csv(csv_path: str | Path) -> list[ExpertRating]:
     return ratings
 
 
+def extract_ml_predicted_bands_csv(
+    csv_path: str | Path,
+) -> dict[tuple[str, str], RiskBand]:
+    """Read ML reference bands embedded in a review CSV.
+
+    The generated review packet keeps ``ml_predicted_band`` alongside the task,
+    which is a safer provenance path than trying to reconstruct predictions
+    later from incomplete dataset rows alone.
+    """
+    path = Path(csv_path)
+    ml_bands: dict[tuple[str, str], RiskBand] = {}
+    with path.open(newline="", encoding="utf-8") as fh:
+        reader = csv.DictReader(fh)
+        for row in reader:
+            band_str = (row.get("ml_predicted_band") or "").strip().upper()
+            if not band_str:
+                continue
+            try:
+                ml_band = RiskBand(band_str)
+            except ValueError:
+                raise ValueError(
+                    f"row task_id={row.get('task_id')!r} has invalid ml_predicted_band {band_str!r}"
+                )
+            key = (
+                str(row.get("profile_id", "")).strip(),
+                str(row.get("scenario_name", "")).strip(),
+            )
+            ml_bands[key] = ml_band
+    return ml_bands
+
+
 def compute_external_calibration(
     records: list[DatasetRecord],
     ratings: list[ExpertRating],
-    ml_predicted_bands: dict[str, RiskBand] | None = None,
+    ml_predicted_bands: dict[tuple[str, str], RiskBand] | None = None,
 ) -> ExternalCalibrationResult:
     """Compare heuristic (and optional ML) bands to expert ratings.
 
@@ -208,7 +254,9 @@ def compute_external_calibration(
 
     matched_keys = [k for k in rating_index if k in record_index]
     if not matched_keys:
-        raise ValueError("no overlap between ratings and records — check task_ids and scenario names")
+        raise ValueError(
+            "no overlap between ratings and records — check profile_id and scenario_name"
+        )
 
     heuristic_matches = 0
     ml_matches = 0

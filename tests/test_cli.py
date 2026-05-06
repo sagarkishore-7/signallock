@@ -2,18 +2,66 @@
 
 from __future__ import annotations
 
+import csv
 import contextlib
 import io
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
 
 from signallock.cli import main
+from signallock.dataset import dataset_to_csv, generate_dataset
+from signallock.expert_review import generate_review_tasks, write_review_tasks_csv
+from signallock.model import save_model, train_model
+from signallock.synthetic_profiles import generate_synthetic_profiles
 
 
 class CLITests(unittest.TestCase):
     """Smoke-test the Phase 1 CLI workflows."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.review_profiles = generate_synthetic_profiles(count=2, seed=1)
+        _, cls.review_records = generate_dataset(cls.review_profiles, seed=1)
+        training_result, fitted_model = train_model(
+            cls.review_records,
+            model_type="gradient_boosting",
+            random_state=1,
+        )
+        cls._model_temp_dir = tempfile.TemporaryDirectory()
+        artifacts = save_model(
+            fitted_model,
+            training_result,
+            output_dir=cls._model_temp_dir.name,
+        )
+        cls.review_model_file = artifacts.model_file
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls._model_temp_dir.cleanup()
+
+    def _write_dataset_records_csv(self, temp_dir: str) -> Path:
+        path = Path(temp_dir) / "dataset_records.csv"
+        path.write_text(dataset_to_csv(self.review_records), encoding="utf-8")
+        return path
+
+    def _write_completed_review_csv(self, temp_dir: str, *, include_ml: bool) -> Path:
+        tasks = generate_review_tasks(
+            self.review_profiles,
+            model_file=self.review_model_file if include_ml else None,
+        )
+        rows = list(csv.DictReader(io.StringIO(write_review_tasks_csv(tasks))))
+        for row in rows:
+            row["expert_band"] = row["ml_predicted_band"] or row["heuristic_band"]
+
+        path = Path(temp_dir) / "completed_review.csv"
+        with path.open("w", newline="", encoding="utf-8") as fh:
+            writer = csv.DictWriter(fh, fieldnames=rows[0].keys())
+            writer.writeheader()
+            writer.writerows(rows)
+        return path
 
     def test_score_exposure_outputs_json(self) -> None:
         stream = io.StringIO()
@@ -94,6 +142,79 @@ class CLITests(unittest.TestCase):
         decoded = json.loads(stream.getvalue())
         self.assertGreaterEqual(len(decoded), 3)
         self.assertIn("profile", decoded[0])
+
+    def test_generate_review_tasks_with_model_file_embeds_ml_band_column(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_file = Path(temp_dir) / "tasks.csv"
+            stream = io.StringIO()
+            with contextlib.redirect_stdout(stream):
+                main(
+                    [
+                        "generate-review-tasks",
+                        "--count",
+                        "2",
+                        "--seed",
+                        "1",
+                        "--model-file",
+                        str(self.review_model_file),
+                        "--format",
+                        "csv",
+                        "--output-file",
+                        str(output_file),
+                    ]
+                )
+
+            decoded = json.loads(stream.getvalue())
+            with output_file.open(encoding="utf-8") as fh:
+                rows = list(csv.DictReader(fh))
+            self.assertEqual(decoded["tasks_written"], 20)
+            self.assertTrue(any(row["ml_predicted_band"] for row in rows))
+
+    def test_compute_external_calibration_requires_embedded_ml_when_model_file_is_supplied(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            records_file = self._write_dataset_records_csv(temp_dir)
+            ratings_file = self._write_completed_review_csv(temp_dir, include_ml=False)
+
+            with open(os.devnull, "w", encoding="utf-8") as devnull:
+                with contextlib.redirect_stderr(devnull):
+                    with self.assertRaises(SystemExit) as exc:
+                        main(
+                            [
+                                "compute-external-calibration",
+                                "--records-file",
+                                str(records_file),
+                                "--ratings-file",
+                                str(ratings_file),
+                                "--model-file",
+                                str(self.review_model_file),
+                            ]
+                        )
+
+            self.assertEqual(exc.exception.code, 2)
+
+    def test_compute_external_calibration_uses_embedded_ml_bands(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            records_file = self._write_dataset_records_csv(temp_dir)
+            ratings_file = self._write_completed_review_csv(temp_dir, include_ml=True)
+            stream = io.StringIO()
+            with contextlib.redirect_stdout(stream):
+                main(
+                    [
+                        "compute-external-calibration",
+                        "--records-file",
+                        str(records_file),
+                        "--ratings-file",
+                        str(ratings_file),
+                        "--model-file",
+                        str(self.review_model_file),
+                        "--pretty",
+                    ]
+                )
+
+            decoded = json.loads(stream.getvalue())
+            self.assertEqual(decoded["rating_count"], 20)
+            self.assertEqual(decoded["ml_vs_expert_match_rate"], 1.0)
+            self.assertIn("ml_band_distribution", decoded)
 
     def test_evaluate_policies_outputs_summaries(self) -> None:
         stream = io.StringIO()

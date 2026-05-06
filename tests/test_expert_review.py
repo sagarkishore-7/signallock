@@ -13,11 +13,13 @@ from signallock.dataset import generate_dataset
 from signallock.expert_review import (
     calibration_result_to_json,
     compute_external_calibration,
+    extract_ml_predicted_bands_csv,
     generate_review_tasks,
     import_expert_ratings_csv,
     write_review_tasks_csv,
     write_review_tasks_json,
 )
+from signallock.model import save_model, train_model
 from signallock.schemas import (
     ExpertRating,
     HardeningAction,
@@ -30,8 +32,26 @@ from signallock.synthetic_profiles import generate_synthetic_profiles
 class ReviewTaskGenerationTests(unittest.TestCase):
     """Validate review task export."""
 
-    def setUp(self) -> None:
-        self.profiles = generate_synthetic_profiles(count=3, seed=1)
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.profiles = generate_synthetic_profiles(count=3, seed=1)
+        _, records = generate_dataset(cls.profiles, seed=1)
+        training_result, fitted_model = train_model(
+            records,
+            model_type="gradient_boosting",
+            random_state=1,
+        )
+        cls._model_temp_dir = tempfile.TemporaryDirectory()
+        artifacts = save_model(
+            fitted_model,
+            training_result,
+            output_dir=cls._model_temp_dir.name,
+        )
+        cls.model_file = artifacts.model_file
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls._model_temp_dir.cleanup()
 
     def test_one_task_per_scenario_per_profile(self) -> None:
         tasks = generate_review_tasks(self.profiles)
@@ -67,6 +87,7 @@ class ReviewTaskGenerationTests(unittest.TestCase):
             "password",
             "heuristic_band",
             "heuristic_action",
+            "ml_predicted_band",
             "expert_band",
             "expert_action",
             "notes",
@@ -89,6 +110,24 @@ class ReviewTaskGenerationTests(unittest.TestCase):
         self.assertEqual(payload["task_count"], 30)
         self.assertIn("tasks", payload)
         self.assertIn("generated_at", payload)
+
+    def test_generate_review_tasks_can_include_ml_predicted_band(self) -> None:
+        tasks = generate_review_tasks(self.profiles, model_file=self.model_file)
+        self.assertEqual(len(tasks), 30)
+        self.assertTrue(all(task.ml_predicted_band is not None for task in tasks))
+
+    def test_extract_ml_predicted_bands_csv_reads_embedded_values(self) -> None:
+        tasks = generate_review_tasks(self.profiles, model_file=self.model_file)
+        csv_text = write_review_tasks_csv(tasks)
+        path = Path(tempfile.NamedTemporaryFile(suffix=".csv", delete=False).name)
+        path.write_text(csv_text, encoding="utf-8")
+        try:
+            ml_bands = extract_ml_predicted_bands_csv(path)
+            self.assertEqual(len(ml_bands), len(tasks))
+            first_key = (tasks[0].profile_id, tasks[0].scenario_name)
+            self.assertEqual(ml_bands[first_key], tasks[0].ml_predicted_band)
+        finally:
+            path.unlink()
 
 
 class RatingImportTests(unittest.TestCase):

@@ -6,6 +6,11 @@ SignalLock now supports a lightweight experiment workflow for comparing policy p
 
 The goal is not large-scale benchmarking yet. The goal is to make iterative research work traceable and easy to review.
 
+For the human-review calibration path, see
+[`docs/EXPERT_REVIEW_PROTOCOL.md`](EXPERT_REVIEW_PROTOCOL.md). That workflow
+extends the synthetic experiment harness with reviewer packets, completed
+ratings, and external-calibration summaries.
+
 The current evaluation layer also attaches proxy calibration targets to each synthetic scenario so we can estimate:
 
 - whether a policy under-hardens high-risk synthetic passwords,
