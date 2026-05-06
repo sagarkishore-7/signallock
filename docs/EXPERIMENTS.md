@@ -9,7 +9,7 @@ The goal is not large-scale benchmarking yet. The goal is to make iterative rese
 For the human-review calibration path, see
 [`docs/EXPERT_REVIEW_PROTOCOL.md`](EXPERT_REVIEW_PROTOCOL.md). That workflow
 extends the synthetic experiment harness with reviewer packets, completed
-ratings, and external-calibration summaries.
+ratings, batch reviewer summaries, and external-calibration summaries.
 
 The current evaluation layer also attaches proxy calibration targets to each synthetic scenario so we can estimate:
 
