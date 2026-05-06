@@ -182,6 +182,60 @@ class CLITests(unittest.TestCase):
             self.assertEqual(decoded["tasks_written"], 20)
             self.assertTrue(any(row["ml_predicted_band"] for row in rows))
 
+    def test_generate_review_tasks_blind_review_writes_hidden_packet_and_key(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_file = Path(temp_dir) / "tasks_blind.csv"
+            key_file = Path(temp_dir) / "tasks_key.json"
+            stream = io.StringIO()
+            with contextlib.redirect_stdout(stream):
+                main(
+                    [
+                        "generate-review-tasks",
+                        "--count",
+                        "2",
+                        "--seed",
+                        "1",
+                        "--model-file",
+                        str(self.review_model_file),
+                        "--blind-review",
+                        "--key-output-file",
+                        str(key_file),
+                        "--format",
+                        "csv",
+                        "--output-file",
+                        str(output_file),
+                    ]
+                )
+
+            decoded = json.loads(stream.getvalue())
+            with output_file.open(encoding="utf-8") as fh:
+                blind_rows = list(csv.DictReader(fh))
+            key_payload = json.loads(key_file.read_text(encoding="utf-8"))
+            self.assertTrue(decoded["blind_review"])
+            self.assertEqual(decoded["key_output_file"], str(key_file))
+            self.assertEqual(blind_rows[0]["heuristic_band"], "")
+            self.assertEqual(blind_rows[0]["heuristic_action"], "")
+            self.assertEqual(blind_rows[0]["ml_predicted_band"], "")
+            self.assertNotEqual(key_payload["tasks"][0]["heuristic_band"], "")
+
+    def test_generate_review_tasks_blind_review_requires_key_output_file(self) -> None:
+        with open(os.devnull, "w", encoding="utf-8") as devnull:
+            with contextlib.redirect_stderr(devnull):
+                with self.assertRaises(SystemExit) as exc:
+                    main(
+                        [
+                            "generate-review-tasks",
+                            "--count",
+                            "2",
+                            "--seed",
+                            "1",
+                            "--blind-review",
+                            "--format",
+                            "csv",
+                        ]
+                    )
+        self.assertEqual(exc.exception.code, 2)
+
     def test_compute_external_calibration_requires_embedded_ml_when_model_file_is_supplied(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             records_file = self._write_dataset_records_csv(temp_dir)
@@ -226,6 +280,63 @@ class CLITests(unittest.TestCase):
             decoded = json.loads(stream.getvalue())
             self.assertEqual(decoded["rating_count"], 20)
             self.assertEqual(decoded["ml_vs_expert_match_rate"], 1.0)
+            self.assertIn("ml_band_distribution", decoded)
+
+    def test_compute_external_calibration_blind_review_can_use_reference_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            records_file = self._write_dataset_records_csv(temp_dir)
+            blind_packet = Path(temp_dir) / "blind_tasks.csv"
+            key_file = Path(temp_dir) / "blind_tasks_key.json"
+
+            with contextlib.redirect_stdout(io.StringIO()):
+                main(
+                    [
+                        "generate-review-tasks",
+                        "--count",
+                        "2",
+                        "--seed",
+                        "1",
+                        "--model-file",
+                        str(self.review_model_file),
+                        "--blind-review",
+                        "--key-output-file",
+                        str(key_file),
+                        "--format",
+                        "csv",
+                        "--output-file",
+                        str(blind_packet),
+                    ]
+                )
+
+            with blind_packet.open(encoding="utf-8") as fh:
+                rows = list(csv.DictReader(fh))
+            for row in rows:
+                row["expert_band"] = "LOW"
+            completed_file = Path(temp_dir) / "blind_completed.csv"
+            with completed_file.open("w", newline="", encoding="utf-8") as fh:
+                writer = csv.DictWriter(fh, fieldnames=rows[0].keys())
+                writer.writeheader()
+                writer.writerows(rows)
+
+            stream = io.StringIO()
+            with contextlib.redirect_stdout(stream):
+                main(
+                    [
+                        "compute-external-calibration",
+                        "--records-file",
+                        str(records_file),
+                        "--ratings-file",
+                        str(completed_file),
+                        "--model-file",
+                        str(self.review_model_file),
+                        "--reference-file",
+                        str(key_file),
+                        "--pretty",
+                    ]
+                )
+
+            decoded = json.loads(stream.getvalue())
+            self.assertEqual(decoded["rating_count"], 20)
             self.assertIn("ml_band_distribution", decoded)
 
     def test_summarize_expert_reviews_outputs_summary_and_artifacts(self) -> None:

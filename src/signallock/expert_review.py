@@ -148,22 +148,47 @@ def generate_review_tasks(
     return tasks
 
 
-def write_review_tasks_csv(tasks: list[ExpertReviewTask]) -> str:
+def _review_task_row(
+    task: ExpertReviewTask,
+    *,
+    include_references: bool,
+) -> dict[str, object]:
+    """Convert a review task into an export row, optionally hiding reference bands."""
+    row = task.to_dict()
+    if not include_references:
+        row["heuristic_band"] = ""
+        row["heuristic_action"] = ""
+        row["ml_predicted_band"] = ""
+    return row
+
+
+def write_review_tasks_csv(
+    tasks: list[ExpertReviewTask],
+    *,
+    include_references: bool = True,
+) -> str:
     """Render review tasks as an Excel-friendly CSV with empty rating columns."""
     buffer = StringIO()
     writer = csv.DictWriter(buffer, fieldnames=_REVIEW_TASK_FIELDNAMES)
     writer.writeheader()
     for task in tasks:
-        writer.writerow(task.to_dict())
+        writer.writerow(_review_task_row(task, include_references=include_references))
     return buffer.getvalue()
 
 
-def write_review_tasks_json(tasks: list[ExpertReviewTask], pretty: bool = False) -> str:
+def write_review_tasks_json(
+    tasks: list[ExpertReviewTask],
+    pretty: bool = False,
+    *,
+    include_references: bool = True,
+) -> str:
     """Render review tasks as JSON for programmatic use."""
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "task_count": len(tasks),
-        "tasks": [task.to_dict() for task in tasks],
+        "tasks": [
+            _review_task_row(task, include_references=include_references) for task in tasks
+        ],
     }
     if pretty:
         return json.dumps(payload, indent=2)
@@ -241,6 +266,42 @@ def extract_ml_predicted_bands_csv(
             )
             ml_bands[key] = ml_band
     return ml_bands
+
+
+def extract_ml_predicted_bands_json(
+    json_path: str | Path,
+) -> dict[tuple[str, str], RiskBand]:
+    """Read ML reference bands embedded in a review JSON export."""
+    path = Path(json_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    tasks = payload.get("tasks", [])
+    ml_bands: dict[tuple[str, str], RiskBand] = {}
+    for task in tasks:
+        band_str = str(task.get("ml_predicted_band", "")).strip().upper()
+        if not band_str:
+            continue
+        try:
+            ml_band = RiskBand(band_str)
+        except ValueError:
+            raise ValueError(
+                f"task_id={task.get('task_id')!r} has invalid ml_predicted_band {band_str!r}"
+            )
+        key = (
+            str(task.get("profile_id", "")).strip(),
+            str(task.get("scenario_name", "")).strip(),
+        )
+        ml_bands[key] = ml_band
+    return ml_bands
+
+
+def extract_ml_predicted_bands(
+    path: str | Path,
+) -> dict[tuple[str, str], RiskBand]:
+    """Read ML reference bands from either a CSV or JSON review export."""
+    resolved = Path(path)
+    if resolved.suffix.lower() == ".json":
+        return extract_ml_predicted_bands_json(resolved)
+    return extract_ml_predicted_bands_csv(resolved)
 
 
 def compute_external_calibration(
@@ -433,6 +494,7 @@ def _pairwise_band_agreement_rate(
 def summarize_expert_review_batch(
     records: list[DatasetRecord],
     ratings_files: list[str | Path],
+    reference_file: str | Path | None = None,
     require_ml_reference: bool = False,
 ) -> tuple[
     ExpertReviewBatchSummary,
@@ -443,6 +505,9 @@ def summarize_expert_review_batch(
     ratings_by_reviewer: dict[str, list[ExpertRating]] = {}
     reviewer_summaries: list[ReviewerCalibrationSummary] = []
     ml_bands_by_task: dict[tuple[str, str], RiskBand] = {}
+    shared_reference_bands = (
+        extract_ml_predicted_bands(reference_file) if reference_file is not None else None
+    )
 
     for source in ratings_files:
         path = Path(source)
@@ -454,11 +519,13 @@ def summarize_expert_review_batch(
         if not ratings:
             raise ValueError(f"no completed expert ratings found in {path}")
 
-        reviewer_ml_bands = extract_ml_predicted_bands_csv(path)
+        reviewer_ml_bands = (
+            shared_reference_bands if shared_reference_bands is not None else extract_ml_predicted_bands(path)
+        )
         if require_ml_reference and not reviewer_ml_bands:
             raise ValueError(
-                f"{path} does not contain ml_predicted_band values; regenerate the review packet "
-                "with generate-review-tasks --model-file before collecting ratings"
+                f"{path} does not provide recoverable ml_predicted_band values; use a non-blind "
+                "review packet or pass the blind packet key via --reference-file"
             )
 
         for key, band in reviewer_ml_bands.items():

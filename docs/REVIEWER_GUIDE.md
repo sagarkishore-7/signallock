@@ -31,6 +31,9 @@ Depending on the study packet, you may also see reference columns such as:
 If those columns are present, please treat them as system metadata rather than
 as instructions for your answer.
 
+In some study packets, these fields may be intentionally blank. That is normal
+for blind-review mode and is intended to reduce anchoring bias.
+
 ## What To Fill In
 
 Please edit only:

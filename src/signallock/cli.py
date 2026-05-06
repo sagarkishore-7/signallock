@@ -44,7 +44,7 @@ from .expert_review import (
     calibration_result_to_json,
     compute_external_calibration,
     expert_review_batch_to_json,
-    extract_ml_predicted_bands_csv,
+    extract_ml_predicted_bands,
     generate_review_tasks,
     import_expert_ratings_csv,
     render_expert_review_summary_table,
@@ -113,6 +113,30 @@ from .threshold_sweep_figures import (
     threshold_sweep_figure_results_to_json,
     write_threshold_sweep_figure_artifacts,
 )
+
+
+def _review_output_format_from_path(path: str | Path) -> str:
+    """Infer review export format from a file path suffix."""
+    if Path(path).suffix.lower() == ".json":
+        return "json"
+    return "csv"
+
+
+def _serialize_review_tasks(
+    tasks: list[object],
+    *,
+    output_format: str,
+    pretty: bool,
+    include_references: bool,
+) -> str:
+    """Serialize review tasks in the requested format."""
+    if output_format == "csv":
+        return write_review_tasks_csv(tasks, include_references=include_references)
+    return write_review_tasks_json(
+        tasks,
+        pretty=pretty,
+        include_references=include_references,
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -333,6 +357,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional path to a trained model .pkl file. When supplied, the exported tasks include ml_predicted_band values.",
     )
     review_parser.add_argument(
+        "--blind-review",
+        action="store_true",
+        help="Hide heuristic and ML reference columns in the reviewer-facing packet.",
+    )
+    review_parser.add_argument(
+        "--key-output-file",
+        default=None,
+        help=(
+            "When --blind-review is used, write an unblinded key file here so later calibration "
+            "can recover the hidden reference bands. Use .json or .csv."
+        ),
+    )
+    review_parser.add_argument(
         "--format",
         choices=["csv", "json"],
         default="csv",
@@ -372,6 +409,14 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     calibration_parser.add_argument(
+        "--reference-file",
+        default=None,
+        help=(
+            "Optional unblinded review packet key (.csv or .json). Use this for blind-review "
+            "workflows where the completed ratings CSV does not contain reference bands."
+        ),
+    )
+    calibration_parser.add_argument(
         "--pretty",
         action="store_true",
         help="Pretty-print JSON output.",
@@ -398,6 +443,14 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "Optional path to the trained model used when generating the review packets. "
             "When supplied, each ratings CSV is expected to contain ml_predicted_band values."
+        ),
+    )
+    review_summary_parser.add_argument(
+        "--reference-file",
+        default=None,
+        help=(
+            "Optional unblinded review packet key (.csv or .json) shared by the completed "
+            "reviewer CSVs. Recommended for blind-review workflows."
         ),
     )
     review_summary_parser.add_argument(
@@ -1288,13 +1341,34 @@ def main(argv: list[str] | None = None) -> None:
             policy_file=args.policy_file,
             model_file=args.model_file,
         )
-        if args.format == "csv":
-            output = write_review_tasks_csv(tasks)
-        else:
-            output = write_review_tasks_json(tasks, pretty=args.pretty)
+        if args.blind_review and not args.key_output_file:
+            parser.error("--blind-review requires --key-output-file so the hidden reference bands are preserved")
+
+        output = _serialize_review_tasks(
+            tasks,
+            output_format=args.format,
+            pretty=args.pretty,
+            include_references=not args.blind_review,
+        )
+        if args.blind_review and args.key_output_file:
+            key_format = _review_output_format_from_path(args.key_output_file)
+            key_output = _serialize_review_tasks(
+                tasks,
+                output_format=key_format,
+                pretty=True,
+                include_references=True,
+            )
+            Path(args.key_output_file).write_text(key_output, encoding="utf-8")
         if args.output_file:
             Path(args.output_file).write_text(output, encoding="utf-8")
-            print(json.dumps({"tasks_written": len(tasks), "output_file": args.output_file}))
+            response: dict[str, object] = {
+                "tasks_written": len(tasks),
+                "output_file": args.output_file,
+                "blind_review": args.blind_review,
+            }
+            if args.blind_review and args.key_output_file:
+                response["key_output_file"] = args.key_output_file
+            print(json.dumps(response))
         else:
             print(output)
         return
@@ -1306,12 +1380,12 @@ def main(argv: list[str] | None = None) -> None:
         with open(args.records_file, newline="", encoding="utf-8") as fh:
             records = _rows_to_records(list(_csv.DictReader(fh)))
         ratings = import_expert_ratings_csv(args.ratings_file)
-        ml_bands = extract_ml_predicted_bands_csv(args.ratings_file) or None
+        reference_source = args.reference_file or args.ratings_file
+        ml_bands = extract_ml_predicted_bands(reference_source) or None
         if args.model_file and ml_bands is None:
             parser.error(
-                "ratings CSV does not contain ml_predicted_band values. "
-                "Regenerate the review packet with generate-review-tasks --model-file "
-                "using the same trained model, then re-run compute-external-calibration."
+                "no recoverable ml_predicted_band values were found. "
+                "Use a non-blind review packet or pass the blind packet key via --reference-file."
             )
 
         result = compute_external_calibration(records, ratings, ml_predicted_bands=ml_bands)
@@ -1329,6 +1403,7 @@ def main(argv: list[str] | None = None) -> None:
             overview, reviewer_summaries, consensus_tasks = summarize_expert_review_batch(
                 records,
                 args.ratings_files,
+                reference_file=args.reference_file,
                 require_ml_reference=args.model_file is not None,
             )
         except ValueError as exc:
