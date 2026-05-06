@@ -1,7 +1,7 @@
 # SignalLock — Project Status and Research Reference
 
-**Last updated:** 2026-05-06 (revision 7 — ML explanation consistency + documentation consolidation)
-**Verified test suite:** 190 tests passing in the repository `.venv`
+**Last updated:** 2026-05-06 (revision 8 — expert-review provenance workflow + calibration CLI coverage)
+**Verified test suite:** 197 tests passing in the repository `.venv`
 **Python:** 3.11+ required; developed and verified on Python 3.13 in `.venv/`
 **Optional dependencies:**
 - ML: `pip install signallock[ml]` (scikit-learn ≥ 1.3)
@@ -123,7 +123,7 @@ If any code change makes the tool better at **offensive targeting** than at **de
 
 | Module | Purpose |
 |---|---|
-| `src/signallock/expert_review.py` | Bridges synthetic proxy labels to real expert judgement. `generate_review_tasks(profiles)` produces one `ExpertReviewTask` per (profile, scenario) pair with a one-line `profile_summary`, the candidate password, and the heuristic band/action for reference. `write_review_tasks_csv` writes an Excel-friendly export with empty `expert_band` / `expert_action` / `notes` columns. `import_expert_ratings_csv` parses a completed CSV back into typed `ExpertRating` records (skips blank rows). `compute_external_calibration(records, ratings, ml_predicted_bands=None)` returns an `ExternalCalibrationResult` with three-way agreement rates (heuristic vs expert, ML vs expert, heuristic vs ML), severe-disagreement count (≥ 2-band gap), distribution histograms, and per-task disagreement details. This is the layer that lets RQ2/RQ3 graduate from self-referential proxy metrics to expert-validated calibration. |
+| `src/signallock/expert_review.py` | Bridges synthetic proxy labels to real expert judgement. `generate_review_tasks(profiles, model_file=None)` produces one `ExpertReviewTask` per (profile, scenario) pair with a one-line `profile_summary`, the candidate password, the heuristic band/action, and optionally an embedded `ml_predicted_band` produced from a saved model. `write_review_tasks_csv` writes an Excel-friendly export with empty `expert_band` / `expert_action` / `notes` columns. `import_expert_ratings_csv` parses a completed CSV back into typed `ExpertRating` records (skips blank rows). `extract_ml_predicted_bands_csv` recovers embedded ML bands from the completed review packet instead of trying to reconstruct them later from partial artifacts. `compute_external_calibration(records, ratings, ml_predicted_bands=None)` returns an `ExternalCalibrationResult` with three-way agreement rates (heuristic vs expert, ML vs expert, heuristic vs ML), severe-disagreement count (≥ 2-band gap), distribution histograms, and per-task disagreement details. This is the layer that lets RQ2/RQ3 graduate from self-referential proxy metrics to expert-validated calibration. |
 
 ### Layer 9 — Analyst Dashboard (Next.js 15)
 
@@ -209,8 +209,8 @@ Install: `pip install -e .` or run directly from the checkout with `PYTHONPATH=s
 
 | Command | What it does |
 |---|---|
-| `generate-review-tasks` | Export one (profile, scenario) review task per row as a Excel-friendly CSV (or JSON) for security experts to fill in |
-| `compute-external-calibration` | Read completed expert ratings + dataset records and compute three-way agreement (heuristic vs ML vs expert) |
+| `generate-review-tasks` | Export one (profile, scenario) review task per row as an Excel-friendly CSV (or JSON) for security experts to fill in, optionally embedding `ml_predicted_band` from a saved model |
+| `compute-external-calibration` | Read completed expert ratings + dataset records and compute three-way agreement (heuristic vs ML vs expert), using embedded `ml_predicted_band` values from the completed review packet when present |
 
 **Total: 25 CLI commands.**
 
@@ -546,12 +546,12 @@ CLI: `signallock serve --port 8000 [--model-file <pkl>]`. Tests use FastAPI's `T
 
 | Step | Tool |
 |---|---|
-| Export tasks | `signallock generate-review-tasks --count N --seed S --format csv --output-file tasks.csv` |
+| Export tasks | `signallock generate-review-tasks --count N --seed S --model-file <pkl> --format csv --output-file tasks.csv` |
 | Hand to experts | The CSV has rating columns (`expert_band`, `expert_action`, `notes`) intentionally blank for the reviewer to fill in |
 | Re-import | `import_expert_ratings_csv(path)` returns typed `ExpertRating` records, silently skipping blank rows |
 | Compute calibration | `signallock compute-external-calibration --records-file <records.csv> --ratings-file <ratings.csv> [--model-file <pkl>] --pretty` |
 
-The result includes `heuristic_vs_expert_match_rate`, `ml_vs_expert_match_rate` (when a model is supplied), `severe_disagreement_count` (≥ 2-band gap), per-band distributions for all three sources, and a list of disagreement details with notes — everything required for the paper's calibration table and qualitative discussion.
+The result includes `heuristic_vs_expert_match_rate`, `ml_vs_expert_match_rate` (when the completed review packet carries `ml_predicted_band` values), `severe_disagreement_count` (≥ 2-band gap), per-band distributions for all three sources, and a list of disagreement details with notes — everything required for the paper's calibration table and qualitative discussion. See [`docs/EXPERT_REVIEW_PROTOCOL.md`](EXPERT_REVIEW_PROTOCOL.md) for the recommended provenance-preserving workflow.
 
 **Note for the paper:** This layer is *infrastructure*, not data. Running an actual study (collecting ratings from N security professionals across M scenarios) is still future work. The infrastructure makes that study tractable rather than ad-hoc.
 
@@ -665,12 +665,16 @@ curl http://127.0.0.1:8000/policies
 
 # Empirical calibration workflow
 .venv/bin/python -m signallock generate-review-tasks \
-  --count 50 --seed 1 --format csv --output-file tasks.csv
+  --count 50 --seed 1 \
+  --model-file artifacts/models/<timestamp>/model_gradient_boosting.pkl \
+  --format csv --output-file tasks.csv
 # (security experts fill in expert_band column)
 .venv/bin/python -m signallock generate-dataset --count 50 --seed 1 --save-dataset
 .venv/bin/python -m signallock compute-external-calibration \
   --records-file artifacts/datasets/<timestamp>/dataset_records.csv \
-  --ratings-file completed_tasks.csv --pretty
+  --ratings-file completed_tasks.csv \
+  --model-file artifacts/models/<timestamp>/model_gradient_boosting.pkl \
+  --pretty
 ```
 
 ---

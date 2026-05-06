@@ -43,6 +43,7 @@ from .model_integration import compare_scoring, comparison_to_json
 from .expert_review import (
     calibration_result_to_json,
     compute_external_calibration,
+    extract_ml_predicted_bands_csv,
     generate_review_tasks,
     import_expert_ratings_csv,
     write_review_tasks_csv,
@@ -323,6 +324,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional path to a policy profile JSON file.",
     )
     review_parser.add_argument(
+        "--model-file",
+        default=None,
+        help="Optional path to a trained model .pkl file. When supplied, the exported tasks include ml_predicted_band values.",
+    )
+    review_parser.add_argument(
         "--format",
         choices=["csv", "json"],
         default="csv",
@@ -356,7 +362,10 @@ def build_parser() -> argparse.ArgumentParser:
     calibration_parser.add_argument(
         "--model-file",
         default=None,
-        help="Optional path to a trained model .pkl. When supplied, the comparison is three-way (heuristic vs ML vs expert).",
+        help=(
+            "Optional path to the trained model used when generating the review packet. "
+            "When supplied, the ratings CSV is expected to already contain ml_predicted_band values."
+        ),
     )
     calibration_parser.add_argument(
         "--pretty",
@@ -1219,6 +1228,7 @@ def main(argv: list[str] | None = None) -> None:
             profiles,
             policy_profile=PolicyProfile(args.policy_profile),
             policy_file=args.policy_file,
+            model_file=args.model_file,
         )
         if args.format == "csv":
             output = write_review_tasks_csv(tasks)
@@ -1238,48 +1248,13 @@ def main(argv: list[str] | None = None) -> None:
         with open(args.records_file, newline="", encoding="utf-8") as fh:
             records = _rows_to_records(list(_csv.DictReader(fh)))
         ratings = import_expert_ratings_csv(args.ratings_file)
-
-        ml_bands = None
-        if args.model_file:
-            from .exposure import profile_to_attribute_vector as _vec
-            from .model import load_model_artifacts, predict_risk_band as _predict
-            from .password_risk import score_password_for_profile as _score_pw
-            from .schemas import RoleSeniority as _Role, Platform as _Plat, PublicProfile as _Profile
-
-            fitted_model, _ = load_model_artifacts(args.model_file)
-            # We need the original profiles to extract feature vectors. The
-            # records already store the necessary fields; rebuild a minimal
-            # synthetic vector by re-reading from the synthetic generator
-            # using the profile_id index (records carry employee_id only).
-            # In practice the caller pairs records with the same generated
-            # profile batch; we regenerate here for inference.
-            profiles_by_id: dict[str, _Profile] = {}
-            seed_profiles = generate_synthetic_profiles(count=args.count if hasattr(args, "count") else 50, seed=1)
-            for p in seed_profiles:
-                profiles_by_id[p.employee_id] = p
-
-            ml_bands = {}
-            for rating in ratings:
-                profile = profiles_by_id.get(rating.profile_id)
-                if profile is None:
-                    continue
-                # Find the matching record to get the password
-                matching = next(
-                    (r for r in records if r.employee_id == rating.profile_id and r.scenario_name == rating.scenario_name),
-                    None,
-                )
-                if matching is None:
-                    continue
-                # Recreate the password assessment using the scenario name's password
-                from .evaluation import generate_synthetic_scenario_specs as _specs
-                spec = next((s for s in _specs(profile) if s.name == rating.scenario_name), None)
-                if spec is None:
-                    continue
-                pa = _score_pw(spec.password, profile)
-                vector = _vec(profile)
-                ml_bands[(rating.profile_id, rating.scenario_name)] = _predict(
-                    fitted_model, vector, pa
-                )
+        ml_bands = extract_ml_predicted_bands_csv(args.ratings_file) or None
+        if args.model_file and ml_bands is None:
+            parser.error(
+                "ratings CSV does not contain ml_predicted_band values. "
+                "Regenerate the review packet with generate-review-tasks --model-file "
+                "using the same trained model, then re-run compute-external-calibration."
+            )
 
         result = compute_external_calibration(records, ratings, ml_predicted_bands=ml_bands)
         print(calibration_result_to_json(result, pretty=args.pretty))
