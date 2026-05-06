@@ -32,8 +32,8 @@ class EvaluationTests(unittest.TestCase):
         )
 
         self.assertEqual(len(summaries), 2)
-        self.assertEqual(len(records), 2 * 2 * 5)
-        self.assertGreaterEqual(summaries[0].scenario_count, 10)
+        self.assertEqual(len(records), 2 * 2 * 10)
+        self.assertGreaterEqual(summaries[0].scenario_count, 20)
         self.assertGreaterEqual(summaries[0].average_combined_score, 0.0)
         self.assertIn("expected_risk_band", records[0].to_dict())
         self.assertIn("within_expected_range", records[0].to_dict())

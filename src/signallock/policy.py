@@ -15,6 +15,16 @@ from .schemas import (
     RiskBand,
 )
 
+# Re-export for callers that import from policy
+__all__ = [
+    "recommend_hardening",
+    "get_policy_config",
+    "list_policy_configs",
+    "load_policy_configs",
+    "policy_configs_to_json",
+    "recommendation_to_json",
+]
+
 
 BAND_RANK = {
     RiskBand.LOW: 0,
@@ -108,11 +118,21 @@ def recommend_hardening(
     exposure: ExposureAssessment,
     password_risk: PasswordRiskAssessment,
     config: PolicyConfig | None = None,
+    predicted_password_band: RiskBand | None = None,
 ) -> HardeningRecommendation:
-    """Combine exposure and password risk into a hardening recommendation."""
+    """Combine exposure and password risk into a hardening recommendation.
+
+    When ``predicted_password_band`` is supplied (from a trained ML model), it
+    replaces the heuristic ``password_risk.band`` in all band-based policy
+    decisions.  The heuristic numeric score is still used for the combined score
+    so the existing threshold logic remains meaningful.
+    """
     if exposure.employee_id != password_risk.employee_id:
         raise ValueError("exposure and password_risk must refer to the same employee_id")
     resolved_config = config or get_policy_config()
+
+    effective_band = predicted_password_band if predicted_password_band is not None else password_risk.band
+    ml_assisted = predicted_password_band is not None
 
     combined_score = round(
         (exposure.score * resolved_config.exposure_weight)
@@ -135,10 +155,10 @@ def recommend_hardening(
     ):
         _append_unique(supporting_actions, HardeningAction.STEP_UP_AUTHENTICATION)
 
-    if _band_at_least(password_risk.band, resolved_config.require_stronger_min_password_band):
+    if _band_at_least(effective_band, resolved_config.require_stronger_min_password_band):
         primary_action = HardeningAction.REQUIRE_STRONGER_PASSWORD
     elif (
-        _band_at_least(password_risk.band, resolved_config.paired_require_stronger_password_band)
+        _band_at_least(effective_band, resolved_config.paired_require_stronger_password_band)
         and _band_at_least(exposure.band, resolved_config.paired_require_stronger_min_exposure_band)
     ):
         primary_action = HardeningAction.REQUIRE_STRONGER_PASSWORD
@@ -146,7 +166,7 @@ def recommend_hardening(
         primary_action = HardeningAction.ENFORCE_MFA
     elif _band_at_least(exposure.band, resolved_config.step_up_min_exposure_band):
         primary_action = HardeningAction.STEP_UP_AUTHENTICATION
-    elif _band_at_least(password_risk.band, resolved_config.warn_min_password_band):
+    elif _band_at_least(effective_band, resolved_config.warn_min_password_band):
         primary_action = HardeningAction.WARN
     elif combined_score >= resolved_config.warn_threshold:
         primary_action = HardeningAction.WARN
@@ -171,12 +191,13 @@ def recommend_hardening(
         exposure_score=exposure.score,
         exposure_band=exposure.band,
         password_score=password_risk.score,
-        password_band=password_risk.band,
+        password_band=effective_band,
         combined_score=combined_score,
         policy_profile=resolved_config.profile,
         primary_action=primary_action,
         supporting_actions=supporting_actions,
         rationale=deduped_rationale[:4],
+        ml_assisted=ml_assisted,
     )
 
 
