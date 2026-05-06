@@ -58,6 +58,25 @@ the same saved model:
 
 This fills the `ml_predicted_band` column in the CSV.
 
+If you want a **blind reviewer packet** that hides system reference bands while
+preserving a separate calibration key:
+
+```bash
+.venv/bin/python -m signallock generate-review-tasks \
+  --count 10 \
+  --seed 1 \
+  --policy-profile balanced \
+  --model-file artifacts/models/<timestamp>/model_gradient_boosting.pkl \
+  --blind-review \
+  --key-output-file artifacts/review_tasks/review_tasks_balanced_seed1_key.json \
+  --format csv \
+  --output-file artifacts/review_tasks/review_tasks_balanced_seed1_blind.csv
+```
+
+The blind CSV is the reviewer-facing packet. The key file should be kept
+private so later calibration can still recover the hidden heuristic and ML
+reference bands.
+
 Also export JSON if you want a programmatic copy:
 
 ```bash
@@ -92,6 +111,8 @@ They should not modify:
 - `heuristic_action`
 - `ml_predicted_band`
 
+In a blind-review packet, those reference fields may be present but blank.
+
 ## Reviewer Guidance
 
 Ask reviewers to rate each candidate password as if they were assessing
@@ -114,6 +135,17 @@ After reviewers complete the CSV:
   --records-file artifacts/datasets/<timestamp>/dataset_records.csv \
   --ratings-file artifacts/review_tasks/review_tasks_balanced_seed1_completed.csv \
   --model-file artifacts/models/<timestamp>/model_gradient_boosting.pkl \
+  --pretty
+```
+
+If you used a blind-review packet, pass the separate key file:
+
+```bash
+.venv/bin/python -m signallock compute-external-calibration \
+  --records-file artifacts/datasets/<timestamp>/dataset_records.csv \
+  --ratings-file artifacts/review_tasks/review_tasks_balanced_seed1_blind_completed.csv \
+  --model-file artifacts/models/<timestamp>/model_gradient_boosting.pkl \
+  --reference-file artifacts/review_tasks/review_tasks_balanced_seed1_key.json \
   --pretty
 ```
 
@@ -140,6 +172,7 @@ reviewer-summary bundle:
     artifacts/review_tasks/reviewer_b_completed.csv \
     artifacts/review_tasks/reviewer_c_completed.csv \
   --model-file artifacts/models/<timestamp>/model_gradient_boosting.pkl \
+  --reference-file artifacts/review_tasks/review_tasks_balanced_seed1_key.json \
   --include-reviewer-summaries \
   --include-consensus-tasks \
   --include-table \

@@ -13,6 +13,7 @@ from signallock.dataset import generate_dataset
 from signallock.expert_review import (
     calibration_result_to_json,
     compute_external_calibration,
+    extract_ml_predicted_bands,
     expert_review_batch_to_json,
     extract_ml_predicted_bands_csv,
     generate_review_tasks,
@@ -110,6 +111,15 @@ class ReviewTaskGenerationTests(unittest.TestCase):
             self.assertEqual(row["expert_action"], "")
             self.assertEqual(row["notes"], "")
 
+    def test_blind_csv_export_hides_reference_columns(self) -> None:
+        tasks = generate_review_tasks(self.profiles, model_file=self.model_file)
+        csv_text = write_review_tasks_csv(tasks, include_references=False)
+        rows = list(csv.DictReader(io.StringIO(csv_text)))
+        for row in rows:
+            self.assertEqual(row["heuristic_band"], "")
+            self.assertEqual(row["heuristic_action"], "")
+            self.assertEqual(row["ml_predicted_band"], "")
+
     def test_json_export_includes_metadata(self) -> None:
         tasks = generate_review_tasks(self.profiles)
         raw = write_review_tasks_json(tasks)
@@ -117,6 +127,13 @@ class ReviewTaskGenerationTests(unittest.TestCase):
         self.assertEqual(payload["task_count"], 30)
         self.assertIn("tasks", payload)
         self.assertIn("generated_at", payload)
+
+    def test_blind_json_export_hides_reference_columns(self) -> None:
+        tasks = generate_review_tasks(self.profiles, model_file=self.model_file)
+        payload = json.loads(write_review_tasks_json(tasks, include_references=False))
+        self.assertEqual(payload["tasks"][0]["heuristic_band"], "")
+        self.assertEqual(payload["tasks"][0]["heuristic_action"], "")
+        self.assertEqual(payload["tasks"][0]["ml_predicted_band"], "")
 
     def test_generate_review_tasks_can_include_ml_predicted_band(self) -> None:
         tasks = generate_review_tasks(self.profiles, model_file=self.model_file)
@@ -130,6 +147,18 @@ class ReviewTaskGenerationTests(unittest.TestCase):
         path.write_text(csv_text, encoding="utf-8")
         try:
             ml_bands = extract_ml_predicted_bands_csv(path)
+            self.assertEqual(len(ml_bands), len(tasks))
+            first_key = (tasks[0].profile_id, tasks[0].scenario_name)
+            self.assertEqual(ml_bands[first_key], tasks[0].ml_predicted_band)
+        finally:
+            path.unlink()
+
+    def test_extract_ml_predicted_bands_reads_embedded_json_values(self) -> None:
+        tasks = generate_review_tasks(self.profiles, model_file=self.model_file)
+        path = Path(tempfile.NamedTemporaryFile(suffix=".json", delete=False).name)
+        path.write_text(write_review_tasks_json(tasks, pretty=True), encoding="utf-8")
+        try:
+            ml_bands = extract_ml_predicted_bands(path)
             self.assertEqual(len(ml_bands), len(tasks))
             first_key = (tasks[0].profile_id, tasks[0].scenario_name)
             self.assertEqual(ml_bands[first_key], tasks[0].ml_predicted_band)

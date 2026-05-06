@@ -468,6 +468,11 @@ model you want to evaluate so the CSV carries `ml_predicted_band` values:
 Then follow [`docs/EXPERT_REVIEW_PROTOCOL.md`](docs/EXPERT_REVIEW_PROTOCOL.md)
 to collect expert ratings and compute external calibration.
 
+If you want a reviewer-facing packet that hides system reference bands, use
+`--blind-review` together with `--key-output-file` so the calibration key is
+preserved separately. Later, use `--reference-file` during calibration to point
+back at that key.
+
 When multiple completed reviewer CSVs come back, you can aggregate them with:
 
 ```bash

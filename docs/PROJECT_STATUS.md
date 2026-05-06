@@ -1,7 +1,7 @@
 # SignalLock — Project Status and Research Reference
 
-**Last updated:** 2026-05-06 (revision 9 — reviewer package + multi-review calibration summaries)
-**Verified test suite:** 201 tests passing in the repository `.venv`
+**Last updated:** 2026-05-06 (revision 10 — blind-review packets + calibration key workflow)
+**Verified test suite:** 207 tests passing in the repository `.venv`
 **Python:** 3.11+ required; developed and verified on Python 3.13 in `.venv/`
 **Optional dependencies:**
 - ML: `pip install signallock[ml]` (scikit-learn ≥ 1.3)
@@ -209,7 +209,7 @@ Install: `pip install -e .` or run directly from the checkout with `PYTHONPATH=s
 
 | Command | What it does |
 |---|---|
-| `generate-review-tasks` | Export one (profile, scenario) review task per row as an Excel-friendly CSV (or JSON) for security experts to fill in, optionally embedding `ml_predicted_band` from a saved model |
+| `generate-review-tasks` | Export one (profile, scenario) review task per row as an Excel-friendly CSV (or JSON) for security experts to fill in, optionally embedding `ml_predicted_band` from a saved model or hiding reference fields in blind-review mode |
 | `compute-external-calibration` | Read completed expert ratings + dataset records and compute three-way agreement (heuristic vs ML vs expert), using embedded `ml_predicted_band` values from the completed review packet when present |
 | `summarize-expert-reviews` | Aggregate multiple completed reviewer CSVs into per-reviewer summaries, consensus-task summaries, and a reviewer-batch overview |
 
