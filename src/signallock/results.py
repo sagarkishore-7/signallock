@@ -9,6 +9,7 @@ from io import StringIO
 from pathlib import Path
 
 from .analysis import _create_unique_run_directory
+from .paths import artifacts_path
 from .reporting import normalize_artifact_path
 from .schemas import (
     PolicyProfile,
@@ -21,8 +22,8 @@ from .schemas import (
 )
 
 
-DEFAULT_PRESET_INPUT_DIR = Path(__file__).resolve().parents[2] / "artifacts" / "presets"
-DEFAULT_RESULTS_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "artifacts" / "results"
+DEFAULT_PRESET_INPUT_DIR = artifacts_path("presets")
+DEFAULT_RESULTS_OUTPUT_DIR = artifacts_path("results")
 
 
 def summarize_preset_runs(

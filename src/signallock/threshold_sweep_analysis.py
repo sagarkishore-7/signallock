@@ -10,6 +10,7 @@ from io import StringIO
 from pathlib import Path
 
 from .analysis import _create_unique_run_directory
+from .paths import artifacts_path
 from .reporting import normalize_artifact_path
 from .schemas import (
     PolicyProfile,
@@ -21,9 +22,7 @@ from .schemas import (
 from .threshold_sweeps import DEFAULT_THRESHOLD_SWEEP_OUTPUT_DIR
 
 
-DEFAULT_THRESHOLD_SWEEP_ANALYSIS_OUTPUT_DIR = (
-    Path(__file__).resolve().parents[2] / "artifacts" / "threshold_sweep_analysis"
-)
+DEFAULT_THRESHOLD_SWEEP_ANALYSIS_OUTPUT_DIR = artifacts_path("threshold_sweep_analysis")
 
 
 def analyze_threshold_sweeps(

@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from io import StringIO
 from pathlib import Path
 
+from .paths import artifacts_path
 from .reporting import DEFAULT_EVALUATION_OUTPUT_DIR, normalize_artifact_path
 from .schemas import (
     AnalysisArtifacts,
@@ -18,7 +19,7 @@ from .schemas import (
 )
 
 
-DEFAULT_ANALYSIS_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "artifacts" / "analysis"
+DEFAULT_ANALYSIS_OUTPUT_DIR = artifacts_path("analysis")
 
 
 def analyze_evaluation_runs(

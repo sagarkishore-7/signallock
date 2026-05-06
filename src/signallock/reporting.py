@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .evaluation import summarize_policy_calibration
+from .paths import artifacts_path
 from .schemas import (
     EvaluationArtifacts,
     PolicyCalibrationSummary,
@@ -15,9 +16,7 @@ from .schemas import (
 )
 
 
-DEFAULT_EVALUATION_OUTPUT_DIR = (
-    Path(__file__).resolve().parents[2] / "artifacts" / "evaluations"
-)
+DEFAULT_EVALUATION_OUTPUT_DIR = artifacts_path("evaluations")
 
 
 def normalize_artifact_path(path: str | Path | None, default: Path) -> Path:

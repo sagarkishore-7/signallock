@@ -17,6 +17,7 @@ from .figures import (
     _percentage_y_axis_labels,
     _svg_header,
 )
+from .paths import artifacts_path
 from .reporting import normalize_artifact_path
 from .schemas import (
     ThresholdSweepAggregateRecord,
@@ -26,9 +27,7 @@ from .schemas import (
 from .threshold_sweep_analysis import render_threshold_sweep_aggregate_csv
 
 
-DEFAULT_THRESHOLD_SWEEP_FIGURE_OUTPUT_DIR = (
-    Path(__file__).resolve().parents[2] / "artifacts" / "threshold_sweep_figures"
-)
+DEFAULT_THRESHOLD_SWEEP_FIGURE_OUTPUT_DIR = artifacts_path("threshold_sweep_figures")
 
 _PROFILE_COLORS = {
     "balanced": "#28536b",

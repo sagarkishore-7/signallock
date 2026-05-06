@@ -10,6 +10,7 @@ from io import StringIO
 from pathlib import Path
 
 from .analysis import _create_unique_run_directory
+from .paths import artifacts_path
 from .reporting import normalize_artifact_path
 from .schemas import (
     ComparisonArtifacts,
@@ -22,7 +23,7 @@ from .schemas import (
 )
 
 
-DEFAULT_COMPARISON_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "artifacts" / "comparisons"
+DEFAULT_COMPARISON_OUTPUT_DIR = artifacts_path("comparisons")
 
 _DELTA_COLORS = {
     "combined": "#28536b",
