@@ -238,6 +238,21 @@ class MLBackedAPITests(unittest.TestCase):
         self.assertTrue(body["ml_recommendation"]["ml_assisted"])
 
     def test_explain_with_ml_uses_predicted_band(self) -> None:
+        comparison = self.client.post(
+            "/compare-scoring",
+            json={
+                "profile": self.profile,
+                "password": "Priya2014!",
+                "policy_profile": "balanced",
+            },
+        )
+        self.assertEqual(comparison.status_code, 200)
+        comparison_body = comparison.json()
+        self.assertNotEqual(
+            comparison_body["heuristic_password_band"],
+            comparison_body["ml_predicted_band"],
+        )
+
         response = self.client.post(
             "/explain?ml=true",
             json={
@@ -250,6 +265,11 @@ class MLBackedAPITests(unittest.TestCase):
         body = response.json()
         self.assertIn("full_explanation", body)
         self.assertIn("primary_action", body)
+        self.assertEqual(
+            body["password_explanation"]["password_band"],
+            comparison_body["ml_predicted_band"],
+        )
+        self.assertIn("ML-assisted policy path", body["password_explanation"]["summary"])
 
 
 if __name__ == "__main__":
