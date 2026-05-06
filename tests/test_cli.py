@@ -47,16 +47,28 @@ class CLITests(unittest.TestCase):
         path.write_text(dataset_to_csv(self.review_records), encoding="utf-8")
         return path
 
-    def _write_completed_review_csv(self, temp_dir: str, *, include_ml: bool) -> Path:
+    def _write_completed_review_csv(
+        self,
+        temp_dir: str,
+        *,
+        include_ml: bool,
+        band_source: str = "ml",
+        filename: str = "completed_review.csv",
+    ) -> Path:
         tasks = generate_review_tasks(
             self.review_profiles,
             model_file=self.review_model_file if include_ml else None,
         )
         rows = list(csv.DictReader(io.StringIO(write_review_tasks_csv(tasks))))
         for row in rows:
-            row["expert_band"] = row["ml_predicted_band"] or row["heuristic_band"]
+            if band_source == "ml":
+                row["expert_band"] = row["ml_predicted_band"] or row["heuristic_band"]
+            elif band_source == "heuristic":
+                row["expert_band"] = row["heuristic_band"]
+            else:
+                raise ValueError(f"unknown band_source: {band_source}")
 
-        path = Path(temp_dir) / "completed_review.csv"
+        path = Path(temp_dir) / filename
         with path.open("w", newline="", encoding="utf-8") as fh:
             writer = csv.DictWriter(fh, fieldnames=rows[0].keys())
             writer.writeheader()
@@ -215,6 +227,51 @@ class CLITests(unittest.TestCase):
             self.assertEqual(decoded["rating_count"], 20)
             self.assertEqual(decoded["ml_vs_expert_match_rate"], 1.0)
             self.assertIn("ml_band_distribution", decoded)
+
+    def test_summarize_expert_reviews_outputs_summary_and_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            records_file = self._write_dataset_records_csv(temp_dir)
+            reviewer_a = self._write_completed_review_csv(
+                temp_dir,
+                include_ml=True,
+                band_source="heuristic",
+                filename="reviewer_a.csv",
+            )
+            reviewer_b = self._write_completed_review_csv(
+                temp_dir,
+                include_ml=True,
+                band_source="ml",
+                filename="reviewer_b.csv",
+            )
+            stream = io.StringIO()
+            with contextlib.redirect_stdout(stream):
+                main(
+                    [
+                        "summarize-expert-reviews",
+                        "--records-file",
+                        str(records_file),
+                        "--ratings-files",
+                        str(reviewer_a),
+                        str(reviewer_b),
+                        "--model-file",
+                        str(self.review_model_file),
+                        "--include-reviewer-summaries",
+                        "--include-consensus-tasks",
+                        "--include-table",
+                        "--save-summary",
+                        "--output-dir",
+                        temp_dir,
+                        "--pretty",
+                    ]
+                )
+
+            decoded = json.loads(stream.getvalue())
+            self.assertEqual(decoded["overview"]["reviewer_count"], 2)
+            self.assertIn("reviewer_summaries", decoded)
+            self.assertIn("consensus_tasks", decoded)
+            self.assertIn("summary_table_markdown", decoded)
+            self.assertIn("artifacts", decoded)
+            self.assertTrue(Path(decoded["artifacts"]["summary_file"]).exists())
 
     def test_evaluate_policies_outputs_summaries(self) -> None:
         stream = io.StringIO()

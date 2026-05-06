@@ -13,18 +13,25 @@ from signallock.dataset import generate_dataset
 from signallock.expert_review import (
     calibration_result_to_json,
     compute_external_calibration,
+    expert_review_batch_to_json,
     extract_ml_predicted_bands_csv,
     generate_review_tasks,
     import_expert_ratings_csv,
+    render_expert_review_summary_table,
+    summarize_expert_review_batch,
+    write_expert_review_artifacts,
     write_review_tasks_csv,
     write_review_tasks_json,
 )
 from signallock.model import save_model, train_model
 from signallock.schemas import (
+    ConsensusTaskSummary,
     ExpertRating,
+    ExpertReviewBatchSummary,
     HardeningAction,
     PolicyProfile,
     RiskBand,
+    ReviewerCalibrationSummary,
 )
 from signallock.synthetic_profiles import generate_synthetic_profiles
 
@@ -278,6 +285,148 @@ class ExternalCalibrationTests(unittest.TestCase):
             "disagreement_details",
         ):
             self.assertIn(key, payload)
+
+
+class ExpertReviewBatchTests(unittest.TestCase):
+    """Validate multi-reviewer aggregation and artifact export."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.profiles = generate_synthetic_profiles(count=3, seed=1)
+        _, cls.records = generate_dataset(cls.profiles, seed=1)
+        training_result, fitted_model = train_model(
+            cls.records,
+            model_type="gradient_boosting",
+            random_state=1,
+        )
+        cls._model_temp_dir = tempfile.TemporaryDirectory()
+        artifacts = save_model(
+            fitted_model,
+            training_result,
+            output_dir=cls._model_temp_dir.name,
+        )
+        cls.model_file = artifacts.model_file
+        cls.tasks = generate_review_tasks(cls.profiles, model_file=cls.model_file)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls._model_temp_dir.cleanup()
+
+    def _write_completed_csv(self, band_source: str) -> Path:
+        csv_text = write_review_tasks_csv(self.tasks)
+        rows = list(csv.DictReader(io.StringIO(csv_text)))
+        for row in rows:
+            if band_source == "heuristic":
+                row["expert_band"] = row["heuristic_band"]
+            elif band_source == "ml":
+                row["expert_band"] = row["ml_predicted_band"]
+            else:
+                raise ValueError(f"unknown band_source: {band_source}")
+        out = io.StringIO()
+        writer = csv.DictWriter(out, fieldnames=rows[0].keys())
+        writer.writeheader()
+        writer.writerows(rows)
+        path = Path(tempfile.NamedTemporaryFile(suffix=".csv", delete=False).name)
+        path.write_text(out.getvalue(), encoding="utf-8")
+        return path
+
+    def test_summarize_expert_review_batch_returns_expected_shapes(self) -> None:
+        heuristic_path = self._write_completed_csv("heuristic")
+        ml_path = self._write_completed_csv("ml")
+        try:
+            overview, reviewer_summaries, consensus_tasks = summarize_expert_review_batch(
+                self.records,
+                [heuristic_path, ml_path],
+                require_ml_reference=True,
+            )
+            self.assertIsInstance(overview, ExpertReviewBatchSummary)
+            self.assertEqual(overview.reviewer_count, 2)
+            self.assertEqual(len(reviewer_summaries), 2)
+            self.assertEqual(len(consensus_tasks), len(self.tasks))
+            self.assertIsNotNone(overview.consensus_result)
+            self.assertGreaterEqual(overview.average_heuristic_vs_expert_match_rate, 0.0)
+            self.assertLessEqual(overview.average_heuristic_vs_expert_match_rate, 1.0)
+        finally:
+            heuristic_path.unlink()
+            ml_path.unlink()
+
+    def test_summary_table_and_json_include_expected_sections(self) -> None:
+        overview = ExpertReviewBatchSummary(
+            reviewer_count=2,
+            unique_task_count=10,
+            mean_tasks_per_reviewer=10.0,
+            pairwise_band_agreement_rate=0.5,
+            unanimous_task_rate=0.4,
+            average_heuristic_vs_expert_match_rate=0.7,
+            average_ml_vs_expert_match_rate=0.8,
+            average_heuristic_vs_ml_match_rate=0.6,
+            average_severe_disagreement_count=1.5,
+            consensus_result=None,
+        )
+        reviewer_summaries = [
+            ReviewerCalibrationSummary(
+                reviewer_id="reviewer_a",
+                source_file="/tmp/a.csv",
+                rating_count=10,
+                heuristic_vs_expert_match_rate=0.7,
+                ml_vs_expert_match_rate=0.8,
+                heuristic_vs_ml_match_rate=0.6,
+                severe_disagreement_count=1,
+            )
+        ]
+        consensus_tasks = [
+            ConsensusTaskSummary(
+                task_id="T0001",
+                profile_id="EMP0001",
+                scenario_name="contextual_name_year",
+                reviewer_count=2,
+                consensus_band=RiskBand.HIGH,
+                vote_counts={"HIGH": 2},
+                reviewer_bands={"reviewer_a": "HIGH", "reviewer_b": "HIGH"},
+                unanimous=True,
+                tie_broken=False,
+            )
+        ]
+        table = render_expert_review_summary_table(overview, reviewer_summaries)
+        self.assertIn("Reviewer", table)
+        payload = json.loads(
+            expert_review_batch_to_json(
+                overview,
+                reviewer_summaries,
+                consensus_tasks,
+                include_reviewer_summaries=True,
+                include_consensus_tasks=True,
+                summary_table_markdown=table,
+            )
+        )
+        self.assertIn("overview", payload)
+        self.assertIn("reviewer_summaries", payload)
+        self.assertIn("consensus_tasks", payload)
+        self.assertIn("summary_table_markdown", payload)
+
+    def test_write_expert_review_artifacts_creates_bundle(self) -> None:
+        heuristic_path = self._write_completed_csv("heuristic")
+        ml_path = self._write_completed_csv("ml")
+        try:
+            overview, reviewer_summaries, consensus_tasks = summarize_expert_review_batch(
+                self.records,
+                [heuristic_path, ml_path],
+                require_ml_reference=True,
+            )
+            with tempfile.TemporaryDirectory() as temp_dir:
+                artifacts = write_expert_review_artifacts(
+                    overview,
+                    reviewer_summaries,
+                    consensus_tasks,
+                    output_dir=temp_dir,
+                )
+                self.assertTrue(Path(artifacts.summary_file).exists())
+                self.assertTrue(Path(artifacts.reviewer_summaries_file).exists())
+                self.assertTrue(Path(artifacts.consensus_tasks_file).exists())
+                self.assertTrue(Path(artifacts.summary_table_file).exists())
+        finally:
+            heuristic_path.unlink()
+            ml_path.unlink()
 
 
 if __name__ == "__main__":

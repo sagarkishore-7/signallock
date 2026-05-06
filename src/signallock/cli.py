@@ -43,9 +43,13 @@ from .model_integration import compare_scoring, comparison_to_json
 from .expert_review import (
     calibration_result_to_json,
     compute_external_calibration,
+    expert_review_batch_to_json,
     extract_ml_predicted_bands_csv,
     generate_review_tasks,
     import_expert_ratings_csv,
+    render_expert_review_summary_table,
+    summarize_expert_review_batch,
+    write_expert_review_artifacts,
     write_review_tasks_csv,
     write_review_tasks_json,
 )
@@ -368,6 +372,60 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     calibration_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Pretty-print JSON output.",
+    )
+
+    review_summary_parser = subparsers.add_parser(
+        "summarize-expert-reviews",
+        help="Aggregate multiple completed reviewer CSVs into per-reviewer and consensus summaries.",
+    )
+    review_summary_parser.add_argument(
+        "--records-file",
+        required=True,
+        help="Path to a dataset_records.csv produced by generate-dataset.",
+    )
+    review_summary_parser.add_argument(
+        "--ratings-files",
+        nargs="+",
+        required=True,
+        help="One or more completed reviewer CSV files.",
+    )
+    review_summary_parser.add_argument(
+        "--model-file",
+        default=None,
+        help=(
+            "Optional path to the trained model used when generating the review packets. "
+            "When supplied, each ratings CSV is expected to contain ml_predicted_band values."
+        ),
+    )
+    review_summary_parser.add_argument(
+        "--include-reviewer-summaries",
+        action="store_true",
+        help="Include per-reviewer calibration summaries in the JSON output.",
+    )
+    review_summary_parser.add_argument(
+        "--include-consensus-tasks",
+        action="store_true",
+        help="Include per-task consensus summaries in the JSON output.",
+    )
+    review_summary_parser.add_argument(
+        "--include-table",
+        action="store_true",
+        help="Include a markdown reviewer summary table in the JSON output.",
+    )
+    review_summary_parser.add_argument(
+        "--save-summary",
+        action="store_true",
+        help="Persist the expert-review summary bundle under artifacts/expert_review/.",
+    )
+    review_summary_parser.add_argument(
+        "--output-dir",
+        default=None,
+        help="Optional directory for saved expert-review summary artifacts.",
+    )
+    review_summary_parser.add_argument(
         "--pretty",
         action="store_true",
         help="Pretty-print JSON output.",
@@ -1258,6 +1316,50 @@ def main(argv: list[str] | None = None) -> None:
 
         result = compute_external_calibration(records, ratings, ml_predicted_bands=ml_bands)
         print(calibration_result_to_json(result, pretty=args.pretty))
+        return
+
+    if args.command == "summarize-expert-reviews":
+        from .dataset import _csv_rows_to_records as _rows_to_records
+        import csv as _csv
+
+        with open(args.records_file, newline="", encoding="utf-8") as fh:
+            records = _rows_to_records(list(_csv.DictReader(fh)))
+
+        try:
+            overview, reviewer_summaries, consensus_tasks = summarize_expert_review_batch(
+                records,
+                args.ratings_files,
+                require_ml_reference=args.model_file is not None,
+            )
+        except ValueError as exc:
+            parser.error(str(exc))
+
+        summary_table = (
+            render_expert_review_summary_table(overview, reviewer_summaries)
+            if args.include_table or args.save_summary
+            else None
+        )
+        artifacts = None
+        if args.save_summary:
+            artifacts = write_expert_review_artifacts(
+                overview,
+                reviewer_summaries,
+                consensus_tasks,
+                output_dir=args.output_dir,
+            )
+
+        print(
+            expert_review_batch_to_json(
+                overview,
+                reviewer_summaries,
+                consensus_tasks,
+                include_reviewer_summaries=args.include_reviewer_summaries,
+                include_consensus_tasks=args.include_consensus_tasks,
+                pretty=args.pretty,
+                summary_table_markdown=summary_table if args.include_table else None,
+                artifacts=artifacts.to_dict() if artifacts else None,
+            )
+        )
         return
 
     if args.command == "list-policy-profiles":

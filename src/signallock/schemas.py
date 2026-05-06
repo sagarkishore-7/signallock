@@ -1776,3 +1776,82 @@ class ExternalCalibrationResult:
     def to_dict(self) -> dict[str, object]:
         """Convert the calibration result to a JSON-serializable dictionary."""
         return asdict(self)
+
+
+@dataclass
+class ReviewerCalibrationSummary:
+    """Calibration summary for one completed reviewer CSV."""
+
+    reviewer_id: str
+    source_file: str
+    rating_count: int
+    heuristic_vs_expert_match_rate: float
+    ml_vs_expert_match_rate: float | None
+    heuristic_vs_ml_match_rate: float | None
+    severe_disagreement_count: int
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the reviewer summary to a JSON-serializable dictionary."""
+        return asdict(self)
+
+
+@dataclass
+class ConsensusTaskSummary:
+    """Consensus band summary for one reviewed (profile, scenario) task."""
+
+    task_id: str
+    profile_id: str
+    scenario_name: str
+    reviewer_count: int
+    consensus_band: RiskBand
+    vote_counts: dict[str, int]
+    reviewer_bands: dict[str, str]
+    unanimous: bool
+    tie_broken: bool
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the consensus task summary to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["consensus_band"] = self.consensus_band.value
+        return data
+
+
+@dataclass
+class ExpertReviewBatchSummary:
+    """Aggregate summary across multiple completed reviewer CSVs."""
+
+    reviewer_count: int
+    unique_task_count: int
+    mean_tasks_per_reviewer: float
+    pairwise_band_agreement_rate: float | None
+    unanimous_task_rate: float | None
+    average_heuristic_vs_expert_match_rate: float
+    average_ml_vs_expert_match_rate: float | None
+    average_heuristic_vs_ml_match_rate: float | None
+    average_severe_disagreement_count: float
+    consensus_result: ExternalCalibrationResult | None
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert the batch summary to a JSON-serializable dictionary."""
+        data = asdict(self)
+        data["consensus_result"] = (
+            self.consensus_result.to_dict() if self.consensus_result is not None else None
+        )
+        return data
+
+
+@dataclass
+class ExpertReviewArtifacts:
+    """Filesystem artifact references for one saved expert-review summary bundle."""
+
+    run_id: str
+    generated_at: str
+    output_dir: str
+    summary_file: str
+    reviewer_summaries_file: str
+    consensus_tasks_file: str
+    summary_table_file: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert artifact references to a JSON-serializable dictionary."""
+        return asdict(self)

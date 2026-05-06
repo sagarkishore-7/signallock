@@ -46,6 +46,8 @@ Current contents:
 - a policy-profile reference under [`docs/POLICY_PROFILES.md`](docs/POLICY_PROFILES.md),
 - an experiment workflow reference under [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md),
 - an expert-review study workflow under [`docs/EXPERT_REVIEW_PROTOCOL.md`](docs/EXPERT_REVIEW_PROTOCOL.md),
+- a reviewer-facing packet guide under [`docs/REVIEWER_GUIDE.md`](docs/REVIEWER_GUIDE.md),
+- a reviewer outreach template under [`docs/REVIEWER_INVITE_TEMPLATE.md`](docs/REVIEWER_INVITE_TEMPLATE.md),
 - a formal threat model under [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md),
 - a feature taxonomy under [`docs/FEATURE_SCHEMA.md`](docs/FEATURE_SCHEMA.md),
 - a named experiment preset config under [`configs/experiment_presets.json`](configs/experiment_presets.json),
@@ -96,6 +98,8 @@ SignalLock/
 │   ├── EXPERT_REVIEW_PROTOCOL.md
 │   ├── EXPERIMENTS.md
 │   ├── POLICY_PROFILES.md
+│   ├── REVIEWER_GUIDE.md
+│   ├── REVIEWER_INVITE_TEMPLATE.md
 │   ├── FEATURE_SCHEMA.md
 │   ├── IMPLEMENTATION_PLAN.md
 │   └── THREAT_MODEL.md
@@ -464,6 +468,16 @@ model you want to evaluate so the CSV carries `ml_predicted_band` values:
 Then follow [`docs/EXPERT_REVIEW_PROTOCOL.md`](docs/EXPERT_REVIEW_PROTOCOL.md)
 to collect expert ratings and compute external calibration.
 
+When multiple completed reviewer CSVs come back, you can aggregate them with:
+
+```bash
+.venv/bin/python -m signallock summarize-expert-reviews \
+  --records-file artifacts/datasets/<timestamp>/dataset_records.csv \
+  --ratings-files reviewer_a.csv reviewer_b.csv reviewer_c.csv \
+  --model-file artifacts/models/<timestamp>/model_gradient_boosting.pkl \
+  --include-reviewer-summaries --include-table --save-summary --pretty
+```
+
 ## Current Prototype Capabilities
 
 - generate reproducible synthetic public profiles for experiments,
@@ -475,6 +489,7 @@ to collect expert ratings and compute external calibration.
 - generate a labeled feature-matrix dataset for ML training and calibration analysis,
 - train a scikit-learn gradient-boosted or logistic regression classifier on that dataset and compare it against the heuristic baseline,
 - export expert-review packets with embedded ML reference bands for external calibration studies,
+- aggregate multiple completed reviewer CSVs into per-reviewer and consensus calibration summaries,
 - switch between named policy profiles for experiments,
 - load policy thresholds from a repo-backed JSON config file,
 - compare policy profiles across synthetic evaluation scenarios,
@@ -515,6 +530,8 @@ The engineering and research execution plan is documented in:
 - [`docs/DATA_POLICY.md`](docs/DATA_POLICY.md)
 - [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md)
 - [`docs/EXPERT_REVIEW_PROTOCOL.md`](docs/EXPERT_REVIEW_PROTOCOL.md)
+- [`docs/REVIEWER_GUIDE.md`](docs/REVIEWER_GUIDE.md)
+- [`docs/REVIEWER_INVITE_TEMPLATE.md`](docs/REVIEWER_INVITE_TEMPLATE.md)
 - [`docs/POLICY_PROFILES.md`](docs/POLICY_PROFILES.md)
 - [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md)
 - [`docs/FEATURE_SCHEMA.md`](docs/FEATURE_SCHEMA.md)

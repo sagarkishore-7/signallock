@@ -72,6 +72,11 @@ Also export JSON if you want a programmatic copy:
 
 ### 4. Send the CSV to expert reviewers
 
+Use these companion docs when sending the packet:
+
+- [`docs/REVIEWER_GUIDE.md`](REVIEWER_GUIDE.md)
+- [`docs/REVIEWER_INVITE_TEMPLATE.md`](REVIEWER_INVITE_TEMPLATE.md)
+
 Reviewers should fill in:
 
 - `expert_band`
@@ -121,6 +126,33 @@ Important:
 - If you pass `--model-file` but the CSV has no `ml_predicted_band` values, the
   command will stop and tell you to regenerate the packet with
   `generate-review-tasks --model-file`.
+
+## Summarize Multiple Reviewers
+
+After you receive multiple completed CSVs, aggregate them into one
+reviewer-summary bundle:
+
+```bash
+.venv/bin/python -m signallock summarize-expert-reviews \
+  --records-file artifacts/datasets/<timestamp>/dataset_records.csv \
+  --ratings-files \
+    artifacts/review_tasks/reviewer_a_completed.csv \
+    artifacts/review_tasks/reviewer_b_completed.csv \
+    artifacts/review_tasks/reviewer_c_completed.csv \
+  --model-file artifacts/models/<timestamp>/model_gradient_boosting.pkl \
+  --include-reviewer-summaries \
+  --include-consensus-tasks \
+  --include-table \
+  --save-summary \
+  --pretty
+```
+
+This produces:
+
+- one calibration summary per reviewer,
+- mean agreement metrics across reviewers,
+- a consensus task summary,
+- and a consensus calibration result against the dataset records.
 
 ## Suggested Study Design
 
