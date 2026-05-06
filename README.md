@@ -16,7 +16,25 @@ The long-term goal is a privacy-conscious toolchain that helps defenders:
 
 ## Project Status
 
-This repository is now in early prototype implementation.
+This repository is a working research prototype with three main surfaces:
+
+- a Python scoring and evaluation toolkit,
+- an optional FastAPI service layer,
+- and an optional Next.js dashboard for research demos.
+
+The current implementation is still synthetic-data-first and defensive by design. ML results, calibration summaries, and policy comparisons should be interpreted as research artifacts, not as validated real-world deployment claims.
+
+## Supported Environment
+
+SignalLock requires Python `>=3.11`. The repository-local `.venv` is the reference environment and is currently based on Python `3.13`.
+
+Bootstrap from scratch with:
+
+```bash
+python3.13 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -e ".[ml,api]"
+```
 
 Current contents:
 
@@ -46,7 +64,10 @@ Current contents:
 - a threshold-sweep figure layer under [`src/signallock/threshold_sweep_figures.py`](src/signallock/threshold_sweep_figures.py),
 - a preset-driven multi-seed threshold-sweep orchestration layer under [`src/signallock/sweep_presets.py`](src/signallock/sweep_presets.py),
 - a scikit-learn risk-band classifier under [`src/signallock/model.py`](src/signallock/model.py),
-- an initial Python package scaffold under [`src/signallock/`](src/signallock/).
+- ML integration helpers under [`src/signallock/model_integration.py`](src/signallock/model_integration.py),
+- expert-review and external-calibration tooling under [`src/signallock/expert_review.py`](src/signallock/expert_review.py),
+- an optional FastAPI service under [`src/signallock/api.py`](src/signallock/api.py),
+- and an optional Next.js dashboard under [`dashboard/`](dashboard/).
 
 Repository:
 
@@ -82,14 +103,17 @@ SignalLock/
 │   └── signallock/
 │       ├── __init__.py
 │       ├── analysis.py
+│       ├── api.py
 │       ├── cli.py
 │       ├── comparison.py
 │       ├── dataset.py
 │       ├── evaluation.py
+│       ├── expert_review.py
 │       ├── explanation.py
 │       ├── exposure.py
 │       ├── figures.py
 │       ├── model.py
+│       ├── model_integration.py
 │       ├── password_risk.py
 │       ├── preset_aggregates.py
 │       ├── policy.py
@@ -102,16 +126,24 @@ SignalLock/
 │       ├── threshold_sweep_analysis.py
 │       ├── threshold_sweep_figures.py
 │       └── threshold_sweeps.py
+├── dashboard/
+│   ├── app/
+│   ├── components/
+│   ├── lib/
+│   └── package.json
 ├── tests/
 │   ├── test_cli.py
 │   ├── test_analysis.py
+│   ├── test_api.py
 │   ├── test_comparison.py
 │   ├── test_dataset.py
 │   ├── test_evaluation.py
+│   ├── test_expert_review.py
 │   ├── test_explanation.py
 │   ├── test_exposure.py
 │   ├── test_figures.py
 │   ├── test_model.py
+│   ├── test_model_integration.py
 │   ├── test_presets.py
 │   ├── test_reporting.py
 │   ├── test_results.py
@@ -154,12 +186,14 @@ SignalLock currently targets four core research questions:
 - implement the exposure engine, ✓
 - implement the candidate-password risk engine, ✓
 - add explainability and policy mapping, ✓
-- build an analyst-facing dashboard and a local interactive mode.
+- build the API and dashboard demo surfaces, ✓
+- consolidate documentation and environment guidance, in progress.
 
 ### Phase 3
 
-- evaluate calibration, false positives, and actionability,
+- strengthen calibration, false-positive, and actionability evaluation,
 - run controlled expert review and mock user studies,
+- verify the dashboard and deployment paths end to end,
 - prepare a conference-style paper submission package.
 
 ## Safety and Ethics
@@ -175,35 +209,33 @@ Non-goals:
 
 ## Quick Start
 
-This repository is in early implementation.
-
 ```bash
-pip install -e .
-signallock
+.venv/bin/python -m pip install -e .
+.venv/bin/python -m signallock
 ```
 
 Or, without installation:
 
 ```bash
-PYTHONPATH=src python3 -m signallock
+PYTHONPATH=src .venv/bin/python -m signallock
 ```
 
 Generate sample synthetic profiles:
 
 ```bash
-PYTHONPATH=src python3 -m signallock generate-profiles --count 3 --pretty
+.venv/bin/python -m signallock generate-profiles --count 3 --pretty
 ```
 
 Generate baseline exposure assessments:
 
 ```bash
-PYTHONPATH=src python3 -m signallock score-exposure --count 3 --pretty
+.venv/bin/python -m signallock score-exposure --count 3 --pretty
 ```
 
 Score a candidate password against a synthetic profile context:
 
 ```bash
-PYTHONPATH=src python3 -m signallock score-password \
+.venv/bin/python -m signallock score-password \
   --password "Priya2014!" \
   --seed 1 \
   --profile-index 0 \
@@ -213,7 +245,7 @@ PYTHONPATH=src python3 -m signallock score-password \
 Generate a hardening recommendation from both layers:
 
 ```bash
-PYTHONPATH=src python3 -m signallock recommend-hardening \
+.venv/bin/python -m signallock recommend-hardening \
   --password "Priya2014!" \
   --seed 1 \
   --profile-index 0 \
@@ -224,13 +256,13 @@ PYTHONPATH=src python3 -m signallock recommend-hardening \
 List the built-in policy profiles:
 
 ```bash
-PYTHONPATH=src python3 -m signallock list-policy-profiles --pretty
+.venv/bin/python -m signallock list-policy-profiles --pretty
 ```
 
 Compare policy profiles across synthetic evaluation scenarios:
 
 ```bash
-PYTHONPATH=src python3 -m signallock evaluate-policies \
+.venv/bin/python -m signallock evaluate-policies \
   --count 5 \
   --seed 1 \
   --policy-profiles balanced strict usability \
@@ -244,7 +276,7 @@ That command now emits proxy calibration summaries as part of the evaluation out
 Analyze multiple saved runs and export cross-run comparison artifacts:
 
 ```bash
-PYTHONPATH=src python3 -m signallock analyze-runs \
+.venv/bin/python -m signallock analyze-runs \
   --input-dir artifacts/evaluations \
   --include-table \
   --save-analysis \
@@ -256,7 +288,7 @@ That analysis flow now carries both score summaries and calibration summaries ac
 Generate aggregate SVG and CSV figures from saved runs:
 
 ```bash
-PYTHONPATH=src python3 -m signallock generate-figures \
+.venv/bin/python -m signallock generate-figures \
   --input-dir artifacts/evaluations \
   --include-aggregates \
   --include-table \
@@ -267,7 +299,7 @@ PYTHONPATH=src python3 -m signallock generate-figures \
 Compare a baseline policy directly against candidate policies across saved runs:
 
 ```bash
-PYTHONPATH=src python3 -m signallock compare-policies \
+.venv/bin/python -m signallock compare-policies \
   --input-dir artifacts/evaluations \
   --baseline-profile balanced \
   --candidate-profiles strict usability \
@@ -280,7 +312,7 @@ PYTHONPATH=src python3 -m signallock compare-policies \
 Produce a human-readable explanation of an exposure and password risk assessment:
 
 ```bash
-PYTHONPATH=src python3 -m signallock explain-recommendation \
+.venv/bin/python -m signallock explain-recommendation \
   --password "Priya2014!" \
   --seed 1 \
   --profile-index 0 \
@@ -293,13 +325,13 @@ The explanation output includes a per-sentence breakdown of each exposure and pa
 List available experiment presets:
 
 ```bash
-PYTHONPATH=src python3 -m signallock list-experiment-presets --pretty
+.venv/bin/python -m signallock list-experiment-presets --pretty
 ```
 
 Execute a named preset end to end:
 
 ```bash
-PYTHONPATH=src python3 -m signallock run-preset \
+.venv/bin/python -m signallock run-preset \
   --preset baseline_matrix \
   --pretty
 ```
@@ -307,7 +339,7 @@ PYTHONPATH=src python3 -m signallock run-preset \
 Summarize executed preset bundles into thesis-friendly tables and CSV artifacts:
 
 ```bash
-PYTHONPATH=src python3 -m signallock summarize-presets \
+.venv/bin/python -m signallock summarize-presets \
   --input-dir artifacts/presets \
   --include-runs \
   --include-policy-summaries \
@@ -322,7 +354,7 @@ Those preset summaries now include per-policy calibration behavior aggregated ac
 Aggregate those preset summaries into paper-style cross-preset result tables:
 
 ```bash
-PYTHONPATH=src python3 -m signallock aggregate-presets \
+.venv/bin/python -m signallock aggregate-presets \
   --input-dir artifacts/presets \
   --include-tables \
   --save-aggregates \
@@ -334,7 +366,7 @@ That aggregate flow now includes cross-preset calibration tables alongside the e
 Run a threshold-sensitivity study without editing policy files:
 
 ```bash
-PYTHONPATH=src python3 -m signallock sweep-thresholds \
+.venv/bin/python -m signallock sweep-thresholds \
   --base-profile balanced \
   --count 5 \
   --seed 1 \
@@ -349,7 +381,7 @@ The sweep output includes per-variant calibration metrics and deltas relative to
 Aggregate saved threshold sweeps across runs:
 
 ```bash
-PYTHONPATH=src python3 -m signallock analyze-threshold-sweeps \
+.venv/bin/python -m signallock analyze-threshold-sweeps \
   --input-dir artifacts/threshold_sweeps \
   --include-rows \
   --include-aggregates \
@@ -361,7 +393,7 @@ PYTHONPATH=src python3 -m signallock analyze-threshold-sweeps \
 Generate SVG figures from saved threshold sweeps:
 
 ```bash
-PYTHONPATH=src python3 -m signallock generate-threshold-sweep-figures \
+.venv/bin/python -m signallock generate-threshold-sweep-figures \
   --input-dir artifacts/threshold_sweeps \
   --include-aggregates \
   --include-table \
@@ -372,13 +404,13 @@ PYTHONPATH=src python3 -m signallock generate-threshold-sweep-figures \
 List available threshold-sweep presets:
 
 ```bash
-PYTHONPATH=src python3 -m signallock list-sweep-presets --pretty
+.venv/bin/python -m signallock list-sweep-presets --pretty
 ```
 
 Execute a named threshold-sweep preset across multiple seeds and base profiles:
 
 ```bash
-PYTHONPATH=src python3 -m signallock run-sweep-preset \
+.venv/bin/python -m signallock run-sweep-preset \
   --preset all_profiles_sweep \
   --pretty
 ```
@@ -389,17 +421,17 @@ Train a scikit-learn risk-band classifier on a labeled dataset (requires `pip in
 
 ```bash
 # Generate training data first
-PYTHONPATH=src python3 -m signallock generate-dataset \
+.venv/bin/python -m signallock generate-dataset \
   --count 50 --seed 1 --save-dataset
 
 # Train from the saved CSV
-PYTHONPATH=src python3 -m signallock train-model \
+.venv/bin/python -m signallock train-model \
   --input-file artifacts/datasets/<timestamp>/dataset_records.csv \
   --model-type gradient_boosting \
   --save-model --pretty
 
 # Or generate training data and train in one step
-PYTHONPATH=src python3 -m signallock train-model \
+.venv/bin/python -m signallock train-model \
   --count 50 --seed 1 \
   --model-type gradient_boosting \
   --save-model --pretty
@@ -410,7 +442,7 @@ The training output includes model accuracy, the heuristic baseline accuracy on 
 Run the current test suite:
 
 ```bash
-PYTHONPATH=src python3 -m unittest discover -s tests -v
+.venv/bin/python -m unittest discover -s tests -v
 ```
 
 ## Current Prototype Capabilities

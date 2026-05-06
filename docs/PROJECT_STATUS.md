@@ -1,8 +1,8 @@
 # SignalLock — Project Status and Research Reference
 
-**Last updated:** 2026-05-05 (revision 6 — dashboard redesign + Railway/Vercel deployment ready)
-**Test suite:** 187 tests, all passing
-**Python:** 3.11+ (developed and tested on Python 3.13 in `.venv/`)
+**Last updated:** 2026-05-06 (revision 7 — ML explanation consistency + documentation consolidation)
+**Verified test suite:** 190 tests passing in the repository `.venv`
+**Python:** 3.11+ required; developed and verified on Python 3.13 in `.venv/`
 **Optional dependencies:**
 - ML: `pip install signallock[ml]` (scikit-learn ≥ 1.3)
 - API: `pip install signallock[api]` (fastapi ≥ 0.110, uvicorn ≥ 0.27, pydantic ≥ 2.5)
@@ -18,18 +18,20 @@ python3.13 -m venv .venv
 .venv/bin/python -m pip install -e ".[ml,api]" httpx
 ```
 
-Run all commands using `.venv/bin/python -m signallock <command>` or activate the venv with `source .venv/bin/activate`.
+Run all commands using `.venv/bin/python -m signallock <command>` after an editable install, or use `PYTHONPATH=src .venv/bin/python -m signallock <command>` directly from the repo checkout.
 
 ---
 
 ## Purpose of This Document
 
-This file is the single source of truth for:
+This file is a living research and engineering reference for:
 
 1. **Paper writing** — what has been built, which results map to which research questions, what numbers to cite.
 2. **Agent handoff** — what every module does, what CLI commands exist, what the schemas are, and exactly what to build next.
 
 Read this file before making any code changes. Update it whenever something significant is added.
+
+All quantitative findings in this document should be treated as **synthetic-data or proxy-evaluation results** unless a section explicitly says otherwise. They are useful for prototype iteration and thesis planning, but they are not a substitute for real-world validation.
 
 ---
 
@@ -37,10 +39,10 @@ Read this file before making any code changes. Update it whenever something sign
 
 | RQ | Question | Status |
 |---|---|---|
-| RQ1 | Can public OSINT materially improve defensive prediction of targeted password risk beyond generic password meters? | Infrastructure built; ML model shows +0.625 accuracy delta over heuristic baseline |
-| RQ2 | Does separating exposure risk from password predictability produce better calibrated security decisions? | Separation implemented; proxy calibration layer measures this; threshold sweep enables tuning |
-| RQ3 | Can a combined model improve enterprise authentication hardening without excessive false positives? | Policy engine built; FP proxy rate tracked per policy profile across sweep variants |
-| RQ4 | Are OSINT-aware explanations more actionable than generic strength-meter feedback? | Explanation renderer built; template-based per-factor sentences implemented |
+| RQ1 | Can public OSINT materially improve defensive prediction of targeted password risk beyond generic password meters? | Prototype ML pipeline implemented; current deltas are measured on synthetic labeled scenarios only |
+| RQ2 | Does separating exposure risk from password predictability produce better calibrated security decisions? | Separation implemented; proxy calibration and threshold sweeps are in place for synthetic evaluation |
+| RQ3 | Can a combined model improve enterprise authentication hardening without excessive false positives? | Policy engine implemented; false-positive proxy rates are tracked, but field validation is still pending |
+| RQ4 | Are OSINT-aware explanations more actionable than generic strength-meter feedback? | Explanation renderer and expert-review scaffolding implemented; actionability has not yet been validated with a real study |
 
 ---
 
@@ -72,7 +74,7 @@ If any code change makes the tool better at **offensive targeting** than at **de
 
 | Module | Purpose |
 |---|---|
-| `src/signallock/explanation.py` | Template-based human-readable explanations. `explain_exposure` → `ExposureExplanation` (summary + per-factor sentences using real profile data). `explain_password_risk` → `PasswordRiskExplanation` (uses `matched_tokens` for specificity without echoing the password). `explain_hardening` → `HardeningExplanation` (action sentence + composed paragraph). Deterministic, no LLM dependency. |
+| `src/signallock/explanation.py` | Template-based human-readable explanations. `explain_exposure` → `ExposureExplanation` (summary + per-factor sentences using real profile data). `explain_password_risk` → `PasswordRiskExplanation` (uses `matched_tokens` for specificity without echoing the password, and reflects the effective ML-assisted band when policy overrides the heuristic band). `explain_hardening` → `HardeningExplanation` (action sentence + composed paragraph). Deterministic, no LLM dependency. |
 
 **Key design:** Every explanation uses the actual profile data (name, title, org, platform count, year, matched tokens) — not generic templates. The password is never echoed; only matched token strings are mentioned.
 
@@ -143,7 +145,7 @@ If any code change makes the tool better at **offensive targeting** than at **de
 
 ## CLI Command Reference
 
-Install: `pip install -e .` or run with `PYTHONPATH=src python3 -m signallock <command>`.
+Install: `pip install -e .` or run directly from the checkout with `PYTHONPATH=src .venv/bin/python -m signallock <command>`.
 
 ### Scoring and explanation
 
@@ -361,7 +363,7 @@ The heuristic produces a non-actionable WARN; the ML-assisted policy correctly f
 
 ## Test Coverage
 
-**145 tests across 22 test files.** All tests pass with `PYTHONPATH=src python3 -m unittest discover -s tests -v`.
+**190 tests across the current suite.** All tests pass with `.venv/bin/python -m unittest discover -s tests -v`.
 
 Model tests (`test_model.py`) are decorated `@unittest.skipUnless(_SKLEARN_AVAILABLE, ...)` so they are skipped gracefully if scikit-learn is not installed.
 
@@ -621,35 +623,35 @@ python3.13 -m venv .venv
 .venv/bin/python -m pip install -e ".[ml,api]"      # with ML + API service
 
 # Run all tests
-PYTHONPATH=src python3 -m unittest discover -s tests -v
+.venv/bin/python -m unittest discover -s tests -v
 
 # Full evaluation preset
-PYTHONPATH=src python3 -m signallock run-preset --preset baseline_matrix --pretty
+.venv/bin/python -m signallock run-preset --preset baseline_matrix --pretty
 
 # Threshold sensitivity study
-PYTHONPATH=src python3 -m signallock run-sweep-preset --preset all_profiles_sweep --pretty
+.venv/bin/python -m signallock run-sweep-preset --preset all_profiles_sweep --pretty
 
 # Generate dataset and train model
-PYTHONPATH=src python3 -m signallock generate-dataset --count 50 --seed 1 --save-dataset
-PYTHONPATH=src python3 -m signallock train-model --count 50 --seed 1 \
+.venv/bin/python -m signallock generate-dataset --count 50 --seed 1 --save-dataset
+.venv/bin/python -m signallock train-model --count 50 --seed 1 \
   --model-type gradient_boosting --save-model --pretty
 
 # Cross-validated training (paper Table 1)
-PYTHONPATH=src python3 -m signallock train-model --count 50 --seed 1 \
+.venv/bin/python -m signallock train-model --count 50 --seed 1 \
   --model-type gradient_boosting --folds 5 --pretty
 
 # ML-assisted recommendation (uses trained model)
-PYTHONPATH=src python3 -m signallock recommend-hardening \
+.venv/bin/python -m signallock recommend-hardening \
   --password "Priya2014!" --seed 1 --profile-index 0 \
   --policy-profile balanced --model-file artifacts/models/<timestamp>/model_gradient_boosting.pkl --pretty
 
 # Heuristic vs ML side-by-side (paper Table 2)
-PYTHONPATH=src python3 -m signallock compare-scoring \
+.venv/bin/python -m signallock compare-scoring \
   --password "Priya2014!" --seed 1 --profile-index 0 \
   --policy-profile balanced --model-file artifacts/models/<timestamp>/model_gradient_boosting.pkl --pretty
 
 # Explanation example
-PYTHONPATH=src python3 -m signallock explain-recommendation \
+.venv/bin/python -m signallock explain-recommendation \
   --password "Priya2014!" --seed 1 --profile-index 0 \
   --policy-profile balanced --pretty
 

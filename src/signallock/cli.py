@@ -1875,9 +1875,9 @@ def main(argv: list[str] | None = None) -> None:
         uvicorn.run(app, host=args.host, port=args.port, reload=args.reload)
         return
 
-    print("SignalLock is in early implementation.")
-    print("Start with docs/THREAT_MODEL.md, docs/FEATURE_SCHEMA.md, and the CLI help.")
+    print("SignalLock is a defensive research prototype for context-aware authentication hardening.")
+    print("Use --help to browse commands, or start with a synthetic evaluation run.")
     print(
-        "Try: PYTHONPATH=src python3 -m signallock "
+        "Try: PYTHONPATH=src .venv/bin/python -m signallock "
         "evaluate-policies --count 5 --seed 1 --pretty"
     )

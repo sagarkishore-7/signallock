@@ -36,7 +36,7 @@ The current evaluation layer also attaches proxy calibration targets to each syn
 ## CLI Example
 
 ```bash
-PYTHONPATH=src python3 -m signallock evaluate-policies \
+.venv/bin/python -m signallock evaluate-policies \
   --count 5 \
   --seed 1 \
   --policy-profiles balanced strict usability \
@@ -344,7 +344,7 @@ Threshold-sweep figure bundle metadata including:
 Use the saved run directories as input to:
 
 ```bash
-PYTHONPATH=src python3 -m signallock analyze-runs \
+.venv/bin/python -m signallock analyze-runs \
   --input-dir artifacts/evaluations \
   --include-table \
   --save-analysis \
@@ -364,7 +364,7 @@ The `--include-rows` output now includes both score rows and calibration rows.
 Compare one baseline profile against one or more candidate profiles:
 
 ```bash
-PYTHONPATH=src python3 -m signallock compare-policies \
+.venv/bin/python -m signallock compare-policies \
   --input-dir artifacts/evaluations \
   --baseline-profile balanced \
   --candidate-profiles strict usability \
@@ -385,7 +385,7 @@ Optional flags:
 Generate a lightweight figure bundle directly from saved evaluation runs:
 
 ```bash
-PYTHONPATH=src python3 -m signallock generate-figures \
+.venv/bin/python -m signallock generate-figures \
   --input-dir artifacts/evaluations \
   --include-aggregates \
   --include-table \
@@ -405,13 +405,13 @@ Optional flags:
 List the available presets:
 
 ```bash
-PYTHONPATH=src python3 -m signallock list-experiment-presets --pretty
+.venv/bin/python -m signallock list-experiment-presets --pretty
 ```
 
 Run a preset end to end:
 
 ```bash
-PYTHONPATH=src python3 -m signallock run-preset \
+.venv/bin/python -m signallock run-preset \
   --preset baseline_matrix \
   --pretty
 ```
@@ -419,7 +419,7 @@ PYTHONPATH=src python3 -m signallock run-preset \
 Use a custom preset file:
 
 ```bash
-PYTHONPATH=src python3 -m signallock run-preset \
+.venv/bin/python -m signallock run-preset \
   --preset mini_suite \
   --preset-file /path/to/presets.json \
   --output-dir /tmp/signallock-preset-runs \
@@ -431,7 +431,7 @@ PYTHONPATH=src python3 -m signallock run-preset \
 Summarize previously executed preset bundles:
 
 ```bash
-PYTHONPATH=src python3 -m signallock summarize-presets \
+.venv/bin/python -m signallock summarize-presets \
   --input-dir artifacts/presets \
   --include-runs \
   --include-policy-summaries \
@@ -456,7 +456,7 @@ The preset-summary JSON now also includes calibration summaries whenever `--incl
 Build paper-style aggregate tables from executed preset bundles:
 
 ```bash
-PYTHONPATH=src python3 -m signallock aggregate-presets \
+.venv/bin/python -m signallock aggregate-presets \
   --input-dir artifacts/presets \
   --include-tables \
   --save-aggregates \
@@ -474,7 +474,7 @@ Optional flags:
 Produce a human-readable explanation of a recommendation:
 
 ```bash
-PYTHONPATH=src python3 -m signallock explain-recommendation \
+.venv/bin/python -m signallock explain-recommendation \
   --password "Priya2014!" \
   --seed 1 \
   --profile-index 0 \
@@ -494,7 +494,7 @@ The output includes:
 Run a threshold-sensitivity study directly from the CLI:
 
 ```bash
-PYTHONPATH=src python3 -m signallock sweep-thresholds \
+.venv/bin/python -m signallock sweep-thresholds \
   --base-profile balanced \
   --count 5 \
   --seed 1 \
@@ -516,7 +516,7 @@ Useful outputs:
 Aggregate saved threshold sweeps across repeated runs:
 
 ```bash
-PYTHONPATH=src python3 -m signallock analyze-threshold-sweeps \
+.venv/bin/python -m signallock analyze-threshold-sweeps \
   --input-dir artifacts/threshold_sweeps \
   --include-rows \
   --include-aggregates \
@@ -534,7 +534,7 @@ This command is useful for:
 Generate threshold-sweep figures directly from saved sweep bundles:
 
 ```bash
-PYTHONPATH=src python3 -m signallock generate-threshold-sweep-figures \
+.venv/bin/python -m signallock generate-threshold-sweep-figures \
   --input-dir artifacts/threshold_sweeps \
   --include-aggregates \
   --include-table \
@@ -553,7 +553,7 @@ This command is useful for:
 List available sweep presets:
 
 ```bash
-PYTHONPATH=src python3 -m signallock list-sweep-presets --pretty
+.venv/bin/python -m signallock list-sweep-presets --pretty
 ```
 
 Three presets ship by default:
@@ -565,7 +565,7 @@ Three presets ship by default:
 Execute a named sweep preset end to end:
 
 ```bash
-PYTHONPATH=src python3 -m signallock run-sweep-preset \
+.venv/bin/python -m signallock run-sweep-preset \
   --preset all_profiles_sweep \
   --pretty
 ```
@@ -586,7 +586,7 @@ and contains:
 Use a custom preset file:
 
 ```bash
-PYTHONPATH=src python3 -m signallock run-sweep-preset \
+.venv/bin/python -m signallock run-sweep-preset \
   --preset my_sweep \
   --sweep-preset-file /path/to/sweep_presets.json \
   --output-dir /tmp/signallock-sweeps \

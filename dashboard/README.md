@@ -54,10 +54,20 @@ npm run build
 npm run start
 ```
 
-## Type checking
+## Validation
 
 ```bash
 npm run type-check
+```
+
+The current `npm run type-check` command uses a non-interactive Next.js build-backed validation path. This is intentional: the dashboard relies on Next-generated route/type artifacts, so a plain `tsc --noEmit` pass is not the most reliable standalone check for this app.
+
+The current `npm run lint` script is also intentionally non-interactive and aliases the same validation path until an explicit ESLint config is added to the dashboard.
+
+Equivalent direct build check:
+
+```bash
+npm run build
 ```
 
 ## Stack
