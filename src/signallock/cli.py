@@ -3,6 +3,7 @@
 Subcommands mirror the pipeline:
 
     collect           resolve a consented subject from its snapshot
+    collect-live      run live (GitHub) collection -> consented snapshot
     score             exposure (+ optional predictability/recommendation)
     compare-baseline  contextual band vs zxcvbn + exposure premium
     build-dataset     run the pipeline over the roster -> labeled CSV/JSON
@@ -16,10 +17,15 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import sys
 from pathlib import Path
 
 from .collect.base import adversary_mirror_table
+from .collect.code_profile import CodeProfile
+from .collect.snapshot import load_snapshot
+from .core.errors import CollectorError, ConsentError
+from .core.evidence import Observation
 from .core.identity import ConsentedIdentity, ConsentRoster, IdentitySeeds
 from .eval.dataset import (
     build_dataset,
@@ -77,6 +83,106 @@ def cmd_collect(args: argparse.Namespace) -> int:
     subject = resolve_subject(args.subject, observations[args.subject])
     exposure = assess_exposure(subject)
     _print({"subject": subject.to_dict(), "exposure": exposure.to_dict()})
+    return 0
+
+
+def collect_live_observations(
+    subject_id: str,
+    github_user: str,
+    roster: ConsentRoster,
+    *,
+    client=None,
+    token: str | None = None,
+) -> list[Observation]:
+    """Run the live, ToS-permitted collectors for a consented subject.
+
+    Currently wires the GitHub :class:`CodeProfile` collector — the one source
+    with a real public-API path. Consent is enforced inside ``Collector.collect``
+    (and re-checked here so a non-roster subject fails fast with a clear message).
+    ``client`` is an injectable httpx-style client for offline tests.
+    """
+    record = roster.get(subject_id)
+    if record is None:
+        raise ConsentError(
+            f"No consent on record for subject '{subject_id}'. "
+            "Add it to the roster before collecting."
+        )
+    identity = ConsentedIdentity(
+        subject_id=subject_id,
+        seeds=IdentitySeeds(username=github_user),
+        consent=record,
+    )
+    return CodeProfile(client=client, token=token).collect(identity, roster=roster)
+
+
+def _merge_observations(
+    existing: list[Observation], new: list[Observation]
+) -> list[Observation]:
+    """Union observations, de-duping on (source, attr_kind, lowercased value)."""
+    merged: list[Observation] = []
+    seen: set[tuple[str, str, str]] = set()
+    for obs in list(existing) + list(new):
+        key = (obs.source.value, obs.attr_kind.value, obs.value.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(obs)
+    return merged
+
+
+def _write_snapshot(
+    path: Path, subject_id: str, observations: list[Observation]
+) -> None:
+    """Serialize observations into the snapshot schema ``load_snapshot`` reads."""
+    payload = {
+        "subject_id": subject_id,
+        "observations": [
+            {k: v for k, v in obs.to_dict().items() if k != "subject_id"}
+            for obs in observations
+        ],
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def cmd_collect_live(args: argparse.Namespace) -> int:
+    roster = _load_roster(args.roster)
+    if args.subject not in roster:
+        print(
+            f"subject '{args.subject}' is not in the roster — add a consent "
+            "record first",
+            file=sys.stderr,
+        )
+        return 2
+
+    snap_dir = Path(args.snapshots) if args.snapshots else _default("snapshots")
+    out_path = Path(args.out) if args.out else snap_dir / f"{args.subject}.json"
+    existing = load_snapshot(out_path) if out_path.exists() else []
+    if existing and not args.merge:
+        print(
+            f"snapshot {out_path} already exists; pass --merge to add to it "
+            "(keeps your hand-authored social/professional observations)",
+            file=sys.stderr,
+        )
+        return 2
+
+    try:
+        live = collect_live_observations(
+            args.subject,
+            args.github_user,
+            roster,
+            token=os.environ.get("GITHUB_TOKEN"),
+        )
+    except CollectorError as exc:
+        print(f"live collection failed: {exc}", file=sys.stderr)
+        return 1
+
+    merged = _merge_observations(existing, live) if args.merge else live
+    _write_snapshot(out_path, args.subject, merged)
+    print(
+        f"collected {len(live)} live observations from github:{args.github_user}; "
+        f"wrote {len(merged)} total to {out_path}"
+    )
     return 0
 
 
@@ -223,6 +329,24 @@ def build_parser() -> argparse.ArgumentParser:
     p_collect.add_argument("--subject", required=True)
     add_common(p_collect)
     p_collect.set_defaults(func=cmd_collect)
+
+    p_live = sub.add_parser(
+        "collect-live", help="run live (GitHub) collection -> consented snapshot"
+    )
+    p_live.add_argument("--subject", required=True)
+    p_live.add_argument(
+        "--github-user", required=True, help="real GitHub username seed to collect"
+    )
+    p_live.add_argument(
+        "--out", help="snapshot output path (default <snapshots>/<subject>.json)"
+    )
+    p_live.add_argument(
+        "--merge",
+        action="store_true",
+        help="merge into an existing snapshot instead of refusing to overwrite",
+    )
+    add_common(p_live)
+    p_live.set_defaults(func=cmd_collect_live)
 
     p_score = sub.add_parser("score", help="exposure (+ optional predictability)")
     p_score.add_argument("--subject", required=True)
