@@ -22,9 +22,14 @@ from tests._fixtures import (
 
 from signallock.resolve import resolve_subject
 
-from demo.run_attack import assert_loopback, run_attack
-from demo.run_defense import run_defense
-from demo.target_service import create_app
+try:
+    from demo.run_attack import assert_loopback, run_attack
+    from demo.run_defense import run_defense
+    from demo.target_service import create_app
+
+    _DEMO_AVAILABLE = True
+except ImportError:  # demo extra (bcrypt/fastapi) not installed
+    _DEMO_AVAILABLE = False
 
 SEED_PASSWORD = "rex2014"
 
@@ -33,6 +38,7 @@ def _subject():
     return resolve_subject(SUBJECT_ID, make_observations())
 
 
+@unittest.skipUnless(_DEMO_AVAILABLE, "demo extra (bcrypt) not installed")
 class InProcessAttackTests(unittest.TestCase):
     def test_attack_cracks_weak_password(self) -> None:
         subject = _subject()
@@ -45,6 +51,7 @@ class InProcessAttackTests(unittest.TestCase):
         self.assertIsNotNone(result["matched_category"])
 
 
+@unittest.skipUnless(_DEMO_AVAILABLE, "demo extra (bcrypt) not installed")
 class LoopbackGuardTests(unittest.TestCase):
     def test_rejects_non_loopback(self) -> None:
         with self.assertRaises(RuntimeError):
@@ -55,6 +62,7 @@ class LoopbackGuardTests(unittest.TestCase):
         assert_loopback("http://127.0.0.1:8000")
 
 
+@unittest.skipUnless(_DEMO_AVAILABLE, "demo extra (bcrypt) not installed")
 class DefenseTests(unittest.TestCase):
     def test_defense_defeats_attack(self) -> None:
         subject = _subject()
