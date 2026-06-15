@@ -30,6 +30,16 @@ class ManglingTests(unittest.TestCase):
         produced = list(generate_guesses(self.subject, limit=20))
         self.assertEqual(len(produced), 20)
 
+    def test_affix_coverage_includes_common_numbers_and_dynamic_years(self) -> None:
+        # Broadened, de-hardcoded affixes: a common 2-digit number ('99') and the
+        # current year (dynamic, not hardcoded) must both be reachable.
+        from datetime import datetime, timezone
+
+        values = {c.value for c in generate_guesses(self.subject, limit=30000)}
+        self.assertIn("rex99", values)  # regression for the '99' false-negative
+        year = datetime.now(timezone.utc).year
+        self.assertIn(f"rex{year}", values)  # dynamic recent year
+
 
 class SimulatorTests(unittest.TestCase):
     def setUp(self) -> None:
