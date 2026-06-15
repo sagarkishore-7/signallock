@@ -19,6 +19,11 @@ from .base import Collector, register
 
 _API_ROOT = "https://api.github.com"
 
+#: Only the most prominent repos seed interest tokens. Auto-scraped repo
+#: names/topics are noisy guessing material, and a targeted attacker focuses on a
+#: subject's most visible projects rather than every fork or throwaway repo.
+_INTEREST_REPO_CAP = 12
+
 
 @register
 class CodeProfile(Collector):
@@ -97,12 +102,20 @@ class CodeProfile(Collector):
                 )
 
         repos = self._get_json(f"{_API_ROOT}/users/{username}/repos")
-        if not isinstance(repos, list):
-            repos = []
+        repos = [r for r in repos if isinstance(r, dict)] if isinstance(repos, list) else []
+        # Rank by prominence (stars, then most-recently pushed) so the subject's
+        # most visible projects seed interests first; only the top repos do, and
+        # forks are skipped as weak personal signal.
+        repos.sort(
+            key=lambda r: (
+                int(r.get("stargazers_count") or 0),
+                str(r.get("pushed_at") or ""),
+            ),
+            reverse=True,
+        )
+
         seen_languages: set[str] = set()
-        for repo in repos:
-            if not isinstance(repo, dict):
-                continue
+        for rank, repo in enumerate(repos):
             language = repo.get("language")
             if language and str(language).strip():
                 key = str(language).strip().lower()
@@ -117,6 +130,10 @@ class CodeProfile(Collector):
                             provenance=f"github:{username}/repos",
                         )
                     )
+            # Languages are read from every repo; interests only from the top,
+            # non-fork repos.
+            if rank >= _INTEREST_REPO_CAP or repo.get("fork"):
+                continue
             name = repo.get("name")
             if name and str(name).strip():
                 observations.append(

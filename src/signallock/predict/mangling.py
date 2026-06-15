@@ -30,6 +30,15 @@ _BASE_BUCKET_PRIORITY = (
     TokenBucket.LOCATION,
 )
 
+# Per-bucket caps on base words. High-value buckets are used in full; noisy,
+# low-value buckets (e.g. INTEREST from public repo names/topics) are capped so a
+# long tail of weak tokens cannot dilute the guess ranking under a bounded budget.
+_BASE_BUCKET_CAPS = {
+    TokenBucket.INTEREST: 12,
+    TokenBucket.ORGANIZATION: 8,
+    TokenBucket.LOCATION: 4,
+}
+
 # Common number/symbol affixes, ordered by real-world frequency (breach studies)
 # so the bounded budget spends on the most likely guesses first.
 _COMMON_AFFIXES = (
@@ -39,6 +48,9 @@ _COMMON_AFFIXES = (
 #: How many years back the dynamic year window reaches (covers plausible birth,
 #: graduation, and tenure years without hardcoding specific years).
 _YEAR_LOOKBACK = 50
+#: The most recent N years lead the affix order — recent years are among the
+#: highest-frequency password suffixes, so they precede generic numbers/symbols.
+_RECENT_YEARS = 8
 _LEET = str.maketrans({"a": "@", "e": "3", "i": "1", "o": "0", "s": "$"})
 
 
@@ -51,14 +63,20 @@ class GuessCandidate:
 
 
 def _base_words(subject: Subject) -> list[str]:
-    """Ordered, de-duplicated base words biased to high-value buckets."""
+    """Ordered, de-duplicated base words biased to high-value buckets, with noisy
+    low-value buckets capped (see ``_BASE_BUCKET_CAPS``)."""
     words: list[str] = []
     seen: set[str] = set()
     for bucket in _BASE_BUCKET_PRIORITY:
+        cap = _BASE_BUCKET_CAPS.get(bucket)
+        taken = 0
         for token in subject.tokens(bucket):
             if len(token) >= 2 and token not in seen:
                 seen.add(token)
                 words.append(token)
+                taken += 1
+                if cap is not None and taken >= cap:
+                    break
     return words
 
 
@@ -70,10 +88,11 @@ def _affixes(subject: Subject) -> list[str]:
     """
     osint_years = [t for t in subject.tokens(TokenBucket.TEMPORAL) if t.isdigit()]
     now = datetime.now(timezone.utc).year
-    year_window = [str(y) for y in range(now + 1, now - _YEAR_LOOKBACK, -1)]
+    recent_years = [str(y) for y in range(now + 1, now - _RECENT_YEARS, -1)]
+    older_years = [str(y) for y in range(now - _RECENT_YEARS, now - _YEAR_LOOKBACK, -1)]
     ordered: list[str] = []
     seen: set[str] = set()
-    for affix in (*osint_years, *_COMMON_AFFIXES, *year_window):
+    for affix in (*osint_years, *recent_years, *_COMMON_AFFIXES, *older_years):
         if affix not in seen:
             seen.add(affix)
             ordered.append(affix)
