@@ -1,95 +1,55 @@
-"""Exposure normalization and scoring tests for SignalLock."""
+"""Tests for the exposure model and its linkability multiplier."""
 
 from __future__ import annotations
 
 import unittest
 
-from signallock.exposure import profile_to_attribute_vector, score_exposure
-from signallock.schemas import Platform, PublicProfile, RiskBand, RoleSeniority
+from signallock.core.enums import RiskBand
+from signallock.core.subject import Subject
+from signallock.exposure import assess_exposure, band_from_score
+from signallock.resolve import resolve_subject
+
+from ._fixtures import SUBJECT_ID, make_observations
 
 
-class ExposurePipelineTests(unittest.TestCase):
-    """Validate the Phase 1 exposure baseline."""
+class ExposureTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.subject = resolve_subject(SUBJECT_ID, make_observations())
 
-    def test_profile_to_attribute_vector_normalizes_expected_tokens(self) -> None:
-        profile = PublicProfile(
-            employee_id="EMP0099",
-            full_name="Jane Smith",
-            title="Director of Security",
-            department="Security",
-            organization="Example Corp",
-            role_seniority=RoleSeniority.DIRECTOR,
-            email_format="first.last",
-            location="New York",
-            tenure_start_year=2020,
-            platforms=[Platform.LINKEDIN, Platform.PERSONAL_WEBSITE],
-            public_usernames=["jane.smith"],
-            interests=["hiking", "security research"],
-            preferred_name="Janey",
-            education="Georgia Tech",
-            bio="Director of Security at Example Corp.",
+    def test_multi_platform_subject_has_linkability_amplification(self) -> None:
+        assessment = assess_exposure(self.subject)
+        self.assertGreater(assessment.linkability_multiplier, 1.0)
+        self.assertGreater(assessment.linkability_score, 0.0)
+
+    def test_isolated_subject_has_no_linkability(self) -> None:
+        lonely = Subject(subject_id="x")  # no platforms, no tokens
+        assessment = assess_exposure(lonely)
+        self.assertEqual(assessment.linkability_multiplier, 1.0)
+        self.assertEqual(assessment.band, RiskBand.LOW)
+
+    def test_disabling_axis_changes_surface(self) -> None:
+        full = assess_exposure(self.subject)
+        ablated = assess_exposure(
+            self.subject, disabled_axes=frozenset({"personal_trivia_richness"})
         )
+        self.assertNotEqual(full.base_surface, ablated.base_surface)
 
-        vector = profile_to_attribute_vector(profile)
-
-        self.assertEqual(vector.employee_id, "EMP0099")
-        self.assertIn("jane", vector.name_tokens)
-        self.assertIn("smith", vector.name_tokens)
-        self.assertIn("janey", vector.name_tokens)
-        self.assertIn("example", vector.organization_tokens)
-        self.assertIn("corp", vector.organization_tokens)
-        self.assertIn("security", vector.organization_tokens)
-        self.assertIn("2020", vector.temporal_tokens)
-        self.assertIn("jane.smith", vector.identity_tokens)
-        self.assertIn("first.last", vector.identity_tokens)
-        self.assertIn("new", vector.context_tokens)
-        self.assertIn("york", vector.context_tokens)
-        self.assertIn("georgia", vector.context_tokens)
-        self.assertIn("tech", vector.context_tokens)
-
-    def test_high_visibility_profile_scores_above_low_visibility_profile(self) -> None:
-        low_profile = PublicProfile(
-            employee_id="EMP0001",
-            full_name="Avery Kim",
-            title="Software Engineer",
-            department="Engineering",
-            organization="ExampleCorp",
-            role_seniority=RoleSeniority.INDIVIDUAL_CONTRIBUTOR,
-            email_format="first.last",
-            location="Austin",
-            tenure_start_year=2024,
-            platforms=[Platform.LINKEDIN],
-            public_usernames=["averykim"],
-            interests=["running"],
+    def test_disabling_linkability_removes_multiplier(self) -> None:
+        ablated = assess_exposure(
+            self.subject, disabled_axes=frozenset({"linkability"})
         )
-        high_profile = PublicProfile(
-            employee_id="EMP0002",
-            full_name="Priya Hughes",
-            title="Chief Information Security Officer",
-            department="Security",
-            organization="ExampleCorp",
-            role_seniority=RoleSeniority.C_SUITE,
-            email_format="first.last",
-            location="San Francisco",
-            tenure_start_year=2018,
-            platforms=[
-                Platform.LINKEDIN,
-                Platform.PERSONAL_WEBSITE,
-                Platform.SPEAKER_BIO,
-                Platform.COMPANY_DIRECTORY,
-            ],
-            public_usernames=["priya.hughes", "phughes"],
-            interests=["security research", "writing"],
-            education="MIT",
-            bio="CISO at ExampleCorp and frequent public speaker.",
-        )
+        self.assertEqual(ablated.linkability_multiplier, 1.0)
 
-        low_assessment = score_exposure(low_profile)
-        high_assessment = score_exposure(high_profile)
+    def test_band_thresholds(self) -> None:
+        self.assertEqual(band_from_score(80), RiskBand.CRITICAL)
+        self.assertEqual(band_from_score(60), RiskBand.HIGH)
+        self.assertEqual(band_from_score(30), RiskBand.MEDIUM)
+        self.assertEqual(band_from_score(10), RiskBand.LOW)
 
-        self.assertLess(low_assessment.score, high_assessment.score)
-        self.assertEqual(high_assessment.band, RiskBand.CRITICAL)
-        self.assertIn("seniority visibility", high_assessment.top_factors)
+    def test_score_bounded(self) -> None:
+        assessment = assess_exposure(self.subject)
+        self.assertGreaterEqual(assessment.score, 0.0)
+        self.assertLessEqual(assessment.score, 100.0)
 
 
 if __name__ == "__main__":

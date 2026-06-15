@@ -452,7 +452,7 @@ The training output includes model accuracy, the heuristic baseline accuracy on 
 Run the current test suite:
 
 ```bash
-.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python -m unittest discover -t . -s tests -v
 ```
 
 For the empirical review workflow, generate reviewer packets with the same saved
