@@ -97,7 +97,13 @@ def _professional_visibility(subject: Subject) -> float:
 def _personal_trivia_richness(subject: Subject) -> float:
     trivia = len(subject.tokens(TokenBucket.PERSONAL_TRIVIA))
     interest = len(subject.tokens(TokenBucket.INTEREST))
-    return 100.0 * min(1.0, (trivia + 0.5 * interest) / 8.0)
+    # Personal trivia (pets/family/teams) is the high-value targeted-guessing
+    # material and drives this axis. Interests (e.g. public GitHub repo topics)
+    # are only a weak proxy and are capped so a large public project list alone
+    # cannot max the axis or trigger the "rich personal trivia" top factor.
+    trivia_component = min(1.0, trivia / 6.0)
+    interest_component = min(0.2, interest / 50.0)
+    return 100.0 * min(1.0, trivia_component + interest_component)
 
 
 def _breach_exposure(subject: Subject) -> float:

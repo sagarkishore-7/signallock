@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import unittest
 
+from signallock.core import AttributeKind, Observation, SourceClass
 from signallock.core.enums import RiskBand
 from signallock.core.subject import Subject
 from signallock.exposure import assess_exposure, band_from_score
@@ -50,6 +51,23 @@ class ExposureTests(unittest.TestCase):
         assessment = assess_exposure(self.subject)
         self.assertGreaterEqual(assessment.score, 0.0)
         self.assertLessEqual(assessment.score, 100.0)
+
+    def test_interests_alone_do_not_max_personal_trivia(self) -> None:
+        # Many public interests (e.g. GitHub repo topics) with zero real personal
+        # trivia must not max the personal-trivia axis or claim "rich personal
+        # trivia". Regression for the interest-inflation bug.
+        obs = [
+            Observation("dev", SourceClass.CODE, AttributeKind.INTEREST,
+                        f"topic{i}", 0.5, "t", "p", "github-api")
+            for i in range(40)
+        ]
+        subject = resolve_subject("dev", obs)
+        assessment = assess_exposure(subject)
+        self.assertLess(assessment.axis_scores["personal_trivia_richness"], 25.0)
+        self.assertNotIn(
+            "Rich personal trivia exposed (pets, family, teams)",
+            assessment.top_factors,
+        )
 
 
 if __name__ == "__main__":

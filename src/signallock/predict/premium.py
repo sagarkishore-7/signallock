@@ -35,15 +35,22 @@ def exposure_premium(
     """Compute the exposure premium for one (password, subject) pair.
 
     The contextual guess estimate is the simulator's guess rank when the password
-    was cracked, or the budget ceiling (a lower bound) when it survived. The
-    premium can be negative when context offers no advantage over zxcvbn.
+    was cracked. When the password *survived* the targeted budget the personalized
+    attack demonstrated no advantage, so the estimate is the larger of the budget
+    ceiling and the context-free baseline — which makes the premium ~0 rather than
+    spuriously large (flooring a survivor at log10(ceiling) alone made strong
+    passwords score the biggest premiums, which is backwards).
     """
     if prediction.guesses_to_crack is not None:
         contextual_log10 = math.log10(max(prediction.guesses_to_crack, 1))
     else:
-        # Survived the largest budget: contextual attack needs at least the
-        # ceiling number of guesses (a conservative lower bound).
-        contextual_log10 = math.log10(max(prediction.budget_ceiling, 1))
+        # Survived the largest budget: the targeted attack did no better than the
+        # context-free meter, so the contextual cost is at least the baseline (and
+        # at least the ceiling). This keeps a survivor's premium at ~0.
+        contextual_log10 = max(
+            math.log10(max(prediction.budget_ceiling, 1)),
+            baseline.guesses_log10,
+        )
 
     return ExposurePremium(
         baseline_log10=round(baseline.guesses_log10, 4),

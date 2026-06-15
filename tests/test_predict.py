@@ -95,6 +95,20 @@ class BaselineAndPremiumTests(unittest.TestCase):
         if prediction.guesses_to_crack is not None:
             self.assertGreater(premium.premium, 0.0)
 
+    def test_survivor_password_has_near_zero_premium(self) -> None:
+        # A strong password that survives the targeted budget must NOT score a
+        # large premium just because zxcvbn rates it strong. Regression for the
+        # survivor-premium bug (flooring contextual at log10(ceiling) made strong
+        # passwords show the biggest premiums).
+        password = "9f!Qz#7vLp2@Xw"
+        baseline = context_free_strength(password)
+        prediction = simulate_predictability(
+            self.subject, password, identity=self.identity, roster=self.roster
+        )
+        self.assertIsNone(prediction.guesses_to_crack)  # survived
+        premium = exposure_premium(baseline, prediction)
+        self.assertAlmostEqual(premium.premium, 0.0, places=4)
+
 
 if __name__ == "__main__":
     unittest.main()
