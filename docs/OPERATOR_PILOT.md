@@ -1,9 +1,11 @@
-# SignalLock v2 — Participant Intake (Option A pilot, `real-01` = you)
+# SignalLock v2 — Operator Self-Pilot Runbook (`real-01`)
 
-This is the operator runbook for the **consented real-participant** measurement
-study, pilot N=1 with **you** as `real-01`. It turns your *real, existing* public
-footprint into a consented snapshot and measures the exposure premium on study
-passwords — no fabricated accounts, no ToS violations.
+This is the **operator-facing** runbook for the consented real-participant
+measurement study, pilot N=1 with **you (the operator)** as `real-01`. It turns your
+*real, existing* public footprint into a consented snapshot and measures the exposure
+premium on study passwords — no fabricated accounts, no ToS violations. For the
+participant-facing flow (when you recruit others), see
+[`PARTICIPANT_GUIDE.md`](PARTICIPANT_GUIDE.md) + [`PARTICIPANT_INTAKE_FORM.md`](PARTICIPANT_INTAKE_FORM.md).
 
 Companion: `docs/PERSONAS.md` (now used as the **intake field template** + the
 **synthetic-control** set), `docs/RESEARCH_RUNBOOK.md` (pipeline), `docs/CONSENT_TEMPLATE.md`.

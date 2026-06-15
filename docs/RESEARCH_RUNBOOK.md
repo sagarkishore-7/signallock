@@ -43,10 +43,12 @@ Priority order:
    `social` Mastodon, `web_profile`, `username_enum`) for a subject's seeds and
    writes the resulting `Observation`s to a snapshot file. Today the CLI only
    replays snapshots; the GitHub collector works but must be called in a script.
-2. **README refresh.** `README.md` is still entirely v1 (documents removed
-   commands like `train-model`, `generate-profiles`, `run-preset`). Rewrite the
-   Quick Start + command reference for the v2 CLI.
-3. **`PROJECT_STATUS.md` / `FEATURE_SCHEMA.md` refresh** to the v2 schema.
+2. **Docs refresh — done.** README + AGENTS rewritten for v2; the stale v1 docs
+   (ARCHITECTURE, DEPLOYMENT, EXPERIMENTS, PROJECT_STATUS, FEATURE_SCHEMA,
+   reviewer/policy/implementation docs) removed; the participant pack added
+   (`STUDY_INFORMATION_SHEET`, `PARTICIPANT_GUIDE`, `PARTICIPANT_INTAKE_FORM`).
+3. **Live Mastodon collection** — only GitHub has a live CLI path today
+   (`collect-live`); the social collector is snapshot-only.
 4. **Scale the roster** to a study-sized N (see §6) and add a real (non-example)
    gitignored roster + consent records + passwords file.
 5. **Dashboard verification** — confirm the attacker-mirror + exposure-premium
