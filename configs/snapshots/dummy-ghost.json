@@ -1,0 +1,13 @@
+{
+  "_comment": "CLEARLY-FAKE consented snapshot for research persona 'dummy-ghost'. All values are fabricated. The pet name 'Rex' + significant year '2014' are seeded so a password like 'rex2014' is a plausible targeted guess that the bounded-budget simulator should fall to early. 'source' and 'attr_kind' are exact SourceClass / AttributeKind enum names from src/signallock/core/enums.py. Consumed by src/signallock/collect/snapshot.py load_snapshot().",
+  "subject_id": "dummy-ghost",
+  "observations": [
+    {"source": "SOCIAL", "attr_kind": "NAME", "value": "Ghost Persona", "confidence": 0.95, "mirrors": "sherlock", "provenance": "snapshot:ig-fake"},
+    {"source": "SOCIAL", "attr_kind": "PET_NAME", "value": "Rex", "confidence": 0.9, "mirrors": "cupp", "provenance": "snapshot:ig-fake"},
+    {"source": "SOCIAL", "attr_kind": "SIGNIFICANT_YEAR", "value": "2014", "confidence": 0.85, "mirrors": "cupp", "provenance": "snapshot:ig-fake"},
+    {"source": "SOCIAL", "attr_kind": "AFFILIATION", "value": "Riverside Rovers", "confidence": 0.8, "mirrors": "cupp", "provenance": "snapshot:ig-fake"},
+    {"source": "CODE", "attr_kind": "USERNAME", "value": "ghostdev", "confidence": 0.95, "mirrors": "maigret", "provenance": "snapshot:github-fake"},
+    {"source": "PROFESSIONAL", "attr_kind": "ORGANIZATION", "value": "Fabricated Labs Inc", "confidence": 0.9, "mirrors": "linkedin-snapshot", "provenance": "snapshot:linkedin-fake"},
+    {"source": "PROFESSIONAL", "attr_kind": "ROLE_TITLE", "value": "Backend Engineer", "confidence": 0.9, "mirrors": "linkedin-snapshot", "provenance": "snapshot:linkedin-fake"}
+  ]
+}

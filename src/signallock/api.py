@@ -1,343 +1,168 @@
-"""FastAPI service layer for SignalLock Audit and Interactive modes.
+"""FastAPI service for SignalLock v2.
 
-Requires the ``api`` optional dependency group:
-    pip install signallock[api]
+Requires the ``api`` extra: ``pip install "signallock[api]"``.
 
-Stateless by design: every request body carries its own profile data;
-the server stores nothing about callers, never echoes passwords back,
-and only references matched-token strings inside explanations.
+Stateless with respect to callers: passwords arrive in request bodies, are used
+only to compute scores, and are never stored or echoed back. The server loads a
+consent roster and consented snapshots at startup; predictability scoring is
+consent-gated like the rest of the pipeline.
 """
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
-from typing import Any
 
-from .explanation import explain_recommendation
-from .exposure import (
-    profile_to_attribute_vector,
-    score_exposure,
-    score_profiles_exposure,
-)
-from .password_risk import score_password_for_profile
-from .policy import (
-    get_policy_config,
-    list_policy_configs,
-    recommend_hardening,
-)
-from .schemas import (
-    Platform,
-    PolicyProfile,
-    PublicProfile,
-    RoleSeniority,
-)
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
-try:
-    from fastapi import FastAPI, HTTPException
-    from fastapi.middleware.cors import CORSMiddleware
-    from pydantic import BaseModel, Field
-
-    _FASTAPI_AVAILABLE = True
-except ImportError:
-    _FASTAPI_AVAILABLE = False
+from . import __version__
+from .core.identity import ConsentedIdentity, ConsentRoster, IdentitySeeds
+from .core.subject import Subject
+from .eval.dataset import load_observations_dir
+from .exposure.model import assess_exposure
+from .paths import get_project_root
+from .policy.engine import recommend
+from .predict.baseline import context_free_strength
+from .predict.premium import exposure_premium
+from .predict.simulator import simulate_predictability
+from .resolve.entity import resolve_subject
 
 
-def _require_fastapi() -> None:
-    if not _FASTAPI_AVAILABLE:
-        raise ImportError(
-            "FastAPI is required for the API service layer. "
-            "Install it with: pip install signallock[api]"
+def _default_roster_path() -> Path:
+    env = os.environ.get("SIGNALLOCK_ROSTER")
+    if env:
+        return Path(env)
+    return get_project_root() / "configs" / "osint_roster.example.json"
+
+
+def _default_snapshots_dir() -> Path:
+    env = os.environ.get("SIGNALLOCK_SNAPSHOTS")
+    if env:
+        return Path(env)
+    return get_project_root() / "configs" / "snapshots"
+
+
+class SubjectStore:
+    """Loads the consent roster and consented snapshots, resolves subjects."""
+
+    def __init__(self, roster_path: Path, snapshots_dir: Path) -> None:
+        self.roster = (
+            ConsentRoster.load(roster_path) if roster_path.exists() else ConsentRoster()
+        )
+        self.observations = (
+            load_observations_dir(snapshots_dir) if snapshots_dir.is_dir() else {}
+        )
+        self._subjects: dict[str, Subject] = {}
+
+    def subject(self, subject_id: str) -> Subject:
+        if subject_id not in self.roster:
+            raise HTTPException(status_code=403, detail="subject not consented")
+        if subject_id not in self.observations:
+            raise HTTPException(status_code=404, detail="no snapshot for subject")
+        if subject_id not in self._subjects:
+            self._subjects[subject_id] = resolve_subject(
+                subject_id, self.observations[subject_id]
+            )
+        return self._subjects[subject_id]
+
+    def identity(self, subject_id: str) -> ConsentedIdentity:
+        return ConsentedIdentity(
+            subject_id=subject_id,
+            seeds=IdentitySeeds(username=subject_id),
+            consent=self.roster.get(subject_id),  # type: ignore[arg-type]
         )
 
 
-# Pydantic request models are defined at module level so FastAPI's
-# type-introspection can resolve them for body parsing. They are only
-# imported and evaluated when ``fastapi`` and ``pydantic`` are installed.
-if _FASTAPI_AVAILABLE:
+class ScoreRequest(BaseModel):
+    subject_id: str = Field(..., description="A consented subject id.")
 
-    class PublicProfileIn(BaseModel):
-        """Wire format for a public profile, mirroring schemas.PublicProfile."""
 
-        employee_id: str
-        full_name: str
-        title: str
-        department: str
-        organization: str
-        role_seniority: str
-        email_format: str
-        location: str
-        tenure_start_year: int
-        platforms: list[str] = Field(default_factory=list)
-        public_usernames: list[str] = Field(default_factory=list)
-        interests: list[str] = Field(default_factory=list)
-        preferred_name: str | None = None
-        education: str | None = None
-        bio: str | None = None
-
-        def to_dataclass(self) -> PublicProfile:
-            try:
-                return PublicProfile(
-                    employee_id=self.employee_id,
-                    full_name=self.full_name,
-                    title=self.title,
-                    department=self.department,
-                    organization=self.organization,
-                    role_seniority=RoleSeniority(self.role_seniority),
-                    email_format=self.email_format,
-                    location=self.location,
-                    tenure_start_year=self.tenure_start_year,
-                    platforms=[Platform(p) for p in self.platforms],
-                    public_usernames=list(self.public_usernames),
-                    interests=list(self.interests),
-                    preferred_name=self.preferred_name,
-                    education=self.education,
-                    bio=self.bio,
-                )
-            except (ValueError, KeyError) as exc:
-                raise HTTPException(status_code=422, detail=str(exc)) from exc
-
-    class ExposureBatchRequest(BaseModel):
-        profiles: list[PublicProfileIn]
-
-    class PasswordScoreRequest(BaseModel):
-        profile: PublicProfileIn
-        password: str
-
-    class RecommendRequest(BaseModel):
-        profile: PublicProfileIn
-        password: str
-        policy_profile: str = "balanced"
-
-    class ExplainRequest(BaseModel):
-        profile: PublicProfileIn
-        password: str
-        policy_profile: str = "balanced"
-
-    class CompareRequest(BaseModel):
-        profile: PublicProfileIn
-        password: str
-        policy_profile: str = "balanced"
+class PasswordRequest(ScoreRequest):
+    password: str = Field(..., description="Owner's own password; never stored.")
 
 
 def create_app(
-    model_file: str | Path | None = None,
-    cors_origins: list[str] | None = None,
-) -> Any:
-    """Build a FastAPI application bound to an optional trained model.
-
-    Pass ``model_file`` to enable the ``/compare-scoring`` endpoint and the
-    ``/recommend?ml=true`` query mode. Without a model file, the server
-    operates in heuristic-only mode.
-
-    Pass ``cors_origins`` to allow a browser-based dashboard to call the API
-    from a different port. For development the typical value is
-    ``["http://localhost:3000"]`` (the Next.js dev server).
-    """
-    _require_fastapi()
-
-    fitted_model = None
-    if model_file:
-        from .model import load_model_artifacts
-
-        fitted_model, _ = load_model_artifacts(model_file)
-
-    app = FastAPI(
-        title="SignalLock API",
-        version="0.1.0",
-        description=(
-            "Stateless API for OSINT-calibrated password risk assessment "
-            "and context-aware authentication hardening. Audit and Interactive modes."
-        ),
+    roster_path: Path | None = None, snapshots_dir: Path | None = None
+) -> FastAPI:
+    """Build the FastAPI app, loading roster and snapshots at startup."""
+    store = SubjectStore(
+        roster_path or _default_roster_path(),
+        snapshots_dir or _default_snapshots_dir(),
     )
-
-    if cors_origins:
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=list(cors_origins),
-            allow_credentials=False,
-            allow_methods=["GET", "POST", "OPTIONS"],
-            allow_headers=["Content-Type"],
-        )
-
-    # ---------------------------------------------------------------------
-    # Helpers
-    # ---------------------------------------------------------------------
-
-    def _resolve_policy(name: str):
-        try:
-            return get_policy_config(PolicyProfile(name))
-        except (ValueError, KeyError) as exc:
-            raise HTTPException(
-                status_code=422,
-                detail=f"unknown policy profile {name!r}",
-            ) from exc
-
-    def _maybe_predict_band(profile: PublicProfile, password_assessment) -> Any:
-        if fitted_model is None:
-            return None
-        from .model import predict_risk_band
-
-        vector = profile_to_attribute_vector(profile)
-        return predict_risk_band(fitted_model, vector, password_assessment)
-
-    # ---------------------------------------------------------------------
-    # Routes
-    # ---------------------------------------------------------------------
+    app = FastAPI(title="SignalLock", version=__version__)
 
     @app.get("/healthz")
-    def healthz() -> dict[str, Any]:
-        """Liveness check + model availability."""
+    def healthz() -> dict[str, object]:
         return {
             "status": "ok",
-            "version": app.version,
-            "model_loaded": fitted_model is not None,
+            "version": __version__,
+            "subjects": len(store.roster),
         }
 
-    @app.get("/policies")
-    def list_policies() -> list[dict[str, Any]]:
-        """List available named policy profiles and their thresholds."""
-        return [config.to_dict() for config in list_policy_configs()]
-
-    @app.get("/demo/profiles")
-    def demo_profiles(count: int = 10, seed: int = 1, organization: str = "ExampleCorp") -> dict[str, Any]:
-        """Generate a synthetic roster for dashboard demos.
-
-        This endpoint is intended for local research demos only — it bypasses
-        the stateless contract by producing data, but the data is purely
-        synthetic and never tied to real individuals.
-        """
-        from .synthetic_profiles import generate_synthetic_profiles
-
-        if count < 1 or count > 200:
-            raise HTTPException(status_code=422, detail="count must be in [1, 200]")
-        profiles = generate_synthetic_profiles(count=count, organization=organization, seed=seed)
-        return {
-            "count": len(profiles),
-            "organization": organization,
-            "seed": seed,
-            "profiles": [p.to_dict() for p in profiles],
-        }
+    @app.get("/subjects")
+    def subjects() -> list[dict[str, object]]:
+        out: list[dict[str, object]] = []
+        for subject_id in store.roster.subject_ids():
+            record = store.roster.get(subject_id)
+            entry: dict[str, object] = {
+                "subject_id": subject_id,
+                "is_dummy": bool(record.is_dummy) if record else False,
+                "has_snapshot": subject_id in store.observations,
+            }
+            if subject_id in store.observations:
+                exposure = assess_exposure(store.subject(subject_id))
+                entry["exposure_score"] = exposure.score
+                entry["exposure_band"] = exposure.band.value
+            out.append(entry)
+        return out
 
     @app.post("/score/exposure")
-    def score_exposure_batch(request: ExposureBatchRequest) -> dict[str, Any]:
-        """Audit-mode batch endpoint: list of profiles → list of exposure assessments."""
-        profiles = [p.to_dataclass() for p in request.profiles]
-        assessments = score_profiles_exposure(profiles)
-        return {
-            "count": len(assessments),
-            "assessments": [a.to_dict() for a in assessments],
-        }
+    def score_exposure(req: ScoreRequest) -> dict[str, object]:
+        return assess_exposure(store.subject(req.subject_id)).to_dict()
 
-    @app.post("/score/password")
-    def score_password(request: PasswordScoreRequest) -> dict[str, Any]:
-        """Interactive-mode endpoint: profile + password → password risk assessment."""
-        profile = request.profile.to_dataclass()
-        assessment = score_password_for_profile(request.password, profile)
-        return assessment.to_dict()
+    @app.post("/score/predictability")
+    def score_predictability(req: PasswordRequest) -> dict[str, object]:
+        subject = store.subject(req.subject_id)
+        prediction = simulate_predictability(
+            subject,
+            req.password,
+            identity=store.identity(req.subject_id),
+            roster=store.roster,
+        )
+        return prediction.to_dict()
 
     @app.post("/recommend")
-    def recommend(request: RecommendRequest, ml: bool = False) -> dict[str, Any]:
-        """Full pipeline: profile + password → hardening recommendation.
-
-        Pass ``?ml=true`` to use the trained model's predicted band (requires
-        ``--model-file`` at server startup).
-        """
-        if ml and fitted_model is None:
-            raise HTTPException(
-                status_code=503,
-                detail="server was started without --model-file; ml=true is unavailable",
-            )
-
-        profile = request.profile.to_dataclass()
-        config = _resolve_policy(request.policy_profile)
-        exposure = score_exposure(profile)
-        password_assessment = score_password_for_profile(request.password, profile)
-
-        predicted_band = _maybe_predict_band(profile, password_assessment) if ml else None
-        recommendation = recommend_hardening(
-            exposure,
-            password_assessment,
-            config=config,
-            predicted_password_band=predicted_band,
+    def recommend_endpoint(req: PasswordRequest) -> dict[str, object]:
+        subject = store.subject(req.subject_id)
+        exposure = assess_exposure(subject)
+        prediction = simulate_predictability(
+            subject,
+            req.password,
+            identity=store.identity(req.subject_id),
+            roster=store.roster,
         )
+        return recommend(exposure, prediction).to_dict()
+
+    @app.post("/compare-baseline")
+    def compare_baseline(req: PasswordRequest) -> dict[str, object]:
+        subject = store.subject(req.subject_id)
+        prediction = simulate_predictability(
+            subject,
+            req.password,
+            identity=store.identity(req.subject_id),
+            roster=store.roster,
+        )
+        baseline = context_free_strength(req.password)
+        premium = exposure_premium(baseline, prediction)
         return {
-            "exposure": exposure.to_dict(),
-            "password_assessment": password_assessment.to_dict(),
-            "recommendation": recommendation.to_dict(),
+            "subject_id": req.subject_id,
+            "contextual_band": prediction.band.value,
+            "baseline": baseline.to_dict(),
+            "premium": premium.to_dict(),
         }
 
-    @app.post("/explain")
-    def explain(request: ExplainRequest, ml: bool = False) -> dict[str, Any]:
-        """Full pipeline + human-readable explanation paragraph."""
-        if ml and fitted_model is None:
-            raise HTTPException(
-                status_code=503,
-                detail="server was started without --model-file; ml=true is unavailable",
-            )
-
-        profile = request.profile.to_dataclass()
-        config = _resolve_policy(request.policy_profile)
-        exposure = score_exposure(profile)
-        password_assessment = score_password_for_profile(request.password, profile)
-
-        predicted_band = _maybe_predict_band(profile, password_assessment) if ml else None
-        recommendation = recommend_hardening(
-            exposure,
-            password_assessment,
-            config=config,
-            predicted_password_band=predicted_band,
-        )
-        explanation = explain_recommendation(
-            recommendation, profile, exposure, password_assessment
-        )
-        return explanation.to_dict()
-
-    @app.post("/compare-scoring")
-    def compare_scoring_endpoint(request: CompareRequest) -> dict[str, Any]:
-        """Side-by-side heuristic vs ML-assisted scoring.
-
-        Requires the server to be started with ``--model-file``.
-        """
-        if fitted_model is None:
-            raise HTTPException(
-                status_code=503,
-                detail="server was started without --model-file; /compare-scoring is unavailable",
-            )
-
-        from .model import predict_risk_band
-        from .schemas import ModelScoringComparison
-
-        profile = request.profile.to_dataclass()
-        config = _resolve_policy(request.policy_profile)
-        exposure = score_exposure(profile)
-        password_assessment = score_password_for_profile(request.password, profile)
-        vector = profile_to_attribute_vector(profile)
-
-        heuristic_rec = recommend_hardening(exposure, password_assessment, config=config)
-        ml_band = predict_risk_band(fitted_model, vector, password_assessment)
-        ml_rec = recommend_hardening(
-            exposure,
-            password_assessment,
-            config=config,
-            predicted_password_band=ml_band,
-        )
-
-        comparison = ModelScoringComparison(
-            employee_id=profile.employee_id,
-            password_length=password_assessment.password_length,
-            exposure_score=exposure.score,
-            exposure_band=exposure.band,
-            heuristic_password_band=password_assessment.band,
-            ml_predicted_band=ml_band,
-            bands_agree=password_assessment.band == ml_band,
-            heuristic_action=heuristic_rec.primary_action,
-            ml_action=ml_rec.primary_action,
-            actions_agree=heuristic_rec.primary_action == ml_rec.primary_action,
-            heuristic_combined_score=heuristic_rec.combined_score,
-            ml_combined_score=ml_rec.combined_score,
-            heuristic_recommendation=heuristic_rec,
-            ml_recommendation=ml_rec,
-        )
-        return comparison.to_dict()
-
     return app
+
+
+app = create_app()

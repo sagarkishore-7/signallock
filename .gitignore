@@ -18,6 +18,14 @@ build/
 dist/
 *.egg-info/
 artifacts/
+artifacts/osint_cache/
+
+# Signed consent artifacts — never committed. Only the clearly-fake
+# configs/osint_roster.example.json and configs/snapshots/*.json fixtures are
+# tracked; real consent records and collected snapshots stay local.
+# See docs/DATA_POLICY.md.
+configs/consent_records/
+!configs/consent_records/.gitkeep
 
 # IDE / editor
 .DS_Store
@@ -59,3 +67,7 @@ proposal/
 # Local databases
 *.sqlite3
 *.db
+
+# Real consented passwords — never committed (only the .example.json is tracked)
+configs/*passwords*.json
+!configs/example_passwords.example.json
