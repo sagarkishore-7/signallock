@@ -30,7 +30,7 @@ guidance there (some that relate to your public details, some that don't — thi
 the heart of the experiment). Then send the completed **consent form + intake form**
 privately to:
 
-> **`contact@matrixsociallabs.com`** (or whatever private channel the researcher gave you)
+> **`sagarkishore.7@gmail.com`** (or whatever private channel the researcher gave you)
 
 **Do not** open a pull request or commit your personal details to this public repo.
 

@@ -69,7 +69,7 @@ non-identifying id back to you, via the offline consent record.
 
 ## Contact and concerns
 
-- **Researcher:** SignalLock research operator — `contact@matrixsociallabs.com`
+- **Researcher:** SignalLock research operator — `sagarkishore.7@gmail.com`
 - If the study runs under an institution, its ethics/IRB approval reference and an
   independent contact for complaints will be added here: `[institution / IRB ref]`.
 
