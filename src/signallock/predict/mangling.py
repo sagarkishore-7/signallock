@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 from ..core.enums import TokenBucket
 from ..core.subject import Subject
@@ -29,7 +30,15 @@ _BASE_BUCKET_PRIORITY = (
     TokenBucket.LOCATION,
 )
 
-_COMMON_SUFFIXES = ("1", "123", "!", "12", "01", "1234", "@", "#", "2024", "2025")
+# Common number/symbol affixes, ordered by real-world frequency (breach studies)
+# so the bounded budget spends on the most likely guesses first.
+_COMMON_AFFIXES = (
+    "1", "123", "12", "2", "11", "21", "69", "07", "00", "99", "13", "23",
+    "321", "1234", "12345", "007", "01", "!", "@", "#", "$",
+)
+#: How many years back the dynamic year window reaches (covers plausible birth,
+#: graduation, and tenure years without hardcoding specific years).
+_YEAR_LOOKBACK = 50
 _LEET = str.maketrans({"a": "@", "e": "3", "i": "1", "o": "0", "s": "$"})
 
 
@@ -53,9 +62,22 @@ def _base_words(subject: Subject) -> list[str]:
     return words
 
 
-def _years(subject: Subject) -> list[str]:
-    """Subject-derived temporal affixes (full and 2-digit years)."""
-    return [t for t in subject.tokens(TokenBucket.TEMPORAL) if t.isdigit()]
+def _affixes(subject: Subject) -> list[str]:
+    """Ordered affixes, common-first, so a bounded budget tries likely guesses
+    first: the subject's own OSINT years (an attacker knows these), then common
+    number/symbol suffixes, then a dynamic recent-year window. De-hardcoded so it
+    never goes stale and does not arbitrarily privilege two specific years.
+    """
+    osint_years = [t for t in subject.tokens(TokenBucket.TEMPORAL) if t.isdigit()]
+    now = datetime.now(timezone.utc).year
+    year_window = [str(y) for y in range(now + 1, now - _YEAR_LOOKBACK, -1)]
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for affix in (*osint_years, *_COMMON_AFFIXES, *year_window):
+        if affix not in seen:
+            seen.add(affix)
+            ordered.append(affix)
+    return ordered
 
 
 def generate_guesses(subject: Subject, *, limit: int) -> Iterator[GuessCandidate]:
@@ -63,7 +85,7 @@ def generate_guesses(subject: Subject, *, limit: int) -> Iterator[GuessCandidate
     seen: set[str] = set()
     count = 0
     base = _base_words(subject)
-    suffixes = _years(subject) + list(_COMMON_SUFFIXES)
+    suffixes = _affixes(subject)
 
     def emit(value: str, category: str) -> Iterator[GuessCandidate]:
         nonlocal count
@@ -82,9 +104,11 @@ def generate_guesses(subject: Subject, *, limit: int) -> Iterator[GuessCandidate
         yield from emit(word.capitalize(), "case")
         yield from emit(word.upper(), "case")
 
-    # Tier 2 — base + common/temporal affixes (and capitalized variants).
-    for word in base:
-        for suffix in suffixes:
+    # Tier 2 — base + affixes, affix-major: the most common affixes are tried
+    # across all base words first, so a bounded budget reaches the likeliest
+    # (token, affix) combos regardless of how many tokens the dossier has.
+    for suffix in suffixes:
+        for word in base:
             if count >= limit:
                 return
             yield from emit(word + suffix, "affix")
