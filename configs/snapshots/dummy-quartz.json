@@ -1,0 +1,12 @@
+{
+  "_comment": "CLEARLY-FAKE consented snapshot for research persona 'dummy-quartz'. All values fabricated. Includes a BREACH observation (breach name only, never cleartext) and a STRUCTURE_PRIOR observation (a structural password habit, not a real password). 'source'/'attr_kind' are exact enum names from src/signallock/core/enums.py. Consumed by src/signallock/collect/snapshot.py.",
+  "subject_id": "dummy-quartz",
+  "observations": [
+    {"source": "SOCIAL", "attr_kind": "NAME", "value": "Quartz Persona", "confidence": 0.95, "mirrors": "sherlock", "provenance": "snapshot:mastodon-fake"},
+    {"source": "SOCIAL", "attr_kind": "PET_NAME", "value": "Pixel", "confidence": 0.9, "mirrors": "cupp", "provenance": "snapshot:mastodon-fake"},
+    {"source": "SOCIAL", "attr_kind": "AFFILIATION", "value": "Northgate United", "confidence": 0.8, "mirrors": "cupp", "provenance": "snapshot:mastodon-fake"},
+    {"source": "SOCIAL", "attr_kind": "SIGNIFICANT_YEAR", "value": "2009", "confidence": 0.8, "mirrors": "cupp", "provenance": "snapshot:mastodon-fake"},
+    {"source": "BREACH_INTEL", "attr_kind": "BREACH", "value": "FakeForum2019", "confidence": 0.85, "mirrors": "hibp", "provenance": "snapshot:breach-corpus-fake"},
+    {"source": "BREACH_INTEL", "attr_kind": "STRUCTURE_PRIOR", "value": "word+4digits", "confidence": 0.7, "mirrors": "hibp", "provenance": "snapshot:breach-corpus-fake"}
+  ]
+}

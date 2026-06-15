@@ -1,0 +1,13 @@
+{
+  "_comment": "CLEARLY-FAKE consented snapshot for research persona 'dummy-meadow'. All values fabricated. The pet name 'Maple' + significant year '2007' are seeded so a password like 'maple2007' is a plausible targeted guess the bounded-budget simulator should fall to early. 'source'/'attr_kind' are exact SourceClass / AttributeKind enum names from src/signallock/core/enums.py. Consumed by src/signallock/collect/snapshot.py load_snapshot().",
+  "subject_id": "dummy-meadow",
+  "observations": [
+    {"source": "SOCIAL", "attr_kind": "NAME", "value": "Meadow Persona", "confidence": 0.95, "mirrors": "sherlock", "provenance": "snapshot:ig-fake"},
+    {"source": "SOCIAL", "attr_kind": "PET_NAME", "value": "Maple", "confidence": 0.9, "mirrors": "cupp", "provenance": "snapshot:ig-fake"},
+    {"source": "SOCIAL", "attr_kind": "SIGNIFICANT_YEAR", "value": "2007", "confidence": 0.85, "mirrors": "cupp", "provenance": "snapshot:ig-fake"},
+    {"source": "SOCIAL", "attr_kind": "AFFILIATION", "value": "Hillcrest Harriers", "confidence": 0.8, "mirrors": "cupp", "provenance": "snapshot:ig-fake"},
+    {"source": "CODE", "attr_kind": "USERNAME", "value": "meadowmaker", "confidence": 0.95, "mirrors": "maigret", "provenance": "snapshot:github-fake"},
+    {"source": "PROFESSIONAL", "attr_kind": "ORGANIZATION", "value": "Invented Greenworks LLC", "confidence": 0.9, "mirrors": "linkedin-snapshot", "provenance": "snapshot:linkedin-fake"},
+    {"source": "PROFESSIONAL", "attr_kind": "ROLE_TITLE", "value": "Product Designer", "confidence": 0.9, "mirrors": "linkedin-snapshot", "provenance": "snapshot:linkedin-fake"}
+  ]
+}
