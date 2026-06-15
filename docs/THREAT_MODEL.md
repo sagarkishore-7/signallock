@@ -59,9 +59,10 @@ SignalLock does not assume:
 
 Allowed:
 
-- estimating exposure risk from organization-approved or consented public context,
-- estimating candidate-password risk without generating concrete guesses,
-- using synthetic, anonymized, or aggregate statistics to model likely risk classes,
+- estimating exposure risk from consented public context,
+- labeling candidate-password risk via the bounded-budget guess simulator without
+  emitting concrete guess strings,
+- using aggregate breach structure priors to model likely risk classes,
 - recommending hardening actions such as MFA or step-up authentication.
 
 Disallowed:
@@ -76,7 +77,7 @@ Disallowed:
 ### Trusted
 
 - the local scoring workflow in interactive mode,
-- organization-approved synthetic or consent-based datasets,
+- consent-based datasets and fabricated dummy-account sources,
 - policy configuration managed by authorized administrators,
 - normalized schemas defined by the project.
 
@@ -112,22 +113,57 @@ The system must keep these risks separate:
 
 ## Risk Classes
 
-Early implementation should use online-guess-oriented labels:
+The pipeline uses bounded-budget guess labels (`RiskBand` in
+`src/signallock/core/enums.py`):
 
-- `LOW`: unlikely to fall within a low-budget targeted online attack window
-- `MEDIUM`: some contextual predictability but limited structural overlap
-- `HIGH`: likely to be vulnerable within realistic targeted online guess budgets
-- `CRITICAL`: strong contextual overlap and likely need for rejection or mandatory hardening
+- `LOW`: not reached within the largest guess budget
+- `MEDIUM`: contextual predictability with limited structural overlap; falls only at the largest budget
+- `HIGH`: vulnerable within realistic targeted guess budgets
+- `CRITICAL`: strong contextual overlap; falls within a handful of guesses, needs rejection or mandatory hardening
 
-## Initial Guess-Budget Assumptions
+## Bounded Guess Budgets
 
-These are working assumptions for Phase 1 and can be revised later:
+The bounded-budget guess simulator (`predict/simulator.py`) labels each consented
+owner password by the smallest budget (number of attempts) at which a
+personalized candidate matches. The budgets are defined as the `Budget` enum in
+`src/signallock/core/enums.py` and map to risk bands via `BUDGET_TO_BAND`:
 
-- `Budget-1`: first-guess obvious contextual matches
-- `Budget-10`: low-friction targeted online attempts
-- `Budget-100`: aggressive but still bounded online targeting
+| Budget | Attacker tier modeled | Band if reached |
+|---|---|---|
+| `B1` (1 attempt) | a single obvious contextual guess (pet, year) | CRITICAL |
+| `B10` (10 attempts) | low-friction targeted online guessing, no lockout | CRITICAL |
+| `B100` (100 attempts) | aggressive but still bounded online targeting | HIGH |
+| `B1000` (1000 attempts) | rate-limited online / small targeted run | HIGH |
+| `B10000` (10000 attempts) | offline targeted-dictionary run (CUPP/TarGuess scale) | MEDIUM |
+| not reached | survives the largest budget | LOW |
 
-The project should evaluate calibration against these budgets rather than against unbounded offline cracking.
+Calibration is evaluated against these bounded budgets rather than against
+unbounded offline cracking.
+
+## Simulator Misuse Guards
+
+The guess simulator is the research-grade "attack" — and is constrained so it
+cannot become an attack tool. These guards are unit-tested:
+
+- **Consent gate.** The simulator calls `require_consent(identity, roster)` first
+  and refuses any non-roster subject with `ConsentError`.
+- **Never emits guess strings.** It returns only the matched `RiskBand` and the
+  matching template *category* — never a concrete candidate string, and it
+  persists none.
+- **Hard budget cap.** Enumeration is hard-capped at the top budget (`B10000`);
+  it cannot run unbounded.
+
+## Attack Demo — Loopback Only
+
+The optional sandbox attack demo (`demo/`, separable and non-load-bearing) never
+targets live third-party hosts:
+
+- `demo/target_service.py` is a **local** auth service that binds localhost only
+  and refuses non-loopback connections.
+- `demo/run_attack.py` **hard-refuses any target host that is not loopback**
+  (asserted in a test). It drives `predict/mangling.py` against the local
+  sandbox only; no live-platform attack is ever performed.
+- Dummy accounts on real platforms are OSINT *sources*, never attack *targets*.
 
 ## Threats SignalLock Tries to Reduce
 
@@ -152,19 +188,18 @@ The project should evaluate calibration against these budgets rather than agains
 - minimize retained public-profile text
 - make policy actions explainable and reviewable
 
-## Phase 1 Implementation Implications
+## Implementation Implications
 
-The first code should support:
+The v2 pipeline supports:
 
-- synthetic profile generation
-- explicit profile and attribute schemas
-- a clear split between exposure data and password-conditioned features
-- CLI workflows that help test the model design without requiring real enterprise data
+- consented OSINT collection emitting typed `Observation`s (no raw scrape),
+- explicit observation/subject and attribute schemas (`core/`),
+- a clear split between exposure data and password-conditioned features,
+- the bounded-budget guess simulator as the ground-truth labeler,
+- the exposure-premium headline metric (context-free strength minus
+  context-aware strength),
+- CLI and offline workflows exercisable on the clearly-fake example roster and
+  snapshot fixtures without requiring real enterprise data.
 
-Current implementation status:
-
-- synthetic profile generation is implemented,
-- baseline exposure scoring is implemented,
-- baseline candidate-password scoring is implemented,
-- baseline policy mapping is implemented,
-- calibration and deployment tuning remain future work.
+The retired v1 synthetic profile generation, preset experiments, and threshold
+sweeps are no longer part of the threat surface.
