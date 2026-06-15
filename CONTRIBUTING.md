@@ -29,6 +29,18 @@ Contributions that move the project toward offensive targeting, exploit-ready pa
 - concise documentation for public functions,
 - reproducible experiments.
 
+## Running Tests
+
+The test suite uses package-relative fixtures, so run it from the repo root with
+the top-level dir set explicitly:
+
+```bash
+.venv/bin/python -m unittest discover -t . -s tests -v
+```
+
+The `[demo]` extra (bcrypt) is needed for `tests/test_demo.py`; it skips cleanly
+without it.
+
 ## Branching
 
 - `main` should remain stable.
