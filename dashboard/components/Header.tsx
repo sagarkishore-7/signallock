@@ -7,17 +7,17 @@ import { api } from "@/lib/api";
 
 export function Header() {
   const pathname = usePathname();
-  const [status, setStatus] = useState<{ ok: boolean; modelLoaded: boolean } | null>(null);
+  const [status, setStatus] = useState<{ ok: boolean; subjects: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     api
       .health()
       .then((h) => {
-        if (!cancelled) setStatus({ ok: h.status === "ok", modelLoaded: h.model_loaded });
+        if (!cancelled) setStatus({ ok: h.status === "ok", subjects: h.subjects });
       })
       .catch(() => {
-        if (!cancelled) setStatus({ ok: false, modelLoaded: false });
+        if (!cancelled) setStatus({ ok: false, subjects: 0 });
       });
     return () => {
       cancelled = true;
@@ -87,7 +87,7 @@ function NavLink({
 function StatusIndicator({
   status,
 }: {
-  status: { ok: boolean; modelLoaded: boolean } | null;
+  status: { ok: boolean; subjects: number } | null;
 }) {
   if (status === null) {
     return (
@@ -111,7 +111,7 @@ function StatusIndicator({
       <span>API connected</span>
       <span className="text-ink-muted">·</span>
       <span className="font-mono text-[10px]">
-        {status.modelLoaded ? "ML" : "heuristic"}
+        {status.subjects} subjects
       </span>
     </div>
   );
