@@ -82,15 +82,40 @@ class PasswordRequest(ScoreRequest):
     password: str = Field(..., description="Owner's own password; never stored.")
 
 
+def _resolve_cors_origins(cors_origins: list[str] | None) -> list[str]:
+    """CORS origins from the argument, else the SIGNALLOCK_CORS_ORIGINS env var."""
+    if cors_origins is not None:
+        return cors_origins
+    env = os.environ.get("SIGNALLOCK_CORS_ORIGINS", "")
+    return [o.strip() for o in env.split(",") if o.strip()]
+
+
 def create_app(
-    roster_path: Path | None = None, snapshots_dir: Path | None = None
+    roster_path: Path | None = None,
+    snapshots_dir: Path | None = None,
+    cors_origins: list[str] | None = None,
 ) -> FastAPI:
-    """Build the FastAPI app, loading roster and snapshots at startup."""
+    """Build the FastAPI app, loading roster and snapshots at startup.
+
+    ``cors_origins`` (or the ``SIGNALLOCK_CORS_ORIGINS`` env var, comma-separated)
+    enables CORS so the Next.js dashboard dev server can call the API.
+    """
     store = SubjectStore(
         roster_path or _default_roster_path(),
         snapshots_dir or _default_snapshots_dir(),
     )
     app = FastAPI(title="SignalLock", version=__version__)
+
+    origins = _resolve_cors_origins(cors_origins)
+    if origins:
+        from fastapi.middleware.cors import CORSMiddleware
+
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=origins,
+            allow_methods=["GET", "POST", "OPTIONS"],
+            allow_headers=["*"],
+        )
 
     @app.get("/healthz")
     def healthz() -> dict[str, object]:

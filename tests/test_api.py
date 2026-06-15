@@ -53,6 +53,21 @@ class ApiTests(unittest.TestCase):
         resp = self.client.post("/score/exposure", json={"subject_id": "nobody"})
         self.assertEqual(resp.status_code, 403)
 
+    def test_cors_header_when_enabled(self) -> None:
+        # The dashboard dev server needs CORS; confirm the header is emitted when
+        # an origin allowlist is configured.
+        root = get_project_root()
+        app = create_app(
+            roster_path=root / "configs" / "osint_roster.example.json",
+            snapshots_dir=root / "configs" / "snapshots",
+            cors_origins=["http://localhost:3000"],
+        )
+        client = TestClient(app)
+        resp = client.get("/healthz", headers={"Origin": "http://localhost:3000"})
+        self.assertEqual(
+            resp.headers.get("access-control-allow-origin"), "http://localhost:3000"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -6,9 +6,9 @@ A Next.js 15 + TypeScript + Tailwind dashboard for the SignalLock Audit and Inte
 
 | Route | Purpose |
 |---|---|
-| `/` | Org-level exposure heatmap with band filters and sort |
-| `/users/[id]` | Per-user drill-down: exposure factors, component scores, profile snapshot, interactive password tester |
-| `/test` | Standalone password tester — pick any profile, score a candidate password, see heuristic vs ML side-by-side and the full explanation paragraph |
+| `/` | Consented roster: each subject's exposure score + band (from `GET /subjects`) |
+| `/users/[id]` | Per-subject drill-down: exposure axes, linkability multiplier, top factors, and an inline password tester |
+| `/test` | Standalone password tester — pick a consented subject, score a candidate password, see context-aware vs context-free bands and the exposure premium |
 
 ## Local development
 
@@ -22,7 +22,9 @@ The dashboard requires the FastAPI server to be running with CORS enabled.
   --cors-origins http://localhost:3000
 ```
 
-To enable the ML-assisted toggle and `compare-scoring` panel, add `--model-file <path-to-pkl>`.
+To serve a specific roster/snapshots set (e.g. a pilot with real participants),
+add `--roster <roster.json> --snapshots <dir>` (the global `--roster` flag goes
+before `serve`).
 
 **2. Install dashboard deps** (one-time):
 

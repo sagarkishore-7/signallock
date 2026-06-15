@@ -9,6 +9,7 @@ Subcommands mirror the pipeline:
     build-dataset     run the pipeline over the roster -> labeled CSV/JSON
     evaluate          train + evaluate the learned model, premium, ablations
     mirror-table      print the adversary-mirror registry
+    serve             run the FastAPI service (for the dashboard)
     demo              run the optional localhost attack/defense showcase
 """
 
@@ -282,6 +283,33 @@ def cmd_mirror_table(_: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_serve(args: argparse.Namespace) -> int:
+    try:
+        import uvicorn
+    except ImportError:
+        print(
+            "serve requires the 'api' extra: pip install 'signallock[api]'",
+            file=sys.stderr,
+        )
+        return 2
+    from .api import create_app
+
+    roster = (
+        Path(args.roster) if args.roster else _default("osint_roster.example.json")
+    )
+    snapshots = Path(args.snapshots) if args.snapshots else _default("snapshots")
+    origins = [
+        o.strip() for o in (args.cors_origins or "").split(",") if o.strip()
+    ] or None
+    app = create_app(roster_path=roster, snapshots_dir=snapshots, cors_origins=origins)
+    print(
+        f"serving SignalLock API on http://{args.host}:{args.port} "
+        f"(roster={roster.name}, cors={origins or 'none'})"
+    )
+    uvicorn.run(app, host=args.host, port=args.port)
+    return 0
+
+
 def cmd_demo(args: argparse.Namespace) -> int:
     try:
         sys.path.insert(0, str(get_project_root()))
@@ -376,6 +404,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_mirror = sub.add_parser("mirror-table", help="print the adversary-mirror table")
     p_mirror.set_defaults(func=cmd_mirror_table)
+
+    p_serve = sub.add_parser("serve", help="run the FastAPI service (needs api extra)")
+    p_serve.add_argument("--host", default="127.0.0.1")
+    p_serve.add_argument("--port", type=int, default=8000)
+    p_serve.add_argument(
+        "--cors-origins",
+        help="comma-separated CORS origins, e.g. http://localhost:3000",
+    )
+    add_common(p_serve)
+    p_serve.set_defaults(func=cmd_serve)
 
     p_demo = sub.add_parser("demo", help="run the localhost attack/defense showcase")
     p_demo.add_argument("--subject", required=True)
