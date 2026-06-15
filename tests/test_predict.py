@@ -40,6 +40,23 @@ class ManglingTests(unittest.TestCase):
         year = datetime.now(timezone.utc).year
         self.assertIn(f"rex{year}", values)  # dynamic recent year
 
+    def test_noisy_interest_tokens_are_capped(self) -> None:
+        # A long tail of public repo-derived interests must not flood the guess
+        # dossier (regression for the token-quality dilution finding).
+        from signallock.core import AttributeKind, Observation, SourceClass
+        from signallock.core.enums import TokenBucket
+        from signallock.predict.mangling import _BASE_BUCKET_CAPS, _base_words
+
+        obs = [
+            Observation("dev", SourceClass.CODE, AttributeKind.INTEREST,
+                        f"projectalpha{i}", 0.5, "t", "p", "github-api")
+            for i in range(30)
+        ]
+        subject = resolve_subject("dev", obs)
+        interest_tokens = set(subject.tokens(TokenBucket.INTEREST))
+        used = [w for w in _base_words(subject) if w in interest_tokens]
+        self.assertLessEqual(len(used), _BASE_BUCKET_CAPS[TokenBucket.INTEREST])
+
 
 class SimulatorTests(unittest.TestCase):
     def setUp(self) -> None:
