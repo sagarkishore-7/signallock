@@ -1,4 +1,4 @@
-# SignalLock v2 — Research Runbook (operator guide)
+# Eidolon v2 — Research Runbook (operator guide)
 
 This is the end-to-end guide for turning the v2 prototype into a real,
 consented-OSINT measurement study: what exists, what's left to build, and
@@ -26,7 +26,7 @@ each collector mirrors), `THREAT_MODEL.md` (budgets), `DATA_POLICY.md` (retentio
 | **Dashboard** | `dashboard/` (Next.js) | ⚠️ shell present; attacker-mirror/premium views need wiring (verify) |
 | **Enterprise** | `enterprise/protocols.py` — Protocols + stubs (design only) | ✅ by design |
 | **Demo** | `demo/` — loopback-only attack/defense showcase, `[demo]` extra | ✅ |
-| **CLI** | `signallock {collect,score,compare-baseline,build-dataset,evaluate,mirror-table,demo}` | ✅ (snapshot-driven) |
+| **CLI** | `eidolon {collect,score,compare-baseline,build-dataset,evaluate,mirror-table,demo}` | ✅ (snapshot-driven) |
 
 **Verified offline (fake fixtures):** 78 tests pass; `evaluate` gives honest
 non-1.0 numbers (acc 0.857 / AUROC 0.878 / ECE 0.164 vs baseline 0.143); the
@@ -38,7 +38,7 @@ non-1.0 numbers (acc 0.857 / AUROC 0.878 / ECE 0.164 vs baseline 0.143); the
 
 Priority order:
 
-1. **Wire live collectors into the CLI.** Add `signallock collect --live` (or a
+1. **Wire live collectors into the CLI.** Add `eidolon collect --live` (or a
    `--sources` flag) that runs the registered collectors (`CodeProfile`,
    `social` Mastodon, `web_profile`, `username_enum`) for a subject's seeds and
    writes the resulting `Observation`s to a snapshot file. Today the CLI only
@@ -221,7 +221,7 @@ in a **gitignored** file, e.g. `configs/passwords.local.json`:
 ] }
 ```
 The twin vs OSINT-linked contrast is the core of the thesis (zxcvbn can't tell
-`otter2016` from `seal2016`; SignalLock can). Real consented volunteers may instead
+`otter2016` from `seal2016`; Eidolon can). Real consented volunteers may instead
 submit passwords they actually chose for their own consented accounts.
 
 **Study size target:** ~15–40 personas × 6–8 passwords ≈ 100–300 labeled rows for a
@@ -233,21 +233,21 @@ Optionally recruit a few consenting colleagues (signed consent) for external val
 ## 7. Running the study (commands)
 
 ```bash
-cd "/Users/sagarkishore/Cysec Tools/SignalLock"
+cd "/Users/sagarkishore/Cysec Tools/Eidolon"
 R=configs/osint_roster.json          # your real (gitignored) roster
 S=configs/snapshots                  # your snapshot dir (real personas)
 P=configs/passwords.local.json       # your gitignored owner-set passwords
 
 # Per-subject sanity
-.venv/bin/python -m signallock --roster $R collect --subject dummy-otter --snapshots $S
-.venv/bin/python -m signallock --roster $R compare-baseline --subject dummy-otter \
+.venv/bin/python -m eidolon --roster $R collect --subject dummy-otter --snapshots $S
+.venv/bin/python -m eidolon --roster $R compare-baseline --subject dummy-otter \
     --password otter2016 --snapshots $S      # expect HIGH + positive premium
-.venv/bin/python -m signallock --roster $R compare-baseline --subject dummy-otter \
+.venv/bin/python -m eidolon --roster $R compare-baseline --subject dummy-otter \
     --password seal2016 --snapshots $S       # expect LOW + ~0 premium (the twin)
 
 # Full study
-.venv/bin/python -m signallock --roster $R build-dataset --snapshots $S --passwords $P --out artifacts/study
-.venv/bin/python -m signallock --roster $R evaluate --snapshots $S --passwords $P \
+.venv/bin/python -m eidolon --roster $R build-dataset --snapshots $S --passwords $P --out artifacts/study
+.venv/bin/python -m eidolon --roster $R evaluate --snapshots $S --passwords $P \
     --out artifacts/study_eval --seed 1 --figures
 ```
 Outputs (gitignored under `artifacts/`): labeled dataset CSV, AUROC/ECE, baseline

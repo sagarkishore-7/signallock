@@ -1,17 +1,17 @@
-# Participant Information Sheet — SignalLock OSINT & Password-Risk Study
+# Participant Information Sheet — Eidolon OSINT & Password-Risk Study
 
 *Please read this before deciding to take part. Version 1.0 · 2026-06-15.*
 
 ## What is this study?
 
-SignalLock is **defensive** security research. We are studying a simple question:
+Eidolon is **defensive** security research. We are studying a simple question:
 
 > Does the information people already share publicly online (a pet's name, a
 > favourite team, a graduation year, an employer) make their passwords easier for
 > a targeted attacker to guess — and can a defender measure that risk?
 
 The goal is to **help defenders warn users and harden authentication**, *not* to
-build an attack tool. SignalLock never produces guess lists and never attacks any
+build an attack tool. Eidolon never produces guess lists and never attacks any
 real account.
 
 ## Why have I been asked?
@@ -69,7 +69,7 @@ non-identifying id back to you, via the offline consent record.
 
 ## Contact and concerns
 
-- **Researcher:** SignalLock research operator — `sagarkishore.7@gmail.com`
+- **Researcher:** Eidolon research operator — `sagarkishore.7@gmail.com`
 - If the study runs under an institution, its ethics/IRB approval reference and an
   independent contact for complaints will be added here: `[institution / IRB ref]`.
 

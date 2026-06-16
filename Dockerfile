@@ -3,7 +3,7 @@ FROM python:3.13-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    SIGNALLOCK_PROJECT_ROOT=/app
+    EIDOLON_PROJECT_ROOT=/app
 
 WORKDIR /app
 
@@ -17,4 +17,4 @@ RUN python -m pip install --upgrade pip && \
 
 EXPOSE 8000
 
-CMD ["python", "-m", "signallock", "serve", "--host", "0.0.0.0"]
+CMD ["python", "-m", "eidolon", "serve", "--host", "0.0.0.0"]

@@ -1,5 +1,5 @@
 {
-  "_comment": "CLEARLY-FAKE consented snapshot for research persona 'dummy-ghost'. All values are fabricated. The pet name 'Rex' + significant year '2014' are seeded so a password like 'rex2014' is a plausible targeted guess that the bounded-budget simulator should fall to early. 'source' and 'attr_kind' are exact SourceClass / AttributeKind enum names from src/signallock/core/enums.py. Consumed by src/signallock/collect/snapshot.py load_snapshot().",
+  "_comment": "CLEARLY-FAKE consented snapshot for research persona 'dummy-ghost'. All values are fabricated. The pet name 'Rex' + significant year '2014' are seeded so a password like 'rex2014' is a plausible targeted guess that the bounded-budget simulator should fall to early. 'source' and 'attr_kind' are exact SourceClass / AttributeKind enum names from src/eidolon/core/enums.py. Consumed by src/eidolon/collect/snapshot.py load_snapshot().",
   "subject_id": "dummy-ghost",
   "observations": [
     {"source": "SOCIAL", "attr_kind": "NAME", "value": "Ghost Persona", "confidence": 0.95, "mirrors": "sherlock", "provenance": "snapshot:ig-fake"},

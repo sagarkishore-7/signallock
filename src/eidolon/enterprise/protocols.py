@@ -1,6 +1,6 @@
 """Enterprise control-plane interfaces — DESIGN + STUBS ONLY for this phase.
 
-SignalLock's research core (``collect`` -> ``resolve`` -> ``exposure`` /
+Eidolon's research core (``collect`` -> ``resolve`` -> ``exposure`` /
 ``predict`` -> ``policy``) scores individual consented subjects. To run that core
 as a multi-tenant enterprise service you need a control plane around it: tenant
 isolation, identity-provider sync into a consented roster, policy-as-code
@@ -114,7 +114,7 @@ class NoopIdentitySync:
 class PolicyEnforcer(Protocol):
     """Turns a research recommendation into an enforced control-plane decision.
 
-    The research core's :func:`signallock.policy.recommend` produces an
+    The research core's :func:`eidolon.policy.recommend` produces an
     auditable :class:`HardeningRecommendation`. An enforcer evaluates that
     recommendation against tenant-configured policy-as-code thresholds and
     returns a decision the surrounding system acts on.

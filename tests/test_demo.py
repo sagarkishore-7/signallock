@@ -20,7 +20,7 @@ from tests._fixtures import (
     make_roster,
 )
 
-from signallock.resolve import resolve_subject
+from eidolon.resolve import resolve_subject
 
 try:
     from demo.run_attack import assert_loopback, run_attack

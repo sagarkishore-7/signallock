@@ -1,7 +1,7 @@
-# SignalLock v2 — OSINT Collection Protocol
+# Eidolon v2 — OSINT Collection Protocol
 
-This is the operating procedure for ethical OSINT collection in SignalLock v2.
-SignalLock is a defensive research system: every collector is the structural
+This is the operating procedure for ethical OSINT collection in Eidolon v2.
+Eidolon is a defensive research system: every collector is the structural
 mirror of one stage of the attacker's OSINT to cracking kill chain
 (see `docs/ADVERSARY_MIRROR.md`), run only against subjects who have signed
 consent. This document defines *how* collection is allowed to happen so the
@@ -13,7 +13,7 @@ Collection is refused for any subject who is not backed by a signed
 `ConsentRecord` in the active `ConsentRoster`.
 
 - The single ethical boundary is `require_consent(identity, roster, source=...)`
-  in `src/signallock/core/identity.py`. Every collector and the guess simulator
+  in `src/eidolon/core/identity.py`. Every collector and the guess simulator
   call it **before** touching a network source or a password. A subject who is
   not in the roster is refused with `ConsentError`.
 - A `ConsentRecord` carries `subject_id`, `consent_ref` (the path/id of the
@@ -65,7 +65,7 @@ reproduce the OSINT to token to predictability chain on fabricated data.
 
 ## 3. Source handling — API/allowlist vs manual-snapshot-only
 
-Each collector maps to one `SourceClass` in `src/signallock/core/enums.py`. The
+Each collector maps to one `SourceClass` in `src/eidolon/core/enums.py`. The
 ethical mode is fixed per source:
 
 | SourceClass | Collector | Mode |
@@ -93,7 +93,7 @@ Collectors emit typed `Observation` records, never a flattened profile and never
 raw dumps.
 
 - Persist only derived `Observation`s; **drop raw HTML/text** after extraction.
-- An `Observation` (`src/signallock/core/evidence.py`) carries
+- An `Observation` (`src/eidolon/core/evidence.py`) carries
   `subject_id`, `source` (`SourceClass`), `attr_kind` (`AttributeKind`), `value`,
   `confidence`, `collected_at`, `provenance`, and `mirrors` — and nothing else.
 - The transient on-disk collection cache lives under `artifacts/osint_cache/`,
@@ -107,7 +107,7 @@ For every manual/gated source, an operator authors a consented snapshot that the
 `snapshot.py` loader (`load_snapshot`) replays through the same consent gate as
 the live collectors.
 
-Schema consumed by `src/signallock/collect/snapshot.py`:
+Schema consumed by `src/eidolon/collect/snapshot.py`:
 
 ```json
 {
@@ -131,7 +131,7 @@ Field rules:
   id and the consent gate refuses non-roster subjects.
 - `source` is the exact string name of a `SourceClass` enum member; `attr_kind`
   is the exact string name of an `AttributeKind` enum member
-  (`src/signallock/core/enums.py`).
+  (`src/eidolon/core/enums.py`).
 - `confidence` is in `[0, 1]`; `collected_at` and `provenance` are optional and
   default to sensible values in the loader.
 - `mirrors` names the attacker tool the datum mirrors (e.g. `cupp`, `maigret`,

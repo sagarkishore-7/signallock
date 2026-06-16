@@ -6,7 +6,7 @@ tool would: casing, common affixes, leet substitution, and token concatenation,
 biased toward the subject's high-value personal trivia.
 
 This module is dual-use. It is exercised only by the consent-gated
-:mod:`signallock.predict.simulator`, which never emits the generated strings —
+:mod:`eidolon.predict.simulator`, which never emits the generated strings —
 only the matched template *category* and the budget at which a match occurred.
 """
 

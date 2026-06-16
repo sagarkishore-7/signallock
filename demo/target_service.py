@@ -77,7 +77,7 @@ def create_app(seed_password: str, *, username: str = DEMO_USERNAME) -> FastAPI:
     account is locked) and stores the live :class:`_UserStore` on
     ``app.state.store`` so tests/the in-process attacker can reach it directly.
     """
-    app = FastAPI(title="SignalLock demo target (localhost only)")
+    app = FastAPI(title="Eidolon demo target (localhost only)")
     store = _UserStore()
     store.seed(username, seed_password)
     app.state.store = store

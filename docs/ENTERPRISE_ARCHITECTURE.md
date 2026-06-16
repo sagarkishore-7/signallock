@@ -1,6 +1,6 @@
 # Enterprise Architecture (Control Plane)
 
-SignalLock's research core scores a single consented subject:
+Eidolon's research core scores a single consented subject:
 
 ```
 collect -> resolve -> exposure / predict -> policy.recommend
@@ -11,7 +11,7 @@ To operate that core as a multi-tenant enterprise service, it is wrapped by a
 
 ## Scope of this phase
 
-**This phase ships interfaces + stubs only.** `src/signallock/enterprise/`
+**This phase ships interfaces + stubs only.** `src/eidolon/enterprise/`
 contains `typing.Protocol` interfaces and no-op reference implementations whose
 real methods raise `NotImplementedError`. There is:
 
@@ -53,8 +53,8 @@ building that infrastructure.
 | Protocol / type        | Wraps / depends on                                          |
 | ---------------------- | ----------------------------------------------------------- |
 | `TenantContext`, `tenant_scoped` | Partitions all core inputs/outputs per tenant     |
-| `IdentitySync`         | Produces `signallock.core.ConsentedIdentity` for the roster |
-| `PolicyEnforcer`       | Wraps `signallock.policy.recommend` -> `HardeningRecommendation`; reads `HardeningAction` / `RiskBand` from `signallock.core` |
+| `IdentitySync`         | Produces `eidolon.core.ConsentedIdentity` for the roster |
+| `PolicyEnforcer`       | Wraps `eidolon.policy.recommend` -> `HardeningRecommendation`; reads `HardeningAction` / `RiskBand` from `eidolon.core` |
 | `AuditSink`            | Records the recommendation + enforcement decision           |
 | `SiemExporter`         | Serializes audit events for the customer SIEM               |
 | `Role`, `ApiKeyScope`  | Gate who may invoke collect/score/admin operations          |

@@ -1,13 +1,13 @@
-"""Exception hierarchy for SignalLock v2."""
+"""Exception hierarchy for Eidolon v2."""
 
 from __future__ import annotations
 
 
-class SignalLockError(Exception):
-    """Base class for all SignalLock errors."""
+class EidolonError(Exception):
+    """Base class for all Eidolon errors."""
 
 
-class ConsentError(SignalLockError):
+class ConsentError(EidolonError):
     """Raised when an operation targets an identity outside the consent roster.
 
     The consent gate (`core.identity.require_consent`) raises this before any
@@ -16,11 +16,11 @@ class ConsentError(SignalLockError):
     """
 
 
-class CollectorError(SignalLockError):
+class CollectorError(EidolonError):
     """Raised when a collector fails irrecoverably (network, parse, auth)."""
 
 
-class DependencyError(SignalLockError):
+class DependencyError(EidolonError):
     """Raised when an optional dependency is required but not installed."""
 
 
@@ -35,5 +35,5 @@ def require_dependency(module_name: str, extra: str) -> None:
     if importlib.util.find_spec(module_name) is None:
         raise DependencyError(
             f"'{module_name}' is required for this feature. "
-            f'Install it with: pip install "signallock[{extra}]"'
+            f'Install it with: pip install "eidolon[{extra}]"'
         )

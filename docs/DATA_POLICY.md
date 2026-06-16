@@ -1,13 +1,13 @@
-# SignalLock Data Policy (v2)
+# Eidolon Data Policy (v2)
 
 ## Purpose
 
-This document defines the data-governance rules for SignalLock v2, an
+This document defines the data-governance rules for Eidolon v2, an
 adversary-mirrored OSINT + password-risk research system. The project is
 defensive and research-oriented; its data handling makes that obvious in
 practice, not just in intent.
 
-SignalLock v2 operates on **consented subjects only** and persists **derived,
+Eidolon v2 operates on **consented subjects only** and persists **derived,
 typed observations only**. The retired v1 synthetic/preset pipeline
 (`generate-profiles`, preset-driven experiments, threshold sweeps) is no longer
 part of the data flow and its data classes no longer apply.
@@ -15,14 +15,14 @@ part of the data flow and its data classes no longer apply.
 ## Core rules
 
 1. **Derived Observations only — no raw scrape persisted.** Collectors emit
-   typed `Observation` records (`src/signallock/core/evidence.py`): one
+   typed `Observation` records (`src/eidolon/core/evidence.py`): one
    provenance-stamped, confidence-scored fact each (`subject_id`, `source`,
    `attr_kind`, `value`, `confidence`, `collected_at`, `provenance`, `mirrors`).
    Raw HTML/text is dropped after extraction. No flattened profiles, no raw
    dumps.
 2. **Owned / consented allowlist.** Collection runs only against subjects backed
    by a signed `ConsentRecord` in the active roster, enforced by the
-   `require_consent` hard gate (`src/signallock/core/identity.py`). A
+   `require_consent` hard gate (`src/eidolon/core/identity.py`). A
    per-subject `allowed_sources` allowlist further restricts which collectors may
    run. Non-roster subjects are refused with `ConsentError`.
 3. **`configs/consent_records/` is gitignored and never committed.** Signed
@@ -51,7 +51,7 @@ part of the data flow and its data classes no longer apply.
 
 ## Disallowed or restricted data classes
 
-SignalLock v2 must not collect or persist:
+Eidolon v2 must not collect or persist:
 
 - real user passwords or raw credentials from live systems,
 - raw scraped profile pages or HTML,

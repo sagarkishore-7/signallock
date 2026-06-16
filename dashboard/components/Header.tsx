@@ -29,7 +29,7 @@ export function Header() {
       <div className="mx-auto flex max-w-7xl items-center gap-6 px-6 py-3.5">
         <Link href="/" className="flex items-center gap-2.5">
           <Logo />
-          <span className="font-semibold tracking-tight text-ink">SignalLock</span>
+          <span className="font-semibold tracking-tight text-ink">Eidolon</span>
           <span className="hidden rounded border border-border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-ink-faint sm:inline">
             audit
           </span>

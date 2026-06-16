@@ -1,4 +1,4 @@
-"""SignalLock v2 — adversary-mirrored OSINT exposure and password predictability.
+"""Eidolon v2 — adversary-mirrored OSINT exposure and password predictability.
 
 The public surface mirrors the attacker OSINT -> cracking kill chain:
 

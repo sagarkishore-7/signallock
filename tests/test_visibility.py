@@ -7,10 +7,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from signallock.collect.snapshot import load_snapshot
-from signallock.core import AttributeKind, Observation, SourceClass, Visibility
-from signallock.exposure import assess_exposure
-from signallock.resolve import filter_by_visibility, resolve_subject
+from eidolon.collect.snapshot import load_snapshot
+from eidolon.core import AttributeKind, Observation, SourceClass, Visibility
+from eidolon.exposure import assess_exposure
+from eidolon.resolve import filter_by_visibility, resolve_subject
 
 
 def _obs(kind: AttributeKind, value: str, vis: Visibility = Visibility.PUBLIC) -> Observation:

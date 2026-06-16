@@ -1,7 +1,7 @@
-# SignalLock v2 — Research Consent Form Template
+# Eidolon v2 — Research Consent Form Template
 
 This is a reusable, plain-language consent form a research subject — or the
-operator of a dummy account — signs before SignalLock collects any OSINT or
+operator of a dummy account — signs before Eidolon collects any OSINT or
 assesses any password for that subject. A signed copy is stored as the consent
 artifact referenced by `consent_ref` in the consent roster
 (`configs/osint_roster.example.json`) and lives under
@@ -9,14 +9,14 @@ artifact referenced by `consent_ref` in the consent roster
 committed**.
 
 The signed record enables the hard consent gate
-(`require_consent` in `src/signallock/core/identity.py`): SignalLock refuses to
+(`require_consent` in `src/eidolon/core/identity.py`): Eidolon refuses to
 collect on or score any subject who is not on the roster.
 
 ---
 
 ## Template
 
-**SignalLock OSINT & Password-Risk Research — Consent Form**
+**Eidolon OSINT & Password-Risk Research — Consent Form**
 
 **Subject id:** `__________________`
 (the label used in the roster; for a dummy account this is the persona id)
@@ -24,7 +24,7 @@ collect on or score any subject who is not on the roster.
 **1. Who I am.** I am the person, or the operator of the account(s), identified
 below, and I am authorized to grant this consent.
 
-**2. What I authorize.** I authorize the SignalLock research operator to collect
+**2. What I authorize.** I authorize the Eidolon research operator to collect
 publicly available OSINT about the following handles/emails/domains, and to
 assess the password(s) I provide, for defensive password-risk research only:
 
@@ -33,7 +33,7 @@ assess the password(s) I provide, for defensive password-risk research only:
 - Domains / personal sites: `__________________`
 
 **3. Sources.** Collection may run against the following source classes only
-(matching `SourceClass` in `src/signallock/core/enums.py`); any source not
+(matching `SourceClass` in `src/eidolon/core/enums.py`); any source not
 listed here is excluded:
 
 - `[ ]` SOCIAL  `[ ]` CODE  `[ ]` USERNAME_ENUM  `[ ]` EMAIL_ENUM
@@ -49,7 +49,7 @@ source text is dropped after extraction. See `docs/DATA_POLICY.md`.
 
 **5. How it is used.** My data is used only to estimate exposure and password
 predictability and to demonstrate the OSINT to predictability research chain.
-SignalLock never emits concrete guess strings and never attacks any live
+Eidolon never emits concrete guess strings and never attacks any live
 third-party account.
 
 **6. Dummy account (if applicable).** `[ ]` This subject is an operator-created
@@ -74,11 +74,11 @@ study and deleted on withdrawal or study end.
 This example corresponds to the fabricated research persona `dummy-ghost` in
 `configs/osint_roster.example.json`. Every value is fake by construction.
 
-**SignalLock OSINT & Password-Risk Research — Consent Form**
+**Eidolon OSINT & Password-Risk Research — Consent Form**
 
 **Subject id:** `dummy-ghost`
 
-**1. Who I am.** I am the SignalLock research operator and the creator of the
+**1. Who I am.** I am the Eidolon research operator and the creator of the
 dummy account(s) below. There is no real third party.
 
 **2. What I authorize.** Collection on, and assessment of, the following:

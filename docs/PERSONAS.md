@@ -1,4 +1,4 @@
-# SignalLock v2 — Research Personas (reference dataset)
+# Eidolon v2 — Research Personas (reference dataset)
 
 Companion to `docs/RESEARCH_RUNBOOK.md`. This file specifies the **fabricated
 research personas** for the consented-OSINT study: how many, what each one is,

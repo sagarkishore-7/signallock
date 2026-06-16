@@ -1,6 +1,6 @@
-"""FastAPI service for SignalLock v2.
+"""FastAPI service for Eidolon v2.
 
-Requires the ``api`` extra: ``pip install "signallock[api]"``.
+Requires the ``api`` extra: ``pip install "eidolon[api]"``.
 
 Stateless with respect to callers: passwords arrive in request bodies, are used
 only to compute scores, and are never stored or echoed back. The server loads a
@@ -39,14 +39,14 @@ def _visibility(value: str | None) -> Visibility:
 
 
 def _default_roster_path() -> Path:
-    env = os.environ.get("SIGNALLOCK_ROSTER")
+    env = os.environ.get("EIDOLON_ROSTER")
     if env:
         return Path(env)
     return get_project_root() / "configs" / "osint_roster.example.json"
 
 
 def _default_snapshots_dir() -> Path:
-    env = os.environ.get("SIGNALLOCK_SNAPSHOTS")
+    env = os.environ.get("EIDOLON_SNAPSHOTS")
     if env:
         return Path(env)
     return get_project_root() / "configs" / "snapshots"
@@ -94,10 +94,10 @@ class PasswordRequest(ScoreRequest):
 
 
 def _resolve_cors_origins(cors_origins: list[str] | None) -> list[str]:
-    """CORS origins from the argument, else the SIGNALLOCK_CORS_ORIGINS env var."""
+    """CORS origins from the argument, else the EIDOLON_CORS_ORIGINS env var."""
     if cors_origins is not None:
         return cors_origins
-    env = os.environ.get("SIGNALLOCK_CORS_ORIGINS", "")
+    env = os.environ.get("EIDOLON_CORS_ORIGINS", "")
     return [o.strip() for o in env.split(",") if o.strip()]
 
 
@@ -108,14 +108,14 @@ def create_app(
 ) -> FastAPI:
     """Build the FastAPI app, loading roster and snapshots at startup.
 
-    ``cors_origins`` (or the ``SIGNALLOCK_CORS_ORIGINS`` env var, comma-separated)
+    ``cors_origins`` (or the ``EIDOLON_CORS_ORIGINS`` env var, comma-separated)
     enables CORS so the Next.js dashboard dev server can call the API.
     """
     store = SubjectStore(
         roster_path or _default_roster_path(),
         snapshots_dir or _default_snapshots_dir(),
     )
-    app = FastAPI(title="SignalLock", version=__version__)
+    app = FastAPI(title="Eidolon", version=__version__)
 
     origins = _resolve_cors_origins(cors_origins)
     if origins:

@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import unittest
 
-from signallock.core.enums import HardeningAction, RiskBand
-from signallock.exposure import assess_exposure
-from signallock.policy import recommend
-from signallock.predict import simulate_predictability
-from signallock.resolve import resolve_subject
+from eidolon.core.enums import HardeningAction, RiskBand
+from eidolon.exposure import assess_exposure
+from eidolon.policy import recommend
+from eidolon.predict import simulate_predictability
+from eidolon.resolve import resolve_subject
 
 from ._fixtures import SUBJECT_ID, make_identity, make_observations, make_roster
 

@@ -12,16 +12,16 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from signallock.collect import (
+from eidolon.collect import (
     BreachIntel,
     CodeProfile,
     SnapshotCollector,
     adversary_mirror_table,
     load_snapshot,
 )
-from signallock.core.enums import AttributeKind, SourceClass
-from signallock.core.errors import CollectorError, ConsentError
-from signallock.core.identity import (
+from eidolon.core.enums import AttributeKind, SourceClass
+from eidolon.core.errors import CollectorError, ConsentError
+from eidolon.core.identity import (
     ConsentRecord,
     ConsentRoster,
     ConsentedIdentity,

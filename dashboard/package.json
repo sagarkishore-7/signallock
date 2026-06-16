@@ -1,8 +1,8 @@
 {
-  "name": "signallock-dashboard",
+  "name": "eidolon-dashboard",
   "version": "0.1.0",
   "private": true,
-  "description": "Analyst-facing dashboard for SignalLock OSINT-calibrated password risk assessments.",
+  "description": "Analyst-facing dashboard for Eidolon OSINT-calibrated password risk assessments.",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",

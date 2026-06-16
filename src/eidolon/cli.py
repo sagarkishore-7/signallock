@@ -1,4 +1,4 @@
-"""Command-line interface for SignalLock v2.
+"""Command-line interface for Eidolon v2.
 
 Subcommands mirror the pipeline:
 
@@ -310,7 +310,7 @@ def cmd_serve(args: argparse.Namespace) -> int:
         import uvicorn
     except ImportError:
         print(
-            "serve requires the 'api' extra: pip install 'signallock[api]'",
+            "serve requires the 'api' extra: pip install 'eidolon[api]'",
             file=sys.stderr,
         )
         return 2
@@ -325,7 +325,7 @@ def cmd_serve(args: argparse.Namespace) -> int:
     ] or None
     app = create_app(roster_path=roster, snapshots_dir=snapshots, cors_origins=origins)
     print(
-        f"serving SignalLock API on http://{args.host}:{args.port} "
+        f"serving Eidolon API on http://{args.host}:{args.port} "
         f"(roster={roster.name}, cors={origins or 'none'})"
     )
     uvicorn.run(app, host=args.host, port=args.port)
@@ -368,7 +368,7 @@ def cmd_demo(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="signallock", description=__doc__)
+    parser = argparse.ArgumentParser(prog="eidolon", description=__doc__)
     parser.add_argument("--roster", help="path to a consent roster JSON")
     sub = parser.add_subparsers(dest="command", required=True)
 

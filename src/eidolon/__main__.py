@@ -1,4 +1,4 @@
-"""Module entrypoint for `python -m signallock`."""
+"""Module entrypoint for `python -m eidolon`."""
 
 from .cli import main
 

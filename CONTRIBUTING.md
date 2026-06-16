@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in SignalLock.
+Thanks for your interest in Eidolon.
 
 ## Scope
 

@@ -5,9 +5,9 @@ This re-runs :func:`demo.run_attack.run_attack` twice against the local target:
 1. **Before** — the account holds the weak, OSINT-derived seed password, and the
    attack cracks it within budget.
 2. **After** — the seed is replaced by a strong, random password (the "hardening"
-   SignalLock recommends), and the identical attack now FAILS within budget.
+   Eidolon recommends), and the identical attack now FAILS within budget.
 
-Optionally it calls :func:`signallock.policy.recommend` to surface the auditable
+Optionally it calls :func:`eidolon.policy.recommend` to surface the auditable
 recommendation that motivated hardening — the same research-core output an
 enterprise ``PolicyEnforcer`` would act on. The defense asserts the post-hardening
 attack fails; a crack after hardening is a demo failure and raises.
@@ -21,11 +21,11 @@ import secrets
 
 from fastapi import FastAPI
 
-from signallock.core.identity import ConsentedIdentity, ConsentRoster
-from signallock.core.subject import Subject
-from signallock.exposure import assess_exposure
-from signallock.policy import recommend
-from signallock.predict.simulator import simulate_predictability
+from eidolon.core.identity import ConsentedIdentity, ConsentRoster
+from eidolon.core.subject import Subject
+from eidolon.exposure import assess_exposure
+from eidolon.policy import recommend
+from eidolon.predict.simulator import simulate_predictability
 
 from .run_attack import run_attack
 from .target_service import DEMO_USERNAME

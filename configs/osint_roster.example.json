@@ -1,5 +1,5 @@
 {
-  "_comment": "CLEARLY-FAKE example consent roster for the SignalLock v2 offline pipeline. Every subject here is a fabricated 'dummy-*' research persona that does NOT correspond to any real person. consent_ref points at configs/consent_records/<id>.json, which is gitignored and never committed (see docs/DATA_POLICY.md). Field names match src/signallock/core/identity.py ConsentRoster.from_dicts exactly.",
+  "_comment": "CLEARLY-FAKE example consent roster for the Eidolon v2 offline pipeline. Every subject here is a fabricated 'dummy-*' research persona that does NOT correspond to any real person. consent_ref points at configs/consent_records/<id>.json, which is gitignored and never committed (see docs/DATA_POLICY.md). Field names match src/eidolon/core/identity.py ConsentRoster.from_dicts exactly.",
   "subjects": [
     {
       "subject_id": "dummy-ghost",

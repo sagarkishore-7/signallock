@@ -1,4 +1,4 @@
-"""Core enumerations for SignalLock v2.
+"""Core enumerations for Eidolon v2.
 
 These enums are the shared vocabulary across the adversary-mirrored pipeline:
 collection sources, attribute kinds, typed token buckets, risk bands, hardening

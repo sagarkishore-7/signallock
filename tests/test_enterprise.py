@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import unittest
 
-import signallock.enterprise as ent
-from signallock.enterprise import (
+import eidolon.enterprise as ent
+from eidolon.enterprise import (
     ApiKeyScope,
     NoopAuditSink,
     NoopIdentitySync,
