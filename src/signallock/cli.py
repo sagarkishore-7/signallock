@@ -439,8 +439,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_mirror.set_defaults(func=cmd_mirror_table)
 
     p_serve = sub.add_parser("serve", help="run the FastAPI service (needs api extra)")
-    p_serve.add_argument("--host", default="127.0.0.1")
-    p_serve.add_argument("--port", type=int, default=8000)
+    # Read HOST/PORT from the environment so PaaS platforms (Railway, Heroku) that
+    # inject a dynamic $PORT work out of the box; explicit flags still override.
+    p_serve.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"))
+    p_serve.add_argument(
+        "--port", type=int, default=int(os.environ.get("PORT", "8000"))
+    )
     p_serve.add_argument(
         "--cors-origins",
         help="comma-separated CORS origins, e.g. http://localhost:3000",
