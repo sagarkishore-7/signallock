@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 
-from .enums import AttributeKind, SourceClass
+from .enums import AttributeKind, SourceClass, Visibility
 
 
 @dataclass(frozen=True)
@@ -29,6 +29,8 @@ class Observation:
         provenance: Human-readable origin (URL, API endpoint, snapshot id).
         mirrors: The attacker tool/technique this collection mirrors
             (e.g. "maigret", "holehe", "hibp"), for the adversary-mirror report.
+        visibility: How accessible the datum is (PUBLIC / GATED / PRIVATE).
+            Defaults to PUBLIC so existing data and snapshots are unaffected.
     """
 
     subject_id: str
@@ -39,6 +41,7 @@ class Observation:
     collected_at: str
     provenance: str
     mirrors: str
+    visibility: Visibility = Visibility.PUBLIC
 
     def __post_init__(self) -> None:
         if not self.subject_id.strip():
@@ -59,4 +62,5 @@ class Observation:
         data = asdict(self)
         data["source"] = self.source.value
         data["attr_kind"] = self.attr_kind.value
+        data["visibility"] = self.visibility.value
         return data

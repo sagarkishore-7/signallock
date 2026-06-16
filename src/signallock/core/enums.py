@@ -112,6 +112,31 @@ class SourceClass(str, Enum):
     SNAPSHOT = "SNAPSHOT"                  # operator-authored consented snapshot
 
 
+class Visibility(str, Enum):
+    """How accessible a harvested datum is to a targeted attacker.
+
+    The accessibility tier an observation sits behind. Scoring can be restricted
+    to a tier so exposure/predictability can be reported for a fully-public
+    attacker vs. one who has connected to the subject.
+    """
+
+    PUBLIC = "PUBLIC"    # anyone can find it (open web, public profile)
+    GATED = "GATED"      # reachable by an attacker who connects/follows
+    PRIVATE = "PRIVATE"  # not normally reachable without compromise
+
+    @property
+    def rank(self) -> int:
+        """Ordinal accessibility (PUBLIC=0 .. PRIVATE=2)."""
+        return _VISIBILITY_ORDER[self]
+
+
+_VISIBILITY_ORDER: dict[Visibility, int] = {
+    Visibility.PUBLIC: 0,
+    Visibility.GATED: 1,
+    Visibility.PRIVATE: 2,
+}
+
+
 class AttributeKind(str, Enum):
     """Typed kinds of harvested attributes carried by an ``Observation``."""
 

@@ -10,6 +10,7 @@ import type {
   Health,
   PredictabilityAssessment,
   SubjectSummary,
+  Visibility,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
@@ -36,25 +37,30 @@ export const api = {
 
   health: () => jsonFetch<Health>("/healthz"),
 
-  subjects: () => jsonFetch<SubjectSummary[]>("/subjects"),
+  subjects: (visibility: Visibility = "all") =>
+    jsonFetch<SubjectSummary[]>(`/subjects?visibility=${visibility}`),
 
-  scoreExposure: (subjectId: string) =>
-    post<ExposureAssessment>("/score/exposure", { subject_id: subjectId }),
+  scoreExposure: (subjectId: string, visibility: Visibility = "all") =>
+    post<ExposureAssessment>(`/score/exposure?visibility=${visibility}`, {
+      subject_id: subjectId,
+    }),
 
-  scorePredictability: (subjectId: string, password: string) =>
-    post<PredictabilityAssessment>("/score/predictability", {
+  compareBaseline: (
+    subjectId: string,
+    password: string,
+    visibility: Visibility = "all",
+  ) =>
+    post<CompareBaselineResult>(`/compare-baseline?visibility=${visibility}`, {
       subject_id: subjectId,
       password,
     }),
 
-  compareBaseline: (subjectId: string, password: string) =>
-    post<CompareBaselineResult>("/compare-baseline", {
-      subject_id: subjectId,
-      password,
-    }),
-
-  recommend: (subjectId: string, password: string) =>
-    post<HardeningRecommendation>("/recommend", {
+  recommend: (
+    subjectId: string,
+    password: string,
+    visibility: Visibility = "all",
+  ) =>
+    post<HardeningRecommendation>(`/recommend?visibility=${visibility}`, {
       subject_id: subjectId,
       password,
     }),
