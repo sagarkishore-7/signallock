@@ -17,6 +17,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from . import __version__
+from .core.enums import Visibility
 from .core.identity import ConsentedIdentity, ConsentRoster, IdentitySeeds
 from .core.subject import Subject
 from .eval.dataset import load_observations_dir
@@ -26,7 +27,15 @@ from .policy.engine import recommend
 from .predict.baseline import context_free_strength
 from .predict.premium import exposure_premium
 from .predict.simulator import simulate_predictability
-from .resolve.entity import resolve_subject
+from .resolve.entity import filter_by_visibility, resolve_subject
+
+
+def _visibility(value: str | None) -> Visibility:
+    """Map a ``?visibility=`` query value to the max accessibility tier."""
+    return {
+        "public": Visibility.PUBLIC,
+        "gated": Visibility.GATED,
+    }.get((value or "all").lower(), Visibility.PRIVATE)
 
 
 def _default_roster_path() -> Path:
@@ -53,18 +62,20 @@ class SubjectStore:
         self.observations = (
             load_observations_dir(snapshots_dir) if snapshots_dir.is_dir() else {}
         )
-        self._subjects: dict[str, Subject] = {}
+        self._subjects: dict[tuple[str, Visibility], Subject] = {}
 
-    def subject(self, subject_id: str) -> Subject:
+    def subject(
+        self, subject_id: str, visibility: Visibility = Visibility.PRIVATE
+    ) -> Subject:
         if subject_id not in self.roster:
             raise HTTPException(status_code=403, detail="subject not consented")
         if subject_id not in self.observations:
             raise HTTPException(status_code=404, detail="no snapshot for subject")
-        if subject_id not in self._subjects:
-            self._subjects[subject_id] = resolve_subject(
-                subject_id, self.observations[subject_id]
-            )
-        return self._subjects[subject_id]
+        key = (subject_id, visibility)
+        if key not in self._subjects:
+            obs = filter_by_visibility(self.observations[subject_id], visibility)
+            self._subjects[key] = resolve_subject(subject_id, obs)
+        return self._subjects[key]
 
     def identity(self, subject_id: str) -> ConsentedIdentity:
         return ConsentedIdentity(
@@ -126,7 +137,8 @@ def create_app(
         }
 
     @app.get("/subjects")
-    def subjects() -> list[dict[str, object]]:
+    def subjects(visibility: str = "all") -> list[dict[str, object]]:
+        tier = _visibility(visibility)
         out: list[dict[str, object]] = []
         for subject_id in store.roster.subject_ids():
             record = store.roster.get(subject_id)
@@ -136,19 +148,23 @@ def create_app(
                 "has_snapshot": subject_id in store.observations,
             }
             if subject_id in store.observations:
-                exposure = assess_exposure(store.subject(subject_id))
+                exposure = assess_exposure(store.subject(subject_id, tier))
                 entry["exposure_score"] = exposure.score
                 entry["exposure_band"] = exposure.band.value
             out.append(entry)
         return out
 
     @app.post("/score/exposure")
-    def score_exposure(req: ScoreRequest) -> dict[str, object]:
-        return assess_exposure(store.subject(req.subject_id)).to_dict()
+    def score_exposure(req: ScoreRequest, visibility: str = "all") -> dict[str, object]:
+        return assess_exposure(
+            store.subject(req.subject_id, _visibility(visibility))
+        ).to_dict()
 
     @app.post("/score/predictability")
-    def score_predictability(req: PasswordRequest) -> dict[str, object]:
-        subject = store.subject(req.subject_id)
+    def score_predictability(
+        req: PasswordRequest, visibility: str = "all"
+    ) -> dict[str, object]:
+        subject = store.subject(req.subject_id, _visibility(visibility))
         prediction = simulate_predictability(
             subject,
             req.password,
@@ -158,8 +174,10 @@ def create_app(
         return prediction.to_dict()
 
     @app.post("/recommend")
-    def recommend_endpoint(req: PasswordRequest) -> dict[str, object]:
-        subject = store.subject(req.subject_id)
+    def recommend_endpoint(
+        req: PasswordRequest, visibility: str = "all"
+    ) -> dict[str, object]:
+        subject = store.subject(req.subject_id, _visibility(visibility))
         exposure = assess_exposure(subject)
         prediction = simulate_predictability(
             subject,
@@ -170,8 +188,10 @@ def create_app(
         return recommend(exposure, prediction).to_dict()
 
     @app.post("/compare-baseline")
-    def compare_baseline(req: PasswordRequest) -> dict[str, object]:
-        subject = store.subject(req.subject_id)
+    def compare_baseline(
+        req: PasswordRequest, visibility: str = "all"
+    ) -> dict[str, object]:
+        subject = store.subject(req.subject_id, _visibility(visibility))
         prediction = simulate_predictability(
             subject,
             req.password,

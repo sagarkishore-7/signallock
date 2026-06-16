@@ -10,10 +10,23 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from ..core.enums import AttributeKind, RoleSeniority, SourceClass
+from ..core.enums import AttributeKind, RoleSeniority, SourceClass, Visibility
 from ..core.evidence import Observation
 from ..core.subject import Subject
 from .tokens import extract_token_buckets
+
+
+def filter_by_visibility(
+    observations: list[Observation], max_visibility: Visibility
+) -> list[Observation]:
+    """Keep observations reachable at or below ``max_visibility``.
+
+    ``PUBLIC`` keeps only fully-public data; ``GATED`` additionally keeps
+    connection-gated data; ``PRIVATE`` keeps everything. This lets exposure and
+    predictability be scored for a fully-public attacker versus one who has
+    connected to (or follows) the subject.
+    """
+    return [o for o in observations if o.visibility.rank <= max_visibility.rank]
 
 
 def _resolve_seniority(observations: list[Observation]) -> RoleSeniority:

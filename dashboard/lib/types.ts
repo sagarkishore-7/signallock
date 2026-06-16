@@ -3,6 +3,9 @@
 
 export type RiskBand = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
+// Accessibility tier to score against (public-only / +connection-gated / all).
+export type Visibility = "public" | "gated" | "all";
+
 export type HardeningAction =
   | "ALLOW"
   | "WARN"

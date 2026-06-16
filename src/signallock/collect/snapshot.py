@@ -14,7 +14,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ..core.enums import AttributeKind, SourceClass
+from ..core.enums import AttributeKind, SourceClass, Visibility
 from ..core.evidence import Observation
 from ..core.identity import ConsentedIdentity
 from .base import Collector, register
@@ -55,6 +55,7 @@ def load_snapshot(path: str | Path) -> list[Observation]:
                 collected_at=str(raw.get("collected_at", default_time)),
                 provenance=str(raw.get("provenance", "snapshot")),
                 mirrors=str(raw.get("mirrors", "snapshot")),
+                visibility=Visibility(str(raw.get("visibility", "PUBLIC")).upper()),
             )
         )
     return observations

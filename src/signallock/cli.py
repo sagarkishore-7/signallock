@@ -25,6 +25,7 @@ from pathlib import Path
 from .collect.base import adversary_mirror_table
 from .collect.code_profile import CodeProfile
 from .collect.snapshot import load_snapshot
+from .core.enums import Visibility
 from .core.errors import CollectorError, ConsentError
 from .core.evidence import Observation
 from .core.identity import ConsentedIdentity, ConsentRoster, IdentitySeeds
@@ -39,7 +40,14 @@ from .policy.engine import recommend
 from .predict.baseline import context_free_strength
 from .predict.premium import exposure_premium
 from .predict.simulator import simulate_predictability
-from .resolve.entity import resolve_subject
+from .resolve.entity import filter_by_visibility, resolve_subject
+
+#: --visibility choice -> the maximum accessibility tier to score.
+_VISIBILITY = {
+    "public": Visibility.PUBLIC,
+    "gated": Visibility.GATED,
+    "all": Visibility.PRIVATE,
+}
 
 
 def _configs() -> Path:
@@ -71,13 +79,25 @@ def _print(obj: object) -> None:
     print(json.dumps(obj, indent=2, sort_keys=True))
 
 
+def _load_observations(args: argparse.Namespace) -> dict[str, list[Observation]]:
+    """Load snapshots, filtered to the requested ``--visibility`` tier (if any)."""
+    observations = load_observations_dir(args.snapshots or _default("snapshots"))
+    tier = _VISIBILITY.get(getattr(args, "visibility", None) or "all", Visibility.PRIVATE)
+    if tier is Visibility.PRIVATE:
+        return observations
+    return {
+        subject_id: filter_by_visibility(obs, tier)
+        for subject_id, obs in observations.items()
+    }
+
+
 # --------------------------------------------------------------------------- #
 # commands
 
 
 def cmd_collect(args: argparse.Namespace) -> int:
     roster = _load_roster(args.roster)
-    observations = load_observations_dir(args.snapshots or _default("snapshots"))
+    observations = _load_observations(args)
     if args.subject not in observations:
         print(f"no snapshot found for subject '{args.subject}'", file=sys.stderr)
         return 2
@@ -189,7 +209,7 @@ def cmd_collect_live(args: argparse.Namespace) -> int:
 
 def cmd_score(args: argparse.Namespace) -> int:
     roster = _load_roster(args.roster)
-    observations = load_observations_dir(args.snapshots or _default("snapshots"))
+    observations = _load_observations(args)
     if args.subject not in observations:
         print(f"no snapshot found for subject '{args.subject}'", file=sys.stderr)
         return 2
@@ -209,7 +229,7 @@ def cmd_score(args: argparse.Namespace) -> int:
 
 def cmd_compare_baseline(args: argparse.Namespace) -> int:
     roster = _load_roster(args.roster)
-    observations = load_observations_dir(args.snapshots or _default("snapshots"))
+    observations = _load_observations(args)
     if args.subject not in observations:
         print(f"no snapshot found for subject '{args.subject}'", file=sys.stderr)
         return 2
@@ -234,7 +254,7 @@ def cmd_compare_baseline(args: argparse.Namespace) -> int:
 
 def _build(args: argparse.Namespace):
     roster = _load_roster(args.roster)
-    observations = load_observations_dir(args.snapshots or _default("snapshots"))
+    observations = _load_observations(args)
     passwords_path = Path(args.passwords) if args.passwords else _default(
         "example_passwords.example.json"
     )
@@ -323,7 +343,7 @@ def cmd_demo(args: argparse.Namespace) -> int:
         )
         return 2
     roster = _load_roster(args.roster)
-    observations = load_observations_dir(args.snapshots or _default("snapshots"))
+    observations = _load_observations(args)
     if args.subject not in observations:
         print(f"no snapshot found for subject '{args.subject}'", file=sys.stderr)
         return 2
@@ -353,9 +373,18 @@ def build_parser() -> argparse.ArgumentParser:
     def add_common(p: argparse.ArgumentParser) -> None:
         p.add_argument("--snapshots", help="snapshots directory")
 
+    def add_visibility(p: argparse.ArgumentParser) -> None:
+        p.add_argument(
+            "--visibility",
+            choices=["public", "gated", "all"],
+            default="all",
+            help="accessibility tier to score: public-only, +connection-gated, or all",
+        )
+
     p_collect = sub.add_parser("collect", help="resolve a subject from its snapshot")
     p_collect.add_argument("--subject", required=True)
     add_common(p_collect)
+    add_visibility(p_collect)
     p_collect.set_defaults(func=cmd_collect)
 
     p_live = sub.add_parser(
@@ -380,22 +409,26 @@ def build_parser() -> argparse.ArgumentParser:
     p_score.add_argument("--subject", required=True)
     p_score.add_argument("--password")
     add_common(p_score)
+    add_visibility(p_score)
     p_score.set_defaults(func=cmd_score)
 
     p_cmp = sub.add_parser("compare-baseline", help="contextual vs zxcvbn + premium")
     p_cmp.add_argument("--subject", required=True)
     p_cmp.add_argument("--password", required=True)
     add_common(p_cmp)
+    add_visibility(p_cmp)
     p_cmp.set_defaults(func=cmd_compare_baseline)
 
     p_ds = sub.add_parser("build-dataset", help="build the labeled dataset")
     add_common(p_ds)
+    add_visibility(p_ds)
     p_ds.add_argument("--passwords", help="passwords map JSON")
     p_ds.add_argument("--out", help="output directory")
     p_ds.set_defaults(func=cmd_build_dataset)
 
     p_eval = sub.add_parser("evaluate", help="train + evaluate the learned model")
     add_common(p_eval)
+    add_visibility(p_eval)
     p_eval.add_argument("--passwords", help="passwords map JSON")
     p_eval.add_argument("--out", help="output directory")
     p_eval.add_argument("--seed", type=int, default=7)

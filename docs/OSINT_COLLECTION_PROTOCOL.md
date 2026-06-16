@@ -136,6 +136,12 @@ Field rules:
   default to sensible values in the loader.
 - `mirrors` names the attacker tool the datum mirrors (e.g. `cupp`, `maigret`,
   `hibp`) for the adversary-mirror report.
+- `visibility` (optional, default `PUBLIC`) is the accessibility tier: `PUBLIC`
+  (anyone can find it), `GATED` (reachable by an attacker who connects/follows,
+  e.g. a private Instagram or connection-visible birthday), or `PRIVATE`. Scoring
+  can be restricted to a tier with `--visibility public|gated|all` (CLI) or
+  `?visibility=` (API), so exposure and predictability are reported for a
+  public-only attacker versus one who has connected to the subject.
 - Use only **derived, typed** facts — no raw scraped text, no cleartext
   passwords. A `BREACH` observation carries only the breach *name*; a
   `STRUCTURE_PRIOR` carries only a structural habit (e.g. `word+4digits`), never

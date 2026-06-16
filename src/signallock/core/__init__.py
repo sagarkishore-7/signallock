@@ -12,6 +12,7 @@ from .enums import (
     RoleSeniority,
     SourceClass,
     TokenBucket,
+    Visibility,
 )
 from .errors import (
     CollectorError,
@@ -40,6 +41,7 @@ __all__ = [
     "RoleSeniority",
     "SourceClass",
     "TokenBucket",
+    "Visibility",
     "CollectorError",
     "ConsentError",
     "DependencyError",
