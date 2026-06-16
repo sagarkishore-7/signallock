@@ -12,7 +12,7 @@ COPY src/ ./src/
 COPY configs/ ./configs/
 
 RUN python -m pip install --upgrade pip && \
-    python -m pip install ".[ml,api]" && \
+    python -m pip install ".[ml,api,osint]" && \
     mkdir -p artifacts artifacts/models
 
 EXPOSE 8000
