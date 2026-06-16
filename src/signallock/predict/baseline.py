@@ -10,8 +10,22 @@ from __future__ import annotations
 import math
 from dataclasses import asdict, dataclass
 
-from ..core.enums import RiskBand
+from ..core.enums import RiskBand, TokenBucket
 from ..core.errors import require_dependency
+from ..core.subject import Subject
+
+
+def identity_inputs(subject: Subject) -> list[str]:
+    """Tokens a realistic enterprise meter is already fed (registration fields):
+    the subject's name parts and handles (username/email). Used as zxcvbn
+    ``user_inputs`` so the baseline is *identity-aware* — then the exposure
+    premium isolates the value of OSINT *beyond* name/username checking, which
+    standard meters already do.
+    """
+    return [
+        *subject.tokens(TokenBucket.NAME),
+        *subject.tokens(TokenBucket.IDENTITY),
+    ]
 
 
 @dataclass
@@ -39,8 +53,14 @@ def _band_from_log10(guesses_log10: float) -> RiskBand:
     return RiskBand.LOW
 
 
-def context_free_strength(password: str) -> BaselineStrength:
-    """Estimate context-free strength via zxcvbn.
+def context_free_strength(
+    password: str, user_inputs: list[str] | None = None
+) -> BaselineStrength:
+    """Estimate strength via zxcvbn.
+
+    ``user_inputs`` are identity tokens a real meter already checks (name,
+    username); pass :func:`identity_inputs` for the identity-aware baseline used
+    by the exposure premium. With no inputs this is the naive context-free meter.
 
     Raises:
         DependencyError: If zxcvbn is not installed (install ``[osint]``).
@@ -48,7 +68,7 @@ def context_free_strength(password: str) -> BaselineStrength:
     require_dependency("zxcvbn", "osint")
     from zxcvbn import zxcvbn
 
-    result = zxcvbn(password)
+    result = zxcvbn(password, user_inputs=user_inputs or [])
     guesses_log10 = float(
         result.get("guesses_log10", math.log10(max(result.get("guesses", 1), 1)))
     )
