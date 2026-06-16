@@ -1,6 +1,6 @@
 """Enterprise control-plane interfaces and stubs (design-only this phase).
 
-This package wraps the SignalLock research core with the interfaces an
+This package wraps the Eidolon research core with the interfaces an
 enterprise deployment needs — tenant isolation, IdP sync, policy enforcement,
 audit/SIEM export, and RBAC — as Protocols plus no-op reference implementations.
 Nothing here is wired to real infrastructure yet; see

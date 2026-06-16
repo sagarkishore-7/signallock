@@ -6,7 +6,7 @@ tool. Importing the package registers every collector in :data:`MIRROR_REGISTRY`
 the collector→attacker-tool mapping that drives ``docs/ADVERSARY_MIRROR.md``.
 
 All collectors run behind the same hard consent gate (``Collector.collect`` calls
-``require_consent`` first) and emit typed :class:`~signallock.core.evidence.Observation`
+``require_consent`` first) and emit typed :class:`~eidolon.core.evidence.Observation`
 records, never flattened profiles or raw scraped text.
 """
 

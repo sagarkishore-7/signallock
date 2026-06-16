@@ -1,6 +1,6 @@
-# SignalLock Dashboard
+# Eidolon Dashboard
 
-A Next.js 15 + TypeScript + Tailwind dashboard for the SignalLock Audit and Interactive modes. Talks to the FastAPI backend over HTTP.
+A Next.js 15 + TypeScript + Tailwind dashboard for the Eidolon Audit and Interactive modes. Talks to the FastAPI backend over HTTP.
 
 ## Pages
 
@@ -17,7 +17,7 @@ The dashboard requires the FastAPI server to be running with CORS enabled.
 **1. Start the API** (in one terminal, from the project root):
 
 ```bash
-.venv/bin/python -m signallock serve \
+.venv/bin/python -m eidolon serve \
   --port 8000 \
   --cors-origins http://localhost:3000
 ```

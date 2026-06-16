@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import unittest
 
-from signallock.core.identity import ConsentRoster
-from signallock.eval import (
+from eidolon.core.identity import ConsentRoster
+from eidolon.eval import (
     ablation_study,
     build_dataset,
     build_expert_packet,

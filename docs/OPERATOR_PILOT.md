@@ -1,4 +1,4 @@
-# SignalLock v2 — Operator Self-Pilot Runbook (`real-01`)
+# Eidolon v2 — Operator Self-Pilot Runbook (`real-01`)
 
 This is the **operator-facing** runbook for the consented real-participant
 measurement study, pilot N=1 with **you (the operator)** as `real-01`. It turns your
@@ -50,7 +50,7 @@ real accounts. Two sub-paths:
 ### 3a. GitHub — automated live collection (the wired live source)
 ```bash
 export GITHUB_TOKEN=ghp_xxx          # a personal access token (read-only is fine)
-.venv/bin/python -m signallock --roster configs/osint_roster.json \
+.venv/bin/python -m eidolon --roster configs/osint_roster.json \
     collect-live --subject real-01 --github-user <your-github-handle> \
     --snapshots configs/snapshots
 # -> writes configs/snapshots/real-01.json with your real NAME/ORG/LOCATION/
@@ -65,7 +65,7 @@ small JSON and merge:
 ```bash
 # author configs/snapshots/real-01.extra.json with {"subject_id":"real-01","observations":[...]}
 # then re-run collect-live with --merge to union GitHub + your manual observations
-.venv/bin/python -m signallock --roster configs/osint_roster.json \
+.venv/bin/python -m eidolon --roster configs/osint_roster.json \
     collect-live --subject real-01 --github-user <your-handle> \
     --snapshots configs/snapshots --merge
 ```
@@ -89,7 +89,7 @@ observation `{source, attr_kind, value}` (see `PERSONAS.md §3` for the full map
 
 Confirm capture worked:
 ```bash
-.venv/bin/python -m signallock --roster configs/osint_roster.json \
+.venv/bin/python -m eidolon --roster configs/osint_roster.json \
     collect --subject real-01 --snapshots configs/snapshots   # exposure + token buckets
 ```
 
@@ -114,14 +114,14 @@ contrast that proves the thesis:
 R=configs/osint_roster.json ; S=configs/snapshots ; P=configs/passwords.local.json
 
 # Per-password (nothing persisted): the headline contrast on your real footprint
-.venv/bin/python -m signallock --roster $R compare-baseline --subject real-01 \
+.venv/bin/python -m eidolon --roster $R compare-baseline --subject real-01 \
     --password "<pet><year>" --snapshots $S      # expect positive premium, matched_category set
-.venv/bin/python -m signallock --roster $R compare-baseline --subject real-01 \
+.venv/bin/python -m eidolon --roster $R compare-baseline --subject real-01 \
     --password "<unrelated-word><year>" --snapshots $S   # expect ~0 premium, no match
 
 # Full measurement (only bands/metrics persisted, never plaintext)
-.venv/bin/python -m signallock --roster $R build-dataset --snapshots $S --passwords $P --out artifacts/study
-.venv/bin/python -m signallock --roster $R evaluate --snapshots $S --passwords $P \
+.venv/bin/python -m eidolon --roster $R build-dataset --snapshots $S --passwords $P --out artifacts/study
+.venv/bin/python -m eidolon --roster $R evaluate --snapshots $S --passwords $P \
     --out artifacts/study_eval --seed 1 --figures
 ```
 

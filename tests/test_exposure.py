@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import unittest
 
-from signallock.core import AttributeKind, Observation, SourceClass
-from signallock.core.enums import RiskBand
-from signallock.core.subject import Subject
-from signallock.exposure import assess_exposure, band_from_score
-from signallock.resolve import resolve_subject
+from eidolon.core import AttributeKind, Observation, SourceClass
+from eidolon.core.enums import RiskBand
+from eidolon.core.subject import Subject
+from eidolon.exposure import assess_exposure, band_from_score
+from eidolon.resolve import resolve_subject
 
 from ._fixtures import SUBJECT_ID, make_observations
 

@@ -73,7 +73,7 @@ export function PasswordTester({ subjectId }: { subjectId: string }) {
 
       {compare && (
         <div className="grid gap-3 sm:grid-cols-3">
-          <Cell label="Context-aware (SignalLock)">
+          <Cell label="Context-aware (Eidolon)">
             <RiskBadge band={compare.contextual_band} />
           </Cell>
           <Cell label="Meter (zxcvbn, name-aware)">

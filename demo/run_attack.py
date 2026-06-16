@@ -1,7 +1,7 @@
 """The demo *attacker* — targeted password guessing against the local target.
 
-This drives :func:`signallock.predict.mangling.generate_guesses` over a resolved
-:class:`~signallock.core.subject.Subject` (the OSINT dossier) to produce candidate
+This drives :func:`eidolon.predict.mangling.generate_guesses` over a resolved
+:class:`~eidolon.core.subject.Subject` (the OSINT dossier) to produce candidate
 passwords in increasing-effort order, then tries each against the demo auth
 service until one matches. It mirrors what a real targeted-guess attacker
 (CUPP/TarGuess-style) would do with the same harvested material.
@@ -23,8 +23,8 @@ from urllib.parse import urlparse
 
 from fastapi import FastAPI
 
-from signallock.core.subject import Subject
-from signallock.predict.mangling import generate_guesses
+from eidolon.core.subject import Subject
+from eidolon.predict.mangling import generate_guesses
 
 from .target_service import DEMO_USERNAME, verify
 

@@ -1,6 +1,6 @@
 ## Summary
 
-Describe the change and why it belongs in SignalLock.
+Describe the change and why it belongs in Eidolon.
 
 ## Type of Change
 

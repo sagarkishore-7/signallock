@@ -1,5 +1,5 @@
 {
-  "_comment": "CLEARLY-FAKE consented snapshot for research persona 'dummy-harbor'. All values fabricated. 'source'/'attr_kind' are exact enum names from src/signallock/core/enums.py. Consumed by src/signallock/collect/snapshot.py.",
+  "_comment": "CLEARLY-FAKE consented snapshot for research persona 'dummy-harbor'. All values fabricated. 'source'/'attr_kind' are exact enum names from src/eidolon/core/enums.py. Consumed by src/eidolon/collect/snapshot.py.",
   "subject_id": "dummy-harbor",
   "observations": [
     {"source": "SOCIAL", "attr_kind": "NAME", "value": "Harbor Persona", "confidence": 0.95, "mirrors": "sherlock", "provenance": "snapshot:reddit-fake"},

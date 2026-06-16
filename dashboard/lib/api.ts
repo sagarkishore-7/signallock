@@ -1,7 +1,7 @@
-// Thin client for the SignalLock v2 FastAPI service.
+// Thin client for the Eidolon v2 FastAPI service.
 // Configure the base URL via NEXT_PUBLIC_API_BASE (default http://localhost:8000).
 // Start the backend with CORS for the dashboard dev server:
-//   python -m signallock serve --cors-origins http://localhost:3000
+//   python -m eidolon serve --cors-origins http://localhost:3000
 
 import type {
   CompareBaselineResult,

@@ -1,8 +1,8 @@
-"""Shared offline fixtures for SignalLock v2 tests (clearly fake data)."""
+"""Shared offline fixtures for Eidolon v2 tests (clearly fake data)."""
 
 from __future__ import annotations
 
-from signallock.core import (
+from eidolon.core import (
     AttributeKind,
     ConsentedIdentity,
     ConsentRecord,

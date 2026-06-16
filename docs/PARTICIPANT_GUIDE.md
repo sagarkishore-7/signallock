@@ -1,6 +1,6 @@
 # How to Take Part — Participant Guide
 
-A 4-step walkthrough for joining the SignalLock OSINT & password-risk study. The
+A 4-step walkthrough for joining the Eidolon OSINT & password-risk study. The
 whole thing takes ~20 minutes. Everything you do is **voluntary** and your details
 are returned **privately**, never committed to this repository.
 

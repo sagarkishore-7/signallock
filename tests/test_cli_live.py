@@ -12,14 +12,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from signallock.cli import (
+from eidolon.cli import (
     _merge_observations,
     _write_snapshot,
     collect_live_observations,
 )
-from signallock.collect.snapshot import load_snapshot
-from signallock.core import AttributeKind, SourceClass
-from signallock.core.errors import ConsentError
+from eidolon.collect.snapshot import load_snapshot
+from eidolon.core import AttributeKind, SourceClass
+from eidolon.core.errors import ConsentError
 
 from tests._fixtures import make_identity, make_roster
 

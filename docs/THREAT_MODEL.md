@@ -1,8 +1,8 @@
-# SignalLock Threat Model
+# Eidolon Threat Model
 
 ## Objective
 
-SignalLock is a defensive system for estimating targeted password risk and recommending authentication hardening actions. It is not an offensive guessing framework.
+Eidolon is a defensive system for estimating targeted password risk and recommending authentication hardening actions. It is not an offensive guessing framework.
 
 ## Primary Security Question
 
@@ -40,7 +40,7 @@ This mode should avoid storing plaintext passwords beyond the immediate scoring 
 
 ## Adversary Model
 
-SignalLock assumes an attacker who may have:
+Eidolon assumes an attacker who may have:
 
 - access to public user information,
 - access to role or organization context,
@@ -48,7 +48,7 @@ SignalLock assumes an attacker who may have:
 - access to prior breach-derived aggregate password knowledge,
 - limited online guessing opportunities.
 
-SignalLock does not assume:
+Eidolon does not assume:
 
 - system compromise,
 - access to password hashes,
@@ -114,7 +114,7 @@ The system must keep these risks separate:
 ## Risk Classes
 
 The pipeline uses bounded-budget guess labels (`RiskBand` in
-`src/signallock/core/enums.py`):
+`src/eidolon/core/enums.py`):
 
 - `LOW`: not reached within the largest guess budget
 - `MEDIUM`: contextual predictability with limited structural overlap; falls only at the largest budget
@@ -126,7 +126,7 @@ The pipeline uses bounded-budget guess labels (`RiskBand` in
 The bounded-budget guess simulator (`predict/simulator.py`) labels each consented
 owner password by the smallest budget (number of attempts) at which a
 personalized candidate matches. The budgets are defined as the `Budget` enum in
-`src/signallock/core/enums.py` and map to risk bands via `BUDGET_TO_BAND`:
+`src/eidolon/core/enums.py` and map to risk bands via `BUDGET_TO_BAND`:
 
 | Budget | Attacker tier modeled | Band if reached |
 |---|---|---|
@@ -165,7 +165,7 @@ targets live third-party hosts:
   sandbox only; no live-platform attack is ever performed.
 - Dummy accounts on real platforms are OSINT *sources*, never attack *targets*.
 
-## Threats SignalLock Tries to Reduce
+## Threats Eidolon Tries to Reduce
 
 - targeted online password guessing
 - public-context-amplified password predictability

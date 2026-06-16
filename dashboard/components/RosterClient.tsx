@@ -26,7 +26,7 @@ export function RosterClient() {
         <p className="mt-3 text-xs text-ink-faint">
           Start the backend with CORS:{" "}
           <code>
-            python -m signallock serve --cors-origins http://localhost:3000
+            python -m eidolon serve --cors-origins http://localhost:3000
           </code>
         </p>
       </div>

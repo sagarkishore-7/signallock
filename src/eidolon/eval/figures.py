@@ -54,7 +54,7 @@ def save_figures(
         base_vals = [baseline_dist.get(b, 0) for b in bands]  # type: ignore[union-attr]
         x = range(len(bands))
         fig, ax = plt.subplots(figsize=(6, 4))
-        ax.bar([i - 0.2 for i in x], label_vals, width=0.4, label="SignalLock (contextual)")
+        ax.bar([i - 0.2 for i in x], label_vals, width=0.4, label="Eidolon (contextual)")
         ax.bar([i + 0.2 for i in x], base_vals, width=0.4, label="zxcvbn (context-free)")
         ax.set_xticks(list(x))
         ax.set_xticklabels(bands)

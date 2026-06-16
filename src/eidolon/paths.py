@@ -1,4 +1,4 @@
-"""Project-root and runtime path helpers for SignalLock."""
+"""Project-root and runtime path helpers for Eidolon."""
 
 from __future__ import annotations
 
@@ -8,16 +8,16 @@ from pathlib import Path
 
 
 def _looks_like_project_root(path: Path) -> bool:
-    """Return True when the path looks like a SignalLock checkout/runtime root."""
+    """Return True when the path looks like a Eidolon checkout/runtime root."""
     return (path / "configs").is_dir() and (
-        (path / "src" / "signallock").is_dir() or (path / "artifacts").exists()
+        (path / "src" / "eidolon").is_dir() or (path / "artifacts").exists()
     )
 
 
 @lru_cache(maxsize=1)
 def get_project_root() -> Path:
     """Resolve the project root across source, installed, and container contexts."""
-    env_root = os.environ.get("SIGNALLOCK_PROJECT_ROOT")
+    env_root = os.environ.get("EIDOLON_PROJECT_ROOT")
     if env_root:
         return Path(env_root).expanduser().resolve()
 

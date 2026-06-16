@@ -1,10 +1,10 @@
-"""Tests for the SignalLock v2 core: enums, consent gate, evidence, subjects."""
+"""Tests for the Eidolon v2 core: enums, consent gate, evidence, subjects."""
 
 from __future__ import annotations
 
 import unittest
 
-from signallock.core import (
+from eidolon.core import (
     AttributeKind,
     Budget,
     ConsentedIdentity,
@@ -19,7 +19,7 @@ from signallock.core import (
     TokenBucket,
     require_consent,
 )
-from signallock.core.enums import BUDGET_TO_BAND, RoleSeniority
+from eidolon.core.enums import BUDGET_TO_BAND, RoleSeniority
 
 
 def _identity(subject_id: str = "subj-1") -> ConsentedIdentity:

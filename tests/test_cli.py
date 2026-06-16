@@ -7,7 +7,7 @@ import json
 import unittest
 from contextlib import redirect_stdout
 
-from signallock.cli import main
+from eidolon.cli import main
 
 
 def _run(args: list[str]) -> tuple[int, str]:

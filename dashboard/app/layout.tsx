@@ -17,7 +17,7 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SignalLock — Audit Dashboard",
+  title: "Eidolon — Audit Dashboard",
   description:
     "OSINT-calibrated password risk assessment and context-aware authentication hardening.",
 };

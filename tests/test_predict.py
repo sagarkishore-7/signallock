@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import unittest
 
-from signallock.core.enums import RiskBand
-from signallock.predict import (
+from eidolon.core.enums import RiskBand
+from eidolon.predict import (
     context_free_strength,
     exposure_premium,
     generate_guesses,
     simulate_predictability,
 )
-from signallock.resolve import resolve_subject
+from eidolon.resolve import resolve_subject
 
 from ._fixtures import SUBJECT_ID, make_identity, make_observations, make_roster
 
@@ -43,9 +43,9 @@ class ManglingTests(unittest.TestCase):
     def test_noisy_interest_tokens_are_capped(self) -> None:
         # A long tail of public repo-derived interests must not flood the guess
         # dossier (regression for the token-quality dilution finding).
-        from signallock.core import AttributeKind, Observation, SourceClass
-        from signallock.core.enums import TokenBucket
-        from signallock.predict.mangling import _BASE_BUCKET_CAPS, _base_words
+        from eidolon.core import AttributeKind, Observation, SourceClass
+        from eidolon.core.enums import TokenBucket
+        from eidolon.predict.mangling import _BASE_BUCKET_CAPS, _base_words
 
         obs = [
             Observation("dev", SourceClass.CODE, AttributeKind.INTEREST,
@@ -83,7 +83,7 @@ class SimulatorTests(unittest.TestCase):
         self.assertEqual(result.band, RiskBand.LOW)
 
     def test_consent_gate_refuses_non_roster(self) -> None:
-        from signallock.core import ConsentRoster, ConsentError
+        from eidolon.core import ConsentRoster, ConsentError
 
         with self.assertRaises(ConsentError):
             simulate_predictability(

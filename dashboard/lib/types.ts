@@ -1,4 +1,4 @@
-// TypeScript types mirroring the SignalLock v2 API (src/signallock/api.py).
+// TypeScript types mirroring the Eidolon v2 API (src/eidolon/api.py).
 // Keep in sync with the Python dataclasses if the backend changes.
 
 export type RiskBand = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";

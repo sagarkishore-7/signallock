@@ -1,6 +1,6 @@
-# SignalLock v2 — Adversary Mirror
+# Eidolon v2 — Adversary Mirror
 
-SignalLock's organizing thesis is that **the defense is the structural mirror of
+Eidolon's organizing thesis is that **the defense is the structural mirror of
 the attacker's OSINT to cracking kill chain**. Every collector reproduces one
 stage of what a real adversary does, in the order they do it, so the
 "defense vs offense" contribution is enforced by the architecture rather than
@@ -14,7 +14,7 @@ human-readable reference.
 
 ## The kill-chain mapping
 
-| Attacker stage | Real tool | Signal harvested | SignalLock collector / component | Ethical mode |
+| Attacker stage | Real tool | Signal harvested | Eidolon collector / component | Ethical mode |
 |---|---|---|---|---|
 | Username pivot | Maigret / Sherlock | account existence across sites | `UsernameEnumerator` (`username_enum.py`, `USERNAME_ENUM`) | HTTP existence checks, owned allowlist |
 | Email pivot | Holehe / h8mail | accounts tied to an email | `EmailEnumerator` (`email_enum.py`, `EMAIL_ENUM`) | owned-allowlist only |
@@ -49,6 +49,6 @@ human-readable reference.
   "attack" is the bounded-budget guess simulator against a consented password;
   the optional sandbox demo is loopback-only (see `docs/THREAT_MODEL.md`).
 
-See `docs/ADVERSARY_MIRROR.md` references in `src/signallock/core/enums.py`
+See `docs/ADVERSARY_MIRROR.md` references in `src/eidolon/core/enums.py`
 (`SourceClass`) for the source-class to attacker-tool comments that this table
 expands on.

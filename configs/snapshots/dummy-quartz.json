@@ -1,5 +1,5 @@
 {
-  "_comment": "CLEARLY-FAKE consented snapshot for research persona 'dummy-quartz'. All values fabricated. Includes a BREACH observation (breach name only, never cleartext) and a STRUCTURE_PRIOR observation (a structural password habit, not a real password). 'source'/'attr_kind' are exact enum names from src/signallock/core/enums.py. Consumed by src/signallock/collect/snapshot.py.",
+  "_comment": "CLEARLY-FAKE consented snapshot for research persona 'dummy-quartz'. All values fabricated. Includes a BREACH observation (breach name only, never cleartext) and a STRUCTURE_PRIOR observation (a structural password habit, not a real password). 'source'/'attr_kind' are exact enum names from src/eidolon/core/enums.py. Consumed by src/eidolon/collect/snapshot.py.",
   "subject_id": "dummy-quartz",
   "observations": [
     {"source": "SOCIAL", "attr_kind": "NAME", "value": "Quartz Persona", "confidence": 0.95, "mirrors": "sherlock", "provenance": "snapshot:mastodon-fake"},

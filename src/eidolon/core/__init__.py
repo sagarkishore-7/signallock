@@ -1,4 +1,4 @@
-"""SignalLock v2 core: enums, consent spine, evidence, and resolved subjects."""
+"""Eidolon v2 core: enums, consent spine, evidence, and resolved subjects."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from .errors import (
     CollectorError,
     ConsentError,
     DependencyError,
-    SignalLockError,
+    EidolonError,
     require_dependency,
 )
 from .evidence import Observation
@@ -45,7 +45,7 @@ __all__ = [
     "CollectorError",
     "ConsentError",
     "DependencyError",
-    "SignalLockError",
+    "EidolonError",
     "require_dependency",
     "Observation",
     "ConsentedIdentity",

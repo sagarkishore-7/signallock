@@ -6,8 +6,8 @@ import unittest
 
 from fastapi.testclient import TestClient
 
-from signallock.api import create_app
-from signallock.paths import get_project_root
+from eidolon.api import create_app
+from eidolon.paths import get_project_root
 
 
 def _client() -> TestClient:

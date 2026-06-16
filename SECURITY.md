@@ -2,7 +2,7 @@
 
 ## Scope
 
-SignalLock is a defensive cybersecurity research project focused on:
+Eidolon is a defensive cybersecurity research project focused on:
 
 - OSINT-calibrated risk assessment,
 - password security research,

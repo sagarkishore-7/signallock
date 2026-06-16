@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import unittest
 
-from signallock.core.enums import RoleSeniority, SourceClass, TokenBucket
-from signallock.resolve import extract_token_buckets, resolve_subject
+from eidolon.core.enums import RoleSeniority, SourceClass, TokenBucket
+from eidolon.resolve import extract_token_buckets, resolve_subject
 
 from ._fixtures import SUBJECT_ID, make_observations
 
