@@ -23,7 +23,7 @@ from ..core.identity import (
     IdentitySeeds,
 )
 from ..exposure.model import assess_exposure
-from ..predict.baseline import context_free_strength
+from ..predict.baseline import context_free_strength, identity_inputs
 from ..predict.features import FEATURE_NAMES, build_features
 from ..predict.premium import exposure_premium
 from ..predict.simulator import simulate_predictability
@@ -110,7 +110,9 @@ def build_dataset(
             prediction = simulate_predictability(
                 subject, password, identity=identity, roster=roster
             )
-            baseline = context_free_strength(password)
+            baseline = context_free_strength(
+                password, user_inputs=identity_inputs(subject)
+            )
             premium = exposure_premium(baseline, prediction)
             features = build_features(subject, exposure, password, baseline)
             rows.append(

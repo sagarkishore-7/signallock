@@ -76,7 +76,7 @@ export function PasswordTester({ subjectId }: { subjectId: string }) {
           <Cell label="Context-aware (SignalLock)">
             <RiskBadge band={compare.contextual_band} />
           </Cell>
-          <Cell label="Context-free (zxcvbn)">
+          <Cell label="Meter (zxcvbn, name-aware)">
             <RiskBadge band={compare.baseline.band} />
           </Cell>
           <Cell label="Exposure premium">
@@ -92,10 +92,10 @@ export function PasswordTester({ subjectId }: { subjectId: string }) {
       {compare && (
         <p className="text-xs leading-relaxed text-ink-subdued">
           The exposure premium is how many orders of magnitude of guessing effort
-          this account&apos;s public OSINT removes. A large premium with a weak
-          context-aware band but a strong context-free band means a password that
-          looks fine to a generic meter is in fact predictable to a targeted
-          attacker.
+          this account&apos;s OSINT removes <em>beyond</em> a meter already fed the
+          name/username. A large premium means a password that looks fine even to a
+          name-aware meter is in fact predictable to an attacker who did the OSINT
+          (pet, team, employer, year).
         </p>
       )}
 

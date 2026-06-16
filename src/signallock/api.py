@@ -24,7 +24,7 @@ from .eval.dataset import load_observations_dir
 from .exposure.model import assess_exposure
 from .paths import get_project_root
 from .policy.engine import recommend
-from .predict.baseline import context_free_strength
+from .predict.baseline import context_free_strength, identity_inputs
 from .predict.premium import exposure_premium
 from .predict.simulator import simulate_predictability
 from .resolve.entity import filter_by_visibility, resolve_subject
@@ -198,7 +198,9 @@ def create_app(
             identity=store.identity(req.subject_id),
             roster=store.roster,
         )
-        baseline = context_free_strength(req.password)
+        baseline = context_free_strength(
+            req.password, user_inputs=identity_inputs(subject)
+        )
         premium = exposure_premium(baseline, prediction)
         return {
             "subject_id": req.subject_id,

@@ -37,7 +37,7 @@ from .eval.metrics import ablation_study, evaluate_dataset
 from .exposure.model import assess_exposure
 from .paths import get_project_root
 from .policy.engine import recommend
-from .predict.baseline import context_free_strength
+from .predict.baseline import context_free_strength, identity_inputs
 from .predict.premium import exposure_premium
 from .predict.simulator import simulate_predictability
 from .resolve.entity import filter_by_visibility, resolve_subject
@@ -238,7 +238,9 @@ def cmd_compare_baseline(args: argparse.Namespace) -> int:
         subject, args.password,
         identity=_identity(args.subject, roster), roster=roster,
     )
-    baseline = context_free_strength(args.password)
+    baseline = context_free_strength(
+        args.password, user_inputs=identity_inputs(subject)
+    )
     premium = exposure_premium(baseline, prediction)
     _print(
         {

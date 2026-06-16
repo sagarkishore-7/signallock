@@ -136,6 +136,23 @@ class BaselineAndPremiumTests(unittest.TestCase):
         premium = exposure_premium(baseline, prediction)
         self.assertAlmostEqual(premium.premium, 0.0, places=4)
 
+    def test_identity_aware_baseline_discounts_known_inputs_only(self) -> None:
+        # A password built from a token the meter is fed (an "identity" input) is
+        # discounted; a password built from an unrelated token is unaffected. This
+        # is why the identity-aware baseline keeps the premium honest: OSINT only
+        # earns premium for tokens the meter does NOT already know.
+        known = "zrtklm"  # not a dictionary word; stands in for a known handle
+        known_naive = context_free_strength(known + "2020").guesses_log10
+        known_aware = context_free_strength(
+            known + "2020", user_inputs=[known]
+        ).guesses_log10
+        other_naive = context_free_strength("qxvwnp2020").guesses_log10
+        other_aware = context_free_strength(
+            "qxvwnp2020", user_inputs=[known]
+        ).guesses_log10
+        self.assertLess(known_aware, known_naive)  # the fed input is discounted
+        self.assertAlmostEqual(other_aware, other_naive)  # unrelated token untouched
+
 
 if __name__ == "__main__":
     unittest.main()
