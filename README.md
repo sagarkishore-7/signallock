@@ -1,9 +1,14 @@
 # Eidolon
 
-Eidolon is a **defensive** security research project on **OSINT-calibrated
-password risk**. It measures how much a person's *public* online footprint lowers
-the effort to guess their passwords — so defenders can warn users and harden
-authentication. It never generates guess lists and never attacks real accounts.
+### Your password's phantom double.
+
+*Eidolon* (Greek **εἴδωλον**, *eidōlon*) — a phantom likeness of a person. A
+targeted attacker assembles exactly such a likeness of you from public traces,
+and passwords are often guessable from it. **Eidolon** is **defensive** security
+research on **OSINT-calibrated password risk**: it builds that same public
+likeness, mirrors the attacker's OSINT → cracking kill chain, and measures — then
+hardens — the resulting risk. It never generates guess lists and never attacks
+real accounts.
 
 > **v2 — Adversary-Mirrored OSINT Defense.** Every collector is the structural
 > mirror of one stage of an attacker's OSINT → cracking kill chain, run only
